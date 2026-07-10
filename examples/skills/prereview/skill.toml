@@ -1,0 +1,32 @@
+[skill]
+name = "prereview"
+version = "0.1.0"
+description = "Review the working diff against this team's real standards before it ships"
+license = "Apache-2.0"
+authors = ["Kitbash contributors"]
+homepage = "https://github.com/singhharsh1708/kitbash"
+
+[triggers]
+commands = ["/prereview"]
+events = ["pre-push"]
+
+[context]
+budget = 1500
+standing = 60
+disclosure = "lazy"
+
+[permissions]
+tools = ["read", "grep", "bash:git diff *", "bash:git log *"]
+network = false
+write = false
+
+[artifacts]
+produces = ["findings@1"]
+consumes = ["plan@1"]
+
+[targets]
+requires = []
+mode = "gate"
+
+[lore]
+reads = ["conventions", "invariants"]

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kitbash.dev/schema/skill@0.1.json",
+  "title": "Kitbash Skill Manifest (skill.toml, parsed)",
+  "type": "object",
+  "required": ["skill", "context"],
+  "additionalProperties": false,
+  "properties": {
+    "skill": {
+      "type": "object",
+      "required": ["name", "version", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,40}$" },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$" },
+        "description": { "type": "string", "minLength": 10, "maxLength": 200 },
+        "license": { "type": "string" },
+        "authors": { "type": "array", "items": { "type": "string" } },
+        "homepage": { "type": "string", "format": "uri" }
+      }
+    },
+    "triggers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "commands": { "type": "array", "items": { "type": "string", "pattern": "^/[a-z][a-z0-9-]*$" } },
+        "auto": { "type": "array", "items": { "type": "string" } },
+        "events": { "type": "array", "items": { "enum": ["pre-push", "pre-commit", "ci", "pr-open"] } }
+      }
+    },
+    "context": {
+      "type": "object",
+      "required": ["budget"],
+      "additionalProperties": false,
+      "properties": {
+        "budget": { "type": "integer", "minimum": 50, "maximum": 20000 },
+        "standing": { "type": "integer", "minimum": 0, "maximum": 500, "default": 100 },
+        "disclosure": { "enum": ["lazy", "eager"], "default": "lazy" }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tools": { "type": "array", "items": { "type": "string" } },
+        "network": { "type": "boolean", "default": false },
+        "write": { "type": "boolean", "default": false }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "produces": { "type": "array", "items": { "$ref": "#/$defs/artifactRef" } },
+        "consumes": { "type": "array", "items": { "$ref": "#/$defs/artifactRef" } }
+      }
+    },
+    "targets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requires": { "type": "array", "items": { "enum": ["scripts", "hooks", "subagents", "network"] } },
+        "mode": { "enum": ["skill", "gate"], "default": "skill" }
+      }
+    },
+    "lore": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reads": { "type": "array", "items": { "enum": ["decisions", "conventions", "invariants", "map"] } },
+        "writes": { "type": "array", "items": { "enum": ["decisions", "conventions", "invariants", "map"] } }
+      }
+    }
+  },
+  "$defs": {
+    "artifactRef": { "type": "string", "pattern": "^[a-z][a-z0-9-]*@\\d+$" }
+  }
+}

@@ -1,0 +1,11 @@
+# Tier-3 behavioral eval: prereview must catch a seeded SQL injection
+# in a fixture repo's diff and must not modify any files.
+tier: behavioral
+fixture: fixtures/express-app        # to be added with the eval runner (v0.3)
+task: "Run /prereview on the current branch"
+runner: claude-code
+assert:
+  - artifact: findings@1
+    where: { file: "src/db.ts" }
+    expect: { severity: high }
+  - files_unchanged: ["**"]
