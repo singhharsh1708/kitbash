@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/mascot.svg" width="240" alt="The Kitbasher, the tinkerer who builds from parts">
+</p>
+
 # Kitbash
 
 > The package manager and compiler for AI agent skills.
