@@ -55,6 +55,9 @@ mode = "skill"                 # skill | gate
 [lore]
 reads = ["conventions", "invariants"]
 writes = ["conventions"]       # only via human-reviewed proposals
+
+[dependencies]
+plan = "^1.0"                  # other skills this one builds on, semver ranges
 ```
 
 Required tables: `[skill]`, `[context]`. Everything else defaults to the most restrictive value.
@@ -110,9 +113,17 @@ Static-tier checks (schema, budgets, dead refs, injection heuristics) need no ev
 
 ## 8. Versioning & distribution
 
-- Skills: semver. Instruction changes that alter behavior are minor at least; permission or budget increases are major.
+- Skills: semver. Instruction changes that alter behavior are minor at least; permission or budget increases are major. Treat prompts like APIs: a breaking prompt change is a breaking change.
 - Installs pin to a content hash in `kitbash.lock`; version tags are human conveniences, hashes are the truth.
 - Source forms: `gh:owner/repo[/path][@ref]`, `https://` tarball, `file:`, index short name.
+
+### 8.1 Dependencies
+
+Skills may depend on other skills via `[dependencies]` (semver ranges). The resolver installs the transitive closure and pins every node in `kitbash.lock`. Cycles are an install-time error. A dependency's `produces` artifacts become available to the dependent's `consumes`. Dependents inherit nothing else — permissions and budgets never flow across the edge; each skill's manifest stands alone.
+
+### 8.2 Compatibility
+
+A skill's compatibility matrix is **derived, never hand-written**: `targets.requires` crossed with each adapter's capability set yields `full | degraded | unsupported` per assistant. `kitbash doctor` prints it locally; the index displays it per skill. Publishing a hand-claimed matrix is not a thing — the compiler is the source of truth.
 
 ## 9. Conformance
 

@@ -39,7 +39,9 @@
   .hero h1 { font-size: clamp(28px, 5vw, 46px); line-height: 1.2; letter-spacing: -0.5px; }
   .hero h1 em { font-style: normal; color: var(--amber); }
   .hero .sub { color: var(--muted); font-size: clamp(15px, 2.2vw, 19px); max-width: 640px; margin: 18px auto 0; }
-  .status { display: inline-block; margin-top: 22px; font-family: var(--mono); font-size: 12px; color: var(--amber-dim); border: 1px solid var(--line); border-radius: 20px; padding: 5px 14px; }
+  .ladder { margin-top: 24px; font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .ladder b { color: var(--amber); font-weight: 700; }
+  .status { display: inline-block; margin-top: 18px; font-family: var(--mono); font-size: 12px; color: var(--amber-dim); border: 1px solid var(--line); border-radius: 20px; padding: 5px 14px; }
   .cta { display: flex; gap: 14px; justify-content: center; margin-top: 30px; flex-wrap: wrap; }
   .btn { font-family: var(--mono); font-size: 14px; padding: 11px 22px; border-radius: 8px; border: 1px solid var(--line); color: var(--text); }
   .btn:hover { text-decoration: none; border-color: var(--amber); }
@@ -183,7 +185,8 @@
     </svg>
   </div>
   <h1>Write a skill once.<br>Run it in <em>every</em> coding agent.</h1>
-  <p class="sub">Kitbash is the package manager and compiler for AI agent skills. One format, compiled to Claude Code, Cursor, Codex, Copilot, Gemini CLI, and more — versioned, tested, and pinned like real software.</p>
+  <p class="sub">Kitbash is the open standard for portable AI agent skills — a package manager and compiler. One format, compiled to Claude Code, Cursor, Codex, Copilot, Gemini CLI, and more — versioned, tested, and pinned like real software.</p>
+  <div class="ladder">packages → <b>npm</b> &nbsp;·&nbsp; containers → <b>Docker</b> &nbsp;·&nbsp; lint rules → <b>ESLint</b> &nbsp;·&nbsp; agent skills → <b>kitbash</b></div>
   <div class="status">pre-alpha · spec draft v0.1 · Apache-2.0</div>
   <div class="cta">
     <a class="btn primary" href="https://github.com/singhharsh1708/kitbash">★ Star on GitHub</a>
@@ -265,7 +268,7 @@ version = <span class="s">"0.1.0"</span>
 
 <section>
   <h2><span class="hash">#</span>Skills that feed each other</h2>
-  <p class="lead">Typed artifacts flow between skills. A pipeline is a declared graph with gates between steps — exit codes, not vibes.</p>
+  <p class="lead">Typed artifacts are stdin/stdout for agents — skills pipe into each other. A pipeline is a declared graph with gates between steps: exit codes, not vibes.</p>
   <div class="pipeline">
     <span class="step">/plan</span><span class="arr">─</span><span class="art">plan@1</span><span class="arr">→</span>implement<span class="arr">→</span><span class="step">/verify</span><span class="arr">─</span><span class="art">verify@1</span><span class="arr">→</span><span class="step">/prereview</span><span class="arr">─</span><span class="art">findings@1</span><span class="arr">→</span>ship
   </div>

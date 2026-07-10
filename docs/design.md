@@ -62,7 +62,7 @@ Trust model, in order of shipping:
 
 ## Artifacts and pipelines
 
-Skills compose through **typed artifacts**, not prompt hopes. An artifact is a JSON file under `.kitbash/artifacts/` with a versioned schema:
+Artifacts are **stdin/stdout for agents** — the pipe operator that makes skills compose. Not prompt hopes: an artifact is a JSON file under `.kitbash/artifacts/` with a versioned schema:
 
 - `plan@1` — file-level implementation plan: touchpoints, risks, test plan
 - `findings@1` — review findings: file, line, severity, rationale
@@ -141,8 +141,13 @@ kitbash/
 - `~/.config/kitbash/config.toml`: user defaults, index sources, telemetry opt-in (off by default, forever).
 - `kitbash.lock`: machine-written pins.
 
+## Future direction: structured steps (RFC territory)
+
+The strongest critique of prompt-file skills: they should be programs, not prose. Kitbash's answer is the deterministic shell — scripts, gates, artifact contracts — around a necessarily non-deterministic LLM core. A future RFC may let gate-mode skills declare ordered steps (`collect → generate → validate → emit`) so more of the skill's surface becomes checkable. What we will not build is a general workflow DSL that replaces the agent: that's the agent-framework trap, and it's a non-goal below.
+
 ## Non-goals
 
-- Not an agent runtime, model router, or IDE.
+- Not an agent runtime, model router, or IDE. Kitbash compiles; agents execute.
 - No hosted execution; the CLI is local-first, offline-capable after install.
 - No telemetry by default; no accounts required for public installs.
+- No popularity-ranked marketplace. The index surfaces measurements (eval pass rate, token cost, compatibility, signature status) — never star ratings.
