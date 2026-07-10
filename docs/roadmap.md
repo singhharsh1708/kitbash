@@ -15,6 +15,7 @@ The single sharpest claim, working: **write once, run in four assistants.**
 ## v0.2 — trust (weeks 6–10)
 
 - `kitbash.lock` with directory content hashes; reproducible installs.
+- Dependency resolution: skill-to-skill `[dependencies]`, transitive closure pinned in the lockfile, cycle detection.
 - `kitbash update` with instruction-level diff review.
 - `kitbash lint`: schema, context budgets (measured against compiled output), dead references, injection heuristics.
 - Permissions manifest compiled to Claude Code permission rules; advisory elsewhere, honestly labeled.
@@ -35,6 +36,7 @@ The single sharpest claim, working: **write once, run in four assistants.**
 - Loadouts: `kitbash install loadout:oss-maintainer`.
 - Remaining adapters: `gemini-cli`, `windsurf`, `opencode`, `cline`, `aider`.
 - Docs site with the skill catalog + measured eval results per skill.
+- Skill badges, measurement-only: eval pass rate, compiled token cost, auto-derived compatibility matrix, signed status. No star ratings — measurement over popularity, by design.
 - **Launch moment.** The demo is one command turning a bare repo into a four-assistant, team-standard setup. Ponytail proved a single good skill can pull 75k stars; ours ride on infrastructure others can build on, which is the durable version of that story.
 
 ## v0.5 — memory (months 6–9)

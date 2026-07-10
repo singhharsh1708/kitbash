@@ -4,8 +4,15 @@
 
 # Kitbash
 
-> The package manager and compiler for AI agent skills.
-> Write a skill once. Run it in Claude Code, Cursor, Codex, Copilot, Gemini CLI, Windsurf, OpenCode, Aider — every coding agent you use.
+> **The open standard for portable AI agent skills.**
+> Write a skill once. A package manager and compiler run it in Claude Code, Cursor, Codex, Copilot, Gemini CLI, Windsurf, OpenCode, Aider — every coding agent you use.
+
+```
+JavaScript packages  →  npm
+Containers           →  Docker
+Lint rules           →  ESLint
+Agent skills         →  Kitbash
+```
 
 **Status: pre-alpha. Spec draft v0.1. Nothing here is stable yet.**
 
@@ -65,7 +72,8 @@ The manifest declares things no other format even has a field for:
 - **`[context] budget`** — max tokens this skill may inject. Enforced. `kitbash lint` fails skills that bloat.
 - **`[permissions]`** — which tools the skill may direct the agent to use. Reviewable at install time.
 - **`[artifacts]`** — typed JSON the skill produces/consumes (`plan@1`, `findings@1`), so skills compose through data, not prompt-chaining hope.
-- **`[targets]`** — capability requirements, so the compiler can degrade gracefully on assistants that can't run scripts.
+- **`[targets]`** — capability requirements, so the compiler can degrade gracefully on assistants that can't run scripts — and derive a per-skill compatibility matrix automatically.
+- **`[dependencies]`** — skills build on other skills, npm-style: semver ranges, resolved as a graph, pinned as a closure in the lockfile.
 
 ### 2. The `kitbash` CLI
 
@@ -91,7 +99,7 @@ GitHub-native first (like Go modules / Homebrew taps): any repo can publish a sk
 The prompt-file abstraction is too small. Kitbash names the missing pieces:
 
 - **Adapters** — compile targets per assistant, with a capability matrix and graceful degradation.
-- **Artifacts** — typed handoffs (`plan@1`, `findings@1`, `benchmark@1`) so `/plan → implement → /verify → /prereview → /release` is a real pipeline, not a suggestion.
+- **Artifacts** — typed handoffs (`plan@1`, `findings@1`, `benchmark@1`): stdin/stdout for agents. Skills pipe into each other, so `/plan → implement → /verify → /prereview → /release` is a real pipeline, not a suggestion.
 - **Gates** — skills that run as deterministic pass/fail hooks (pre-push, CI). Exit codes, not vibes.
 - **Loadouts** — curated skill sets per stack: `kitbash install loadout:oss-maintainer`.
 - **Lore** — a structured, versioned repo-intelligence layer (decisions, conventions, invariants, ownership) that every skill can query and extend, portable across assistants. The project memory your agent forgets every session, made durable.

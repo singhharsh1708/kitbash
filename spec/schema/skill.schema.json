@@ -70,6 +70,11 @@
         "reads": { "type": "array", "items": { "enum": ["decisions", "conventions", "invariants", "map"] } },
         "writes": { "type": "array", "items": { "enum": ["decisions", "conventions", "invariants", "map"] } }
       }
+    },
+    "dependencies": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]{1,40}$" },
+      "additionalProperties": { "type": "string", "description": "semver range" }
     }
   },
   "$defs": {
