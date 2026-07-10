@@ -5,7 +5,7 @@
 # Kitbash
 
 > **The open standard for portable AI agent skills.**
-> Write a skill once. A package manager and compiler run it in Claude Code, Cursor, Codex, Copilot, Gemini CLI, Windsurf, OpenCode, Aider — every coding agent you use.
+> Write a skill once. Run it in every coding agent you use.
 
 ```
 JavaScript packages  →  npm
@@ -16,114 +16,73 @@ Agent skills         →  Kitbash
 
 **Status: pre-alpha. Spec draft v0.1. Nothing here is stable yet.**
 
+## Thirty seconds
+
 ```
-kitbash install prereview
-kitbash compile
-# → .claude/skills/prereview/  .cursor/rules/prereview.mdc  AGENTS.md §prereview  ...
+$ kitbash install prereview
+✓ resolved gh:kitbash-dev/prereview@0.1.0 (sha256-9f2c…)
+✓ lint passed — 1,412 / 1,500 token budget
+✓ pinned in kitbash.lock
+
+$ kitbash compile
+→ .claude/skills/prereview/SKILL.md
+→ .cursor/rules/prereview.mdc
+→ AGENTS.md §prereview
+compiled 1 skill for 3 agents
 ```
 
----
+One skill, in every agent your team uses, versioned and pinned like real software.
 
 ## The problem
 
-Every AI coding assistant invented its own extension format:
+Every assistant invented its own extension format — `.claude/skills/`, `.cursor/rules/*.mdc`, `copilot-instructions.md`, `AGENTS.md`, `.windsurfrules`, `.clinerules`, `CONVENTIONS.md`, `GEMINI.md`. A great skill written for one agent is dead weight for the rest of your team. And the skills people do share are unversioned, untested, unreviewable prompt files.
 
-| Assistant | Format |
-|---|---|
-| Claude Code | `.claude/skills/*/SKILL.md`, plugins, hooks |
-| Cursor | `.cursorrules`, `.cursor/rules/*.mdc` |
-| GitHub Copilot | `.github/copilot-instructions.md`, `*.instructions.md` |
-| OpenAI Codex | `AGENTS.md`, prompts |
-| Windsurf | `.windsurfrules`, workflows |
-| Cline / Roo | `.clinerules` |
-| Continue | config blocks |
-| Aider | `CONVENTIONS.md` |
-| OpenHands | microagents |
+Prompts are code. Nobody is treating them that way. The full argument: [**MANIFESTO.md**](MANIFESTO.md).
 
-Meanwhile the "skills" that developers actually share are viral prompt packs — useful, but structurally dead ends:
+## The fix
 
-- **No portability.** A great Claude skill is useless to your teammate on Cursor.
-- **No testing.** Prompts ship on vibes. Nobody knows if version 1.3 got worse.
-- **No trust.** Installing a skill means pasting unreviewed instructions into the thing that edits your code. Prompt injection is a supply-chain attack nobody is scanning for.
-- **No versioning.** Update a rules file and behavior silently changes for the whole team.
-- **No composition.** Skills can't feed each other. Every prompt is an island.
-- **Context bloat.** Every installed rule burns tokens on every request, forever, unmeasured.
-
-npm solved distribution for JS. Babel solved write-once-run-everywhere. ESLint solved shareable, configurable rules. Homebrew solved one-command install with community taps. **Nobody has solved any of this for agent skills.** Kitbash is that layer.
-
-## What Kitbash is
-
-Three pillars:
-
-### 1. KSF — the Kitbash Skill Format ([spec](spec/SPEC.md))
-
-An open, assistant-agnostic format. A skill is a directory:
+A skill is a directory in one open format ([KSF](spec/SPEC.md)), compiled to every agent's native format:
 
 ```
 prereview/
-  skill.toml        # manifest: triggers, permissions, context budget, artifacts
-  SKILL.md          # the instructions (progressive disclosure)
+  skill.toml        # budget, permissions, artifacts, dependencies
+  SKILL.md          # the instructions
   scripts/          # optional deterministic helpers
-  evals/            # tests. yes, tests for a skill.
+  evals/            # tests — yes, tests for a skill
 ```
 
-The manifest declares things no other format even has a field for:
+The format is the product. Everything else supports it.
 
-- **`[context] budget`** — max tokens this skill may inject. Enforced. `kitbash lint` fails skills that bloat.
-- **`[permissions]`** — which tools the skill may direct the agent to use. Reviewable at install time.
-- **`[artifacts]`** — typed JSON the skill produces/consumes (`plan@1`, `findings@1`), so skills compose through data, not prompt-chaining hope.
-- **`[targets]`** — capability requirements, so the compiler can degrade gracefully on assistants that can't run scripts — and derive a per-skill compatibility matrix automatically.
-- **`[dependencies]`** — skills build on other skills, npm-style: semver ranges, resolved as a graph, pinned as a closure in the lockfile.
+## Concepts
 
-### 2. The `kitbash` CLI
+| Concept | One line | Depth |
+|---|---|---|
+| **Adapters** | Compile targets per agent; degradation is visible, never silent | [design](docs/design.md#the-compiler-and-adapters) |
+| **Lockfile** | Content-hash pins; updates show instruction diffs like code review | [design](docs/design.md#resolution-and-trust) |
+| **Budgets** | Every skill declares its token cost; the compiler enforces it | [spec](spec/SPEC.md) |
+| **Permissions** | Auditable manifest of what a skill may touch | [spec](spec/SPEC.md) |
+| **Artifacts** | Typed handoffs — stdin/stdout for agents; skills pipe into pipelines | [design](docs/design.md#artifacts-and-pipelines) |
+| **Gates** | Skills with deterministic pass/fail — exit codes, not vibes | [design](docs/design.md#gates) |
+| **Evals** | Three test tiers, from free lint to behavioral runs on fixture repos | [design](docs/design.md#evals) |
+| **Lore** | Portable, version-controlled repo memory any agent can query | [design](docs/design.md#lore--repo-intelligence) |
 
-```
-kitbash init                     # set up a repo
-kitbash install gh:owner/skill   # install from any GitHub repo (Homebrew-tap style)
-kitbash install prereview        # short names resolve via the community index
-kitbash compile                  # emit native format for every assistant you use
-kitbash doctor                   # detect which assistants are present
-kitbash lint                     # budget, schema, prompt-injection heuristics
-kitbash test                     # run the skill's evals
-kitbash update                   # show a human-readable diff of instruction changes before applying
-```
+## Flagship skills
 
-Installs are pinned in `kitbash.lock` by content hash. **An updated skill never changes your agent's behavior silently** — `kitbash update` shows you the instruction diff like a code review, because that's what it is.
+`/prereview` reviews your diff against your team's *actual* standards · `/excavate` answers "why is this code like this?" with receipts · `/triage` classifies red CI runs · `/plan` turns issues into file-level plans · `/verify` proves the change works by driving it · `/migrate` runs checkpointed migration campaigns · `/onboard` generates living codebase tours.
 
-### 3. The registry
+Full specs and the rejection list: [docs/skills-catalog.md](docs/skills-catalog.md).
 
-GitHub-native first (like Go modules / Homebrew taps): any repo can publish a skill, the community index maps short names to audited sources. Signing and review tiers come later — see [roadmap](docs/roadmap.md).
+## Roadmap
 
-## What Kitbash adds beyond "skills"
-
-The prompt-file abstraction is too small. Kitbash names the missing pieces:
-
-- **Adapters** — compile targets per assistant, with a capability matrix and graceful degradation.
-- **Artifacts** — typed handoffs (`plan@1`, `findings@1`, `benchmark@1`): stdin/stdout for agents. Skills pipe into each other, so `/plan → implement → /verify → /prereview → /release` is a real pipeline, not a suggestion.
-- **Gates** — skills that run as deterministic pass/fail hooks (pre-push, CI). Exit codes, not vibes.
-- **Loadouts** — curated skill sets per stack: `kitbash install loadout:oss-maintainer`.
-- **Lore** — a structured, versioned repo-intelligence layer (decisions, conventions, invariants, ownership) that every skill can query and extend, portable across assistants. The project memory your agent forgets every session, made durable.
-- **Evals** — three tiers: static lint (free), instruction audit, and behavioral runs against fixture repos using headless agent CLIs.
-
-Full architecture: [docs/design.md](docs/design.md). Flagship skills: [docs/skills-catalog.md](docs/skills-catalog.md).
+v0.1 is a deliberately thin slice: **KSF + `compile` + three adapters + one skill**, done incredibly well. Registry, lore, and pipelines earn their place after the compiler proves itself. Full plan: [docs/roadmap.md](docs/roadmap.md).
 
 ## What Kitbash refuses to be
 
-- **Not another prompt collection.** Unversioned, untested prompt piles are the problem, not the product.
-- **Not an agent framework.** We don't compete with Claude Code or Cursor; we make your investment in skills portable across all of them.
-- **Not a personality store.** Cosmetic personas don't change outcomes. We ship skills that are measured by their evals.
-
-## Quickstart (pre-alpha)
-
-```bash
-npm install -g kitbash    # not published yet — build from source
-kitbash init
-kitbash doctor
-```
+Not a prompt collection. Not an agent framework. Not a personality store. Not lock-in — compiled output is plain files in your repo; leave any time and everything keeps working.
 
 ## Contributing
 
-The spec is a draft and this is the best time to shape it. See [CONTRIBUTING.md](CONTRIBUTING.md). Design discussions happen in issues.
+The spec is a draft and this is the best time to shape it: [CONTRIBUTING.md](CONTRIBUTING.md). Landscape research behind the design: [docs/research.md](docs/research.md).
 
 ## License
 

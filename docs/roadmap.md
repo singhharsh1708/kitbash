@@ -4,21 +4,28 @@ Principle: infrastructure first, virality second, marketplace last. A store of u
 
 ## v0.1 — the compiler exists (weeks 1–6)
 
-The single sharpest claim, working: **write once, run in four assistants.**
+The single sharpest claim, working: **write once, run everywhere.** A deliberately thin slice — trying to ship compiler + registry + lore + pipelines in v0 is how projects die with nothing finished. One skill through one compiler into three agents, done incredibly well.
 
 - KSF spec draft (`spec/SPEC.md`) + JSON schema, versioned.
-- CLI: `init`, `install` (gh: / file: sources), `remove`, `list`, `compile`, `doctor`.
-- Adapters: `claude-code`, `cursor`, `copilot`, `codex`, plus the `agentsmd` floor.
-- Three first-party skills shipped and dogfooded on this repo: `prereview` (no learn mode yet), `excavate`, `plan`.
+- CLI: `init`, `install` (gh: / file: sources only), `remove`, `list`, `compile`, `doctor`.
+- Adapters: `claude-code`, `cursor`, and the `agentsmd` floor (which also covers Codex and everything else that reads AGENTS.md).
+- **One** first-party skill, dogfooded on this repo: `prereview` (no learn mode yet).
 - Exit criterion: a stranger installs a skill from a GitHub URL into a Cursor + Claude Code team repo in under two minutes.
 
-## v0.2 — trust (weeks 6–10)
+Deferred out of v0.1 on purpose: more adapters, more skills, index, evals tier 2+, lore. The compiler creates users; everything else needs users first.
+
+## v0.2 — trust and transparency (weeks 6–10)
 
 - `kitbash.lock` with directory content hashes; reproducible installs.
 - Dependency resolution: skill-to-skill `[dependencies]`, transitive closure pinned in the lockfile, cycle detection.
-- `kitbash update` with instruction-level diff review.
+- `kitbash update` with instruction-level diff review; `kitbash diff <skill> <v1> <v2>` for instruction/permission/budget diffs between any two versions.
 - `kitbash lint`: schema, context budgets (measured against compiled output), dead references, injection heuristics.
+- `kitbash audit`: scan *installed* skills — permission drift since install, unsigned sources, injection heuristics. `npm audit` for skills.
+- `kitbash preview <skill>`: the playground — render exactly what each adapter will emit, with per-agent token counts, before installing.
+- `kitbash explain <skill> <adapter>`: why a compilation degraded — which required capability the adapter lacks, what got rewritten.
 - Permissions manifest compiled to Claude Code permission rules; advisory elsewhere, honestly labeled.
+- Remaining launch adapters: `copilot`, `codex` (native prompts beyond the AGENTS.md floor).
+- Second and third first-party skills: `excavate`, `plan`.
 - Exit criterion: no code path exists where a skill's instructions change on disk without a human seeing a diff.
 
 ## v0.3 — proof (weeks 10–16)
