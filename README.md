@@ -19,19 +19,26 @@ Agent skills         →  Kitbash
 ## Thirty seconds
 
 ```
-$ kitbash install prereview
-✓ resolved gh:kitbash-dev/prereview@0.1.0 (sha256-9f2c…)
-✓ lint passed — 1,412 / 1,500 token budget
-✓ pinned in kitbash.lock
+$ kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview
+installed prereview@0.1.0 — Review the working diff against this team's real standards…
+  budget 1500 tokens · standing 60 · mode gate
 
 $ kitbash compile
 → .claude/skills/prereview/SKILL.md
 → .cursor/rules/prereview.mdc
-→ AGENTS.md §prereview
-compiled 1 skill for 3 agents
+→ AGENTS.md
+compiled 1 skill(s) for 3 agent target(s)
 ```
 
-One skill, in every agent your team uses, versioned and pinned like real software.
+One skill, in every agent your team uses. **This works today, from source:**
+
+```bash
+git clone https://github.com/singhharsh1708/kitbash && cd kitbash/packages/cli
+npm install && npm run build && npm link
+cd ~/your-repo && kitbash init && kitbash doctor
+```
+
+Working now: `init` · `install` (gh:/file:) · `compile` (claude-code, cursor, AGENTS.md floor) · `doctor` · `list` · `remove` · budget enforcement · `--strict`. Lockfile, evals, and the rest land per the [roadmap](docs/roadmap.md).
 
 ## The problem
 
@@ -51,7 +58,16 @@ prereview/
   evals/            # tests — yes, tests for a skill
 ```
 
-The format is the product. Everything else supports it.
+The format is the product. The compiler makes it real:
+
+```mermaid
+flowchart LR
+    S["skill.toml + SKILL.md<br/>(KSF, write once)"] --> C["kitbash compile"]
+    C --> A[".claude/skills/"]
+    C --> B[".cursor/rules/"]
+    C --> D["AGENTS.md §"]
+    C --> E["…more adapters"]
+```
 
 ## Concepts
 

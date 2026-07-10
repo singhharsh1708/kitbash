@@ -1,6 +1,8 @@
 # Kitbash Skill Format (KSF) — spec draft v0.1
 
-Status: **draft**. Everything here may change before 1.0. Changes land via RFC issues.
+Status: **draft**. Everything here may change before 1.0. Changes land via [RFCs](../rfcs/README.md).
+
+KSF is designed to outlive its reference implementation. Independent implementations are encouraged — "supports KSF" is the goal, not "requires Kitbash." Conformance is defined in §9; at spec 1.0, KSF moves to its own repository under open governance.
 
 ## 1. Skill layout
 
