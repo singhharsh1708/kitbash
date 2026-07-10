@@ -1,0 +1,21 @@
+{
+  "name": "kitbash",
+  "version": "0.0.1",
+  "description": "The package manager and compiler for AI agent skills — write once, run in every coding agent",
+  "license": "Apache-2.0",
+  "repository": "github:singhharsh1708/kitbash",
+  "type": "module",
+  "bin": { "kitbash": "dist/index.js" },
+  "files": ["dist"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "dev": "node --experimental-strip-types src/index.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  },
+  "keywords": ["ai", "agents", "skills", "claude-code", "cursor", "copilot", "codex", "cli", "package-manager"]
+}
