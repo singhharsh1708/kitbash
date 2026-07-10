@@ -17,7 +17,7 @@ jobs:
         working-directory: packages/cli
       - run: npm run check
         working-directory: packages/cli
-      - run: npm run build
+      - run: npm test
         working-directory: packages/cli
       - run: node dist/index.js --version
         working-directory: packages/cli

@@ -11,7 +11,8 @@
   "scripts": {
     "build": "tsc",
     "check": "tsc --noEmit",
-    "dev": "node --experimental-strip-types src/index.ts"
+    "dev": "node --experimental-strip-types src/index.ts",
+    "test": "npm run build && node scripts/test.mjs"
   },
   "devDependencies": {
     "typescript": "^5.6.0",
