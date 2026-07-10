@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kitbash — one skill, every coding agent</title>
+<meta name="description" content="The package manager and compiler for AI agent skills. Write a skill once, run it in Claude Code, Cursor, Codex, Copilot, Gemini CLI, and more.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #12161f;
+    --panel: #1a2130;
+    --panel-2: #1f2839;
+    --line: #2c3444;
+    --text: #dbe2ee;
+    --muted: #8b96ab;
+    --amber: #ffb454;
+    --amber-dim: #c98850;
+    --green: #7fd18c;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.6; }
+  a { color: var(--amber); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 0 24px; }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+  nav .brand { font-family: var(--mono); font-weight: 700; font-size: 18px; color: var(--text); }
+  nav .brand span { color: var(--amber); }
+  nav .links { display: flex; gap: 22px; font-size: 14px; }
+  nav .links a { color: var(--muted); }
+  nav .links a:hover { color: var(--amber); text-decoration: none; }
+
+  .hero { text-align: center; padding: 48px 0 24px; }
+  .hero .mascot { width: 200px; height: 200px; margin: 0 auto 28px; }
+  .hero h1 { font-size: clamp(28px, 5vw, 46px); line-height: 1.2; letter-spacing: -0.5px; }
+  .hero h1 em { font-style: normal; color: var(--amber); }
+  .hero .sub { color: var(--muted); font-size: clamp(15px, 2.2vw, 19px); max-width: 640px; margin: 18px auto 0; }
+  .status { display: inline-block; margin-top: 22px; font-family: var(--mono); font-size: 12px; color: var(--amber-dim); border: 1px solid var(--line); border-radius: 20px; padding: 5px 14px; }
+  .cta { display: flex; gap: 14px; justify-content: center; margin-top: 30px; flex-wrap: wrap; }
+  .btn { font-family: var(--mono); font-size: 14px; padding: 11px 22px; border-radius: 8px; border: 1px solid var(--line); color: var(--text); }
+  .btn:hover { text-decoration: none; border-color: var(--amber); }
+  .btn.primary { background: var(--amber); color: #12161f; font-weight: 700; border-color: var(--amber); }
+  .btn.primary:hover { background: #ffc576; }
+
+  .term { background: #0d1119; border: 1px solid var(--line); border-radius: 10px; text-align: left; font-family: var(--mono); font-size: 13.5px; overflow-x: auto; margin: 40px auto 0; max-width: 720px; }
+  .term .bar { display: flex; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  .term .bar i { width: 11px; height: 11px; border-radius: 50%; background: var(--line); }
+  .term pre { padding: 18px 20px; line-height: 1.75; }
+  .term .p { color: var(--muted); }
+  .term .ok { color: var(--green); }
+  .term .out { color: var(--amber); }
+  .term .dim { color: var(--muted); }
+
+  section { padding: 72px 0 0; }
+  section h2 { font-size: clamp(22px, 3.5vw, 30px); margin-bottom: 8px; }
+  section .lead { color: var(--muted); max-width: 700px; margin-bottom: 32px; }
+  section h2 .hash { color: var(--amber); font-family: var(--mono); margin-right: 8px; }
+
+  .formats { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+  .fmt { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; font-size: 13px; }
+  .fmt b { display: block; color: var(--text); font-weight: 600; }
+  .fmt code { font-family: var(--mono); color: var(--amber-dim); font-size: 12px; }
+
+  .pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 22px; }
+  .card h3 { font-size: 16px; margin-bottom: 8px; }
+  .card h3 code { font-family: var(--mono); color: var(--amber); font-size: 14px; }
+  .card p { color: var(--muted); font-size: 14px; }
+
+  .code { background: #0d1119; border: 1px solid var(--line); border-radius: 10px; font-family: var(--mono); font-size: 13px; overflow-x: auto; }
+  .code pre { padding: 18px 20px; line-height: 1.7; }
+  .code .k { color: var(--amber); }
+  .code .s { color: var(--green); }
+  .code .c { color: var(--muted); }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+
+  .skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .skill { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; }
+  .skill .cmd { font-family: var(--mono); color: var(--amber); font-size: 15px; font-weight: 700; }
+  .skill .tag { float: right; font-family: var(--mono); font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 12px; padding: 2px 10px; }
+  .skill p { color: var(--muted); font-size: 14px; margin-top: 8px; }
+
+  .pipeline { background: #0d1119; border: 1px solid var(--line); border-radius: 10px; padding: 26px 20px; font-family: var(--mono); font-size: 13.5px; overflow-x: auto; text-align: center; }
+  .pipeline .step { color: var(--amber); font-weight: 700; }
+  .pipeline .art { color: var(--green); font-size: 12px; }
+  .pipeline .arr { color: var(--muted); padding: 0 6px; }
+
+  .principles li { margin: 10px 0 10px 20px; color: var(--muted); }
+  .principles li b { color: var(--text); }
+
+  footer { margin-top: 90px; border-top: 1px solid var(--line); padding: 34px 0 46px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: 14px; }
+  footer .tag { font-family: var(--mono); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <div class="brand"><span>kit</span>bash</div>
+  <div class="links">
+    <a href="#problem">Problem</a>
+    <a href="#how">How</a>
+    <a href="#skills">Skills</a>
+    <a href="#principles">Principles</a>
+    <a href="https://github.com/singhharsh1708/kitbash">GitHub</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="mascot">
+    <svg viewBox="0 0 512 512" role="img" aria-label="The Kitbasher">
+      <defs>
+        <radialGradient id="bg" cx="50%" cy="42%" r="72%"><stop offset="0%" stop-color="#28324a"/><stop offset="100%" stop-color="#141924"/></radialGradient>
+        <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3e4a61"/><stop offset="100%" stop-color="#2c3444"/></linearGradient>
+        <radialGradient id="iris" cx="50%" cy="38%" r="65%"><stop offset="0%" stop-color="#ffc76b"/><stop offset="100%" stop-color="#b06a1a"/></radialGradient>
+        <clipPath id="badge"><circle cx="256" cy="256" r="236"/></clipPath>
+      </defs>
+      <circle cx="256" cy="256" r="236" fill="url(#bg)"/>
+      <g clip-path="url(#badge)">
+        <g transform="translate(84,314) rotate(-14)" stroke="#8b96ab" fill="none">
+          <rect x="0" y="0" width="84" height="104" rx="10" stroke-width="7"/>
+          <path d="M 42 0 V 104 M 0 52 H 84" stroke-width="5"/>
+          <circle cx="21" cy="26" r="13" stroke="#ffb454" stroke-width="6" stroke-dasharray="4 5"/>
+          <circle cx="21" cy="26" r="4" fill="#ffb454" stroke="none"/>
+          <path d="M 63 18 l 8 5 v 9 l -8 5 l -8 -5 v -9 z" fill="#8b96ab" stroke="none"/>
+          <rect x="12" y="70" width="18" height="16" rx="5" fill="#35516e" stroke-width="4"/>
+          <circle cx="63" cy="78" r="9" stroke-width="5"/>
+        </g>
+        <circle cx="428" cy="180" r="20" fill="none" stroke="#8b96ab" stroke-width="8" stroke-dasharray="6 6"/>
+        <circle cx="428" cy="180" r="6" fill="#ffb454"/>
+        <rect x="422" y="316" width="26" height="26" rx="6" transform="rotate(20 435 329)" fill="#35516e" stroke="#8b96ab" stroke-width="4"/>
+        <path d="M 150 111 l 2.5 6.5 l 6.5 2.5 l -6.5 2.5 l -2.5 6.5 l -2.5 -6.5 l -6.5 -2.5 l 6.5 -2.5 z" fill="#ffd98c"/>
+        <path d="M 392 101 l 2.5 6.5 l 6.5 2.5 l -6.5 2.5 l -2.5 6.5 l -2.5 -6.5 l -6.5 -2.5 l 6.5 -2.5 z" fill="#ffd98c"/>
+        <path d="M 118 391 l 2.5 6.5 l 6.5 2.5 l -6.5 2.5 l -2.5 6.5 l -2.5 -6.5 l -6.5 -2.5 l 6.5 -2.5 z" fill="#ffd98c"/>
+        <path d="M 234 320 L 234 388 Q 256 398 278 388 L 278 320 Z" fill="#ffd8b4"/>
+        <path d="M 234 320 L 234 352 Q 256 362 278 352 L 278 320 Z" fill="#edb88c"/>
+        <path d="M 118 512 C 126 436 178 396 256 392 C 334 396 386 436 394 512 Z" fill="#35516e"/>
+        <path d="M 256 414 L 232 392 L 214 410 L 244 428 Z" fill="#2a415a"/>
+        <path d="M 256 414 L 280 392 L 298 410 L 268 428 Z" fill="#2a415a"/>
+        <path d="M 256 424 L 256 512" stroke="#ffb454" stroke-width="3.5"/>
+        <rect x="152" y="446" width="34" height="24" rx="6" transform="rotate(-12 169 458)" fill="#ffb454" opacity="0.9"/>
+        <path d="M 158 282 C 146 190 168 130 196 104 L 206 64 L 224 94 L 244 86 L 258 46 L 274 86 L 292 92 L 310 60 L 322 100 C 350 128 366 190 354 282 C 344 238 336 218 328 208 L 184 208 C 176 218 168 238 158 282 Z" fill="url(#hair)"/>
+        <ellipse cx="172" cy="256" rx="11" ry="17" fill="#ffd8b4"/>
+        <ellipse cx="340" cy="256" rx="11" ry="17" fill="#ffd8b4"/>
+        <path d="M 174 238 C 174 190 208 148 256 148 C 304 148 338 190 338 238 C 338 288 310 336 256 352 C 202 336 174 288 174 238 Z" fill="#ffd8b4"/>
+        <path d="M 174 238 C 174 288 202 336 256 352 C 228 338 194 300 188 240 C 186 210 190 186 198 170 C 182 186 174 210 174 238 Z" fill="#c98850" opacity="0.18"/>
+        <ellipse cx="198" cy="298" rx="13" ry="6.5" fill="#f79a7a" opacity="0.32"/>
+        <ellipse cx="316" cy="298" rx="13" ry="6.5" fill="#f79a7a" opacity="0.32"/>
+        <ellipse cx="215" cy="264" rx="21" ry="15" fill="#ffffff"/>
+        <ellipse cx="297" cy="264" rx="21" ry="15" fill="#ffffff"/>
+        <circle cx="215" cy="266" r="12" fill="url(#iris)"/>
+        <circle cx="297" cy="266" r="12" fill="url(#iris)"/>
+        <circle cx="215" cy="266" r="5.5" fill="#1d1509"/>
+        <circle cx="297" cy="266" r="5.5" fill="#1d1509"/>
+        <circle cx="211" cy="261" r="3.5" fill="#ffffff"/>
+        <circle cx="293" cy="261" r="3.5" fill="#ffffff"/>
+        <circle cx="220" cy="271" r="1.8" fill="#ffffff" opacity="0.8"/>
+        <circle cx="302" cy="271" r="1.8" fill="#ffffff" opacity="0.8"/>
+        <path d="M 188 256 L 193 262 Q 215 246 237 258" fill="none" stroke="#232a38" stroke-width="6.5" stroke-linecap="round"/>
+        <path d="M 275 258 Q 297 246 319 262 L 324 256" fill="none" stroke="#232a38" stroke-width="6.5" stroke-linecap="round"/>
+        <path d="M 228 282 q 6 3 12 1" fill="none" stroke="#232a38" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+        <path d="M 272 283 q 6 2 12 0" fill="none" stroke="#232a38" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+        <path d="M 192 234 Q 214 224 234 231" fill="none" stroke="#232a38" stroke-width="6" stroke-linecap="round"/>
+        <path d="M 278 228 Q 300 216 320 225" fill="none" stroke="#232a38" stroke-width="6" stroke-linecap="round"/>
+        <path d="M 256 294 q 4 6 0 11" fill="none" stroke="#d99a6c" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M 232 316 Q 258 336 286 312" fill="none" stroke="#232a38" stroke-width="5" stroke-linecap="round"/>
+        <path d="M 286 312 q 6 -2 8 -8" fill="none" stroke="#232a38" stroke-width="4" stroke-linecap="round"/>
+        <path d="M 178 252 C 176 194 200 160 256 158 C 312 160 336 194 334 252 L 314 218 L 296 254 L 278 216 L 258 252 L 240 214 L 222 250 L 204 218 Z" fill="url(#hair)"/>
+        <path d="M 174 186 C 200 156 312 156 338 186 L 338 164 C 312 134 200 134 174 164 Z" fill="#232a38"/>
+        <circle cx="216" cy="158" r="25" fill="#ffcf7d" stroke="#4c576e" stroke-width="7"/>
+        <circle cx="296" cy="158" r="25" fill="#ffcf7d" stroke="#4c576e" stroke-width="7"/>
+        <ellipse cx="208" cy="150" rx="7" ry="4" transform="rotate(-20 208 150)" fill="#ffffff" opacity="0.85"/>
+        <ellipse cx="288" cy="150" rx="7" ry="4" transform="rotate(-20 288 150)" fill="#ffffff" opacity="0.85"/>
+        <rect x="168" y="162" width="10" height="16" rx="3" fill="#4c576e"/>
+        <rect x="334" y="162" width="10" height="16" rx="3" fill="#4c576e"/>
+      </g>
+      <circle cx="256" cy="256" r="238" fill="none" stroke="#ffb454" stroke-width="5"/>
+    </svg>
+  </div>
+  <h1>Write a skill once.<br>Run it in <em>every</em> coding agent.</h1>
+  <p class="sub">Kitbash is the package manager and compiler for AI agent skills. One format, compiled to Claude Code, Cursor, Codex, Copilot, Gemini CLI, and more — versioned, tested, and pinned like real software.</p>
+  <div class="status">pre-alpha · spec draft v0.1 · Apache-2.0</div>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/singhharsh1708/kitbash">★ Star on GitHub</a>
+    <a class="btn" href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md">Read the spec</a>
+  </div>
+
+  <div class="term">
+    <div class="bar"><i></i><i></i><i></i></div>
+    <pre><span class="p">$</span> kitbash install prereview
+<span class="ok">✓</span> resolved gh:kitbash-dev/prereview@0.1.0 <span class="dim">(sha256-9f2c…)</span>
+<span class="ok">✓</span> lint passed <span class="dim">— 1,412 / 1,500 token budget</span>
+<span class="ok">✓</span> pinned in kitbash.lock
+
+<span class="p">$</span> kitbash compile
+<span class="out">→</span> .claude/skills/prereview/SKILL.md
+<span class="out">→</span> .cursor/rules/prereview.mdc
+<span class="out">→</span> .github/instructions/prereview.instructions.md
+<span class="out">→</span> AGENTS.md <span class="dim">§prereview</span>
+<span class="dim">compiled 1 skill for 4 agents</span></pre>
+  </div>
+</div>
+
+<section id="problem">
+  <h2><span class="hash">#</span>Every agent invented its own format</h2>
+  <p class="lead">Your team runs four different coding agents. A great skill written for one is dead weight for the other three — so everyone maintains divergent rule files that silently drift apart.</p>
+  <div class="formats">
+    <div class="fmt"><b>Claude Code</b><code>.claude/skills/*/SKILL.md</code></div>
+    <div class="fmt"><b>Cursor</b><code>.cursor/rules/*.mdc</code></div>
+    <div class="fmt"><b>GitHub Copilot</b><code>.github/copilot-instructions.md</code></div>
+    <div class="fmt"><b>Codex</b><code>AGENTS.md</code></div>
+    <div class="fmt"><b>Windsurf</b><code>.windsurfrules</code></div>
+    <div class="fmt"><b>Cline / Roo</b><code>.clinerules</code></div>
+    <div class="fmt"><b>Aider</b><code>CONVENTIONS.md</code></div>
+    <div class="fmt"><b>Gemini CLI</b><code>GEMINI.md</code></div>
+  </div>
+</section>
+
+<section id="how">
+  <h2><span class="hash">#</span>One manifest, compiled everywhere</h2>
+  <p class="lead">A Kitbash skill declares things no other format has a field for: an enforced token budget, tool permissions, and typed artifacts so skills compose through data instead of prompt-chaining hope.</p>
+  <div class="split">
+    <div class="code"><pre><span class="c"># skill.toml</span>
+[skill]
+name = <span class="s">"prereview"</span>
+version = <span class="s">"0.1.0"</span>
+
+[context]
+<span class="k">budget</span> = 1500   <span class="c"># enforced, not vibes</span>
+<span class="k">standing</span> = 60  <span class="c"># cost when idle</span>
+
+[permissions]
+<span class="k">tools</span> = [<span class="s">"read"</span>, <span class="s">"grep"</span>, <span class="s">"bash:git diff *"</span>]
+<span class="k">network</span> = false
+
+[artifacts]
+<span class="k">produces</span> = [<span class="s">"findings@1"</span>]
+<span class="k">consumes</span> = [<span class="s">"plan@1"</span>]</pre></div>
+    <div class="pillars" style="grid-template-columns:1fr">
+      <div class="card"><h3>Trust the diff</h3><p>Installs pin a content hash in <code>kitbash.lock</code>. Updates show you the instruction diff like a code review — because that's what it is. No skill ever changes behavior silently.</p></div>
+      <div class="card"><h3>Skills with tests</h3><p>Three eval tiers: static lint, instruction audit, and behavioral runs against fixture repos through headless agents. Ranked by measurement, not stars.</p></div>
+      <div class="card"><h3>Honest degradation</h3><p>An agent that can't run scripts gets an instruction-only variant — with a visible build warning, never a silent downgrade.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="skills">
+  <h2><span class="hash">#</span>Flagship skills</h2>
+  <p class="lead">Selection rule: if a frontier model already does it well from a bare prompt, it's not a skill. Skills earn their place through project grounding, enforcement, or composition.</p>
+  <div class="skills">
+    <div class="skill"><span class="tag">gate</span><span class="cmd">/prereview</span><p>Reviews your diff against your team's <i>actual</i> standards — mined from what reviewers on this repo really flag, not a generic checklist.</p></div>
+    <div class="skill"><span class="tag">research</span><span class="cmd">/excavate</span><p>Answers "why is this code like this?" with the commit, PR thread, and issue that made it so — then records the answer durably.</p></div>
+    <div class="skill"><span class="tag">ci</span><span class="cmd">/triage</span><p>Turns a red CI run into a verdict: flake, environment, or real regression — with the decisive log line and the likely culprit.</p></div>
+    <div class="skill"><span class="tag">planning</span><span class="cmd">/plan</span><p>Issue → file-level implementation plan with risks and test plan, as a typed artifact downstream skills consume.</p></div>
+    <div class="skill"><span class="tag">gate</span><span class="cmd">/verify</span><p>Drives the changed behavior end-to-end in the running app. Tests passing is evidence, never the verdict.</p></div>
+    <div class="skill"><span class="tag">campaign</span><span class="cmd">/migrate</span><p>Checkpointed migration batches — resumable across sessions and teammates, every batch independently revertable.</p></div>
+    <div class="skill"><span class="tag">team</span><span class="cmd">/onboard</span><p>A personalized, task-anchored codebase tour that regenerates on demand — never a stale wiki page.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="hash">#</span>Skills that feed each other</h2>
+  <p class="lead">Typed artifacts flow between skills. A pipeline is a declared graph with gates between steps — exit codes, not vibes.</p>
+  <div class="pipeline">
+    <span class="step">/plan</span><span class="arr">─</span><span class="art">plan@1</span><span class="arr">→</span>implement<span class="arr">→</span><span class="step">/verify</span><span class="arr">─</span><span class="art">verify@1</span><span class="arr">→</span><span class="step">/prereview</span><span class="arr">─</span><span class="art">findings@1</span><span class="arr">→</span>ship
+  </div>
+</section>
+
+<section id="principles">
+  <h2><span class="hash">#</span>What Kitbash refuses to be</h2>
+  <ul class="principles">
+    <li><b>Not another prompt collection.</b> Unversioned, untested prompt piles are the problem, not the product.</li>
+    <li><b>Not an agent framework.</b> We don't compete with your agent; we make your investment in skills portable across all of them.</li>
+    <li><b>Not a personality store.</b> Cosmetic personas don't change outcomes. Skills here are measured by their evals.</li>
+    <li><b>Not lock-in.</b> Compiled output is plain files in your repo. Leave any time; everything keeps working.</li>
+  </ul>
+</section>
+
+<footer>
+  <div>
+    <div class="tag"><span style="color:var(--amber)">kit</span>bash — stop rewriting your skills, start kitbashing.</div>
+    <div style="margin-top:6px">Apache-2.0 · spec draft v0.1</div>
+  </div>
+  <div>
+    <a href="https://github.com/singhharsh1708/kitbash">GitHub</a> ·
+    <a href="https://github.com/singhharsh1708/kitbash/blob/main/docs/design.md">Design</a> ·
+    <a href="https://github.com/singhharsh1708/kitbash/blob/main/docs/roadmap.md">Roadmap</a> ·
+    <a href="https://github.com/singhharsh1708/kitbash/blob/main/CONTRIBUTING.md">Contribute</a>
+  </div>
+</footer>
+
+</div>
+</body>
+</html>
