@@ -19,6 +19,12 @@ export function parseToml(src: string): TomlTable {
     const line = stripComment(lines[i] ?? "").trim();
     if (!line) continue;
 
+    if (line.startsWith("[[")) {
+      const m = line.match(/^\[\[([A-Za-z0-9_.-]+)\]\]$/);
+      if (!m) throw new TomlError(i + 1, `invalid array-of-tables header: ${line}`);
+      current = appendArrayTable(root, m[1]!.split("."), i + 1);
+      continue;
+    }
     if (line.startsWith("[")) {
       const m = line.match(/^\[([A-Za-z0-9_.-]+)\]$/);
       if (!m) throw new TomlError(i + 1, `invalid table header: ${line}`);
@@ -67,6 +73,18 @@ function ensureTable(root: TomlTable, path: string[], line: number): TomlTable {
     }
   }
   return node;
+}
+
+function appendArrayTable(root: TomlTable, path: string[], line: number): TomlTable {
+  const parent = ensureTable(root, path.slice(0, -1), line);
+  const last = path[path.length - 1]!;
+  const existing = parent[last];
+  if (existing === undefined) parent[last] = [];
+  else if (!Array.isArray(existing)) throw new TomlError(line, `cannot redefine "${last}" as an array of tables`);
+  const arr = parent[last] as TomlValue[];
+  const entry: TomlTable = {};
+  arr.push(entry);
+  return entry;
 }
 
 function isTable(v: TomlValue): v is TomlTable {

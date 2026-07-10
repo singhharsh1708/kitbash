@@ -3,7 +3,7 @@
  * → verify adapter outputs, budget report, idempotent AGENTS.md merge.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -78,9 +78,46 @@ try {
   check("doctor exits 0", doctor.status === 0, doctor.out);
   check("doctor reports standing cost", doctor.out.includes("standing context cost"), doctor.out);
 
+  // lockfile
+  const lock = join(tmp, "kitbash.lock");
+  check("lockfile written", existsSync(lock));
+  check("lockfile has integrity hash", readFileSync(lock, "utf8").includes("sha256-"));
+
+  const doctorOk = run(["doctor"], tmp);
+  check("doctor reports lock ok", doctorOk.out.includes("lock integrity: ok"), doctorOk.out);
+
+  // integrity drift detection
+  appendFileSync(join(tmp, ".kitbash/skills/prereview/SKILL.md"), "\ntampered\n");
+  const doctorDrift = run(["doctor"], tmp);
+  check("doctor detects drift", doctorDrift.status === 1 && doctorDrift.out.includes("integrity drift"), doctorDrift.out);
+
+  // bare SKILL.md interop (skills.sh / Claude Skills convention)
+  const bareDir = join(tmp, "bare-fixture");
+  mkdirSync(bareDir);
+  writeFileSync(
+    join(bareDir, "SKILL.md"),
+    "---\nname: tidy-commits\ndescription: Write tidy commit messages\n---\n\nKeep commit subjects under 50 chars.\n",
+  );
+  const bare = run(["install", `file:${bareDir}`], tmp);
+  check("bare skill installs", bare.status === 0, bare.out);
+  check("bare skill flagged unmanifested", bare.out.includes("unmanifested"), bare.out);
+  const bareCompile = run(["compile"], tmp);
+  check("bare skill compiles", bareCompile.status === 0, bareCompile.out);
+  const bareOut = readFileSync(join(tmp, ".claude/skills/tidy-commits/SKILL.md"), "utf8");
+  check("bare skill frontmatter not doubled", bareOut.startsWith("---\nname: tidy-commits\n"), bareOut.slice(0, 120));
+  check("bare warning surfaced at compile", bareCompile.out.includes("tidy-commits: unmanifested"), bareCompile.out);
+
+  // remove + prune
   const remove = run(["remove", "prereview"], tmp);
   check("remove exits 0", remove.status === 0, remove.out);
   check("skill dir gone", !existsSync(join(tmp, ".kitbash/skills/prereview")));
+  check("lock entry dropped", !readFileSync(lock, "utf8").includes('"prereview"'));
+  const pruneCompile = run(["compile"], tmp);
+  check("compile prunes stale claude output", !existsSync(join(tmp, ".claude/skills/prereview")), pruneCompile.out);
+  check("compile prunes stale cursor output", !existsSync(join(tmp, ".cursor/rules/prereview.mdc")), pruneCompile.out);
+  const prunedAgents = readFileSync(join(tmp, "AGENTS.md"), "utf8");
+  check("compile prunes stale AGENTS.md section", !prunedAgents.includes("kitbash:begin prereview"), prunedAgents.slice(0, 200));
+  check("surviving skill section intact", prunedAgents.includes("kitbash:begin tidy-commits"));
 } finally {
   rmSync(tmp, { recursive: true, force: true });
 }

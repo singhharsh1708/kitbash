@@ -1,7 +1,7 @@
 /** KSF skill loading, validation, and template resolution. Spec: spec/SPEC.md */
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { parseToml, type TomlTable } from "./toml.js";
 
 export interface SkillManifest {
@@ -25,6 +25,8 @@ export interface LoadedSkill {
   dir: string;
   manifest: SkillManifest;
   body: string;
+  /** true for SKILL.md-only skills (skills.sh / Claude convention) with a synthesized manifest */
+  bare: boolean;
 }
 
 export const SKILLS_DIR = ".kitbash/skills";
@@ -42,13 +44,57 @@ export function standingStub(body: string): string {
 export function loadSkill(dir: string): LoadedSkill {
   const manifestPath = join(dir, "skill.toml");
   const bodyPath = join(dir, "SKILL.md");
-  if (!existsSync(manifestPath)) throw new Error(`${dir}: missing skill.toml`);
   if (!existsSync(bodyPath)) throw new Error(`${dir}: missing SKILL.md`);
+  if (!existsSync(manifestPath)) return loadBareSkill(dir, bodyPath);
 
   const raw = parseToml(readFileSync(manifestPath, "utf8"));
   const manifest = validate(raw, manifestPath);
   const body = readFileSync(bodyPath, "utf8");
-  return { dir, manifest, body };
+  return { dir, manifest, body, bare: false };
+}
+
+/**
+ * Interop: a SKILL.md-only folder (the skills.sh / Claude Skills convention)
+ * is valid KSF-minus-manifest. Synthesize permissive defaults and flag it —
+ * the caller surfaces "unmanifested" warnings at install and compile.
+ */
+function loadBareSkill(dir: string, bodyPath: string): LoadedSkill {
+  const raw = readFileSync(bodyPath, "utf8");
+  const fm = parseFrontmatter(raw);
+  const body = raw.replace(FRONTMATTER_RE, "").trimStart();
+
+  const fallback = basename(dir).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^[^a-z]+/, "").slice(0, 40);
+  const name = fm["name"] && NAME_RE.test(fm["name"]) ? fm["name"] : fallback;
+  if (!NAME_RE.test(name)) throw new Error(`${dir}: cannot derive a valid skill name (got "${name}")`);
+
+  return {
+    dir,
+    bare: true,
+    body,
+    manifest: {
+      skill: { name, version: "0.0.0", description: fm["description"] ?? "Imported skill (no manifest)" },
+      context: { budget: 6000, standing: 250, disclosure: "lazy" },
+      triggers: { commands: [], auto: [], events: [] },
+      permissions: { tools: [], network: false, write: false },
+      artifacts: { produces: [], consumes: [] },
+      targets: { requires: [], mode: "skill" },
+      lore: { reads: [], writes: [] },
+      dependencies: {},
+    },
+  };
+}
+
+const FRONTMATTER_RE = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/;
+
+function parseFrontmatter(raw: string): Record<string, string> {
+  const m = raw.match(FRONTMATTER_RE);
+  const out: Record<string, string> = {};
+  if (!m) return out;
+  for (const line of m[0].split(/\r?\n/)) {
+    const kv = line.match(/^([A-Za-z_-]+):\s*(.+?)\s*$/);
+    if (kv) out[kv[1]!.toLowerCase()] = kv[2]!.replace(/^["']|["']$/g, "");
+  }
+  return out;
 }
 
 export function loadInstalledSkills(root: string): LoadedSkill[] {

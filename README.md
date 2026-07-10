@@ -38,7 +38,9 @@ npm install && npm run build && npm link
 cd ~/your-repo && kitbash init && kitbash doctor
 ```
 
-Working now: `init` · `install` (gh:/file:) · `compile` (claude-code, cursor, AGENTS.md floor) · `doctor` · `list` · `remove` · budget enforcement · `--strict`. Lockfile, evals, and the rest land per the [roadmap](docs/roadmap.md).
+Working now: `init` · `install` (gh:/`owner/repo`/file:) · `compile` (claude-code, cursor, AGENTS.md floor) · `doctor` · `list` · `remove` · budget enforcement · content-hash lockfile with drift detection · stale-output pruning · `--strict`. Evals, update diffs, and the rest land per the [roadmap](docs/roadmap.md).
+
+**Interop:** a plain SKILL.md folder — the [skills.sh](https://www.skills.sh) / Claude Skills convention — installs directly (`kitbash install owner/repo`). It's KSF-minus-manifest: defaults get applied and it's flagged `unmanifested`, because nobody declared its budget or permissions. skills.sh distributes skills; Kitbash makes them engineering.
 
 ## The problem
 

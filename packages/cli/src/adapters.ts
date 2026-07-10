@@ -77,10 +77,9 @@ const agentsmd: Adapter = {
     const section = `${begin}\n${header(skill)}\n\n## Skill: ${name}\n\n${body.trim()}\n${end}`;
     const warnings = degradationWarnings(skill, this);
     const cost = estimateTokens(body);
-    const standing = estimateTokens(standingStub(body));
     if (skill.manifest.context.disclosure === "lazy") {
       warnings.push(
-        `${name} → agentsmd: target cannot lazy-load; §${name} costs ~${cost} tokens standing (declared standing: ${standing})`,
+        `${name} → agentsmd: target cannot lazy-load; §${name} costs ~${cost} tokens standing (declared limit: ${skill.manifest.context.standing})`,
       );
     }
     return { files: [{ path: AGENTS_MD, content: section }], warnings };

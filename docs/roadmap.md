@@ -18,7 +18,9 @@ Deferred out of v0.1 on purpose: more adapters, more skills, index, evals tier 2
 
 ## v0.2 — trust and transparency (weeks 6–10)
 
-- `kitbash.lock` with directory content hashes; reproducible installs.
+- ✅ `kitbash.lock` with directory content hashes; drift detection in `doctor`.
+- ✅ SKILL.md-only interop (skills.sh / Claude Skills convention): installs directly, flagged unmanifested.
+- ✅ Stale-output pruning on `compile` after `remove`.
 - Dependency resolution: skill-to-skill `[dependencies]`, transitive closure pinned in the lockfile, cycle detection.
 - `kitbash update` with instruction-level diff review; `kitbash diff <skill> <v1> <v2>` for instruction/permission/budget diffs between any two versions.
 - `kitbash lint`: schema, context budgets (measured against compiled output), dead references, injection heuristics.
