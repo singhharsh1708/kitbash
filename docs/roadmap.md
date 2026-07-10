@@ -6,10 +6,12 @@ Principle: infrastructure first, virality second, marketplace last. A store of u
 
 The single sharpest claim, working: **write once, run everywhere.** A deliberately thin slice — trying to ship compiler + registry + lore + pipelines in v0 is how projects die with nothing finished. One skill through one compiler into three agents, done incredibly well.
 
-- KSF spec draft (`spec/SPEC.md`) + JSON schema, versioned.
-- CLI: `init`, `install` (gh: / file: sources only), `remove`, `list`, `compile`, `doctor`.
-- Adapters: `claude-code`, `cursor`, and the `agentsmd` floor (which also covers Codex and everything else that reads AGENTS.md).
+- ✅ KSF spec draft (`spec/SPEC.md`) + JSON schema, versioned.
+- ✅ CLI: `init`, `install` (gh: / file: sources only), `remove`, `list`, `compile`, `doctor` — working, e2e-tested in CI.
+- ✅ Adapters: `claude-code`, `cursor`, and the `agentsmd` floor (which also covers Codex and everything else that reads AGENTS.md).
+- ✅ Budget + standing enforcement at compile; visible degradation warnings; `--strict`.
 - **One** first-party skill, dogfooded on this repo: `prereview` (no learn mode yet).
+- npm publish.
 - Exit criterion: a stranger installs a skill from a GitHub URL into a Cursor + Claude Code team repo in under two minutes.
 
 Deferred out of v0.1 on purpose: more adapters, more skills, index, evals tier 2+, lore. The compiler creates users; everything else needs users first.

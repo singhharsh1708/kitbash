@@ -1,0 +1,155 @@
+/** KSF skill loading, validation, and template resolution. Spec: spec/SPEC.md */
+
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { parseToml, type TomlTable } from "./toml.js";
+
+export interface SkillManifest {
+  skill: {
+    name: string;
+    version: string;
+    description: string;
+    license?: string;
+    homepage?: string;
+  };
+  context: { budget: number; standing: number; disclosure: "lazy" | "eager" };
+  triggers: { commands: string[]; auto: string[]; events: string[] };
+  permissions: { tools: string[]; network: boolean; write: boolean };
+  artifacts: { produces: string[]; consumes: string[] };
+  targets: { requires: string[]; mode: "skill" | "gate" };
+  lore: { reads: string[]; writes: string[] };
+  dependencies: Record<string, string>;
+}
+
+export interface LoadedSkill {
+  dir: string;
+  manifest: SkillManifest;
+  body: string;
+}
+
+export const SKILLS_DIR = ".kitbash/skills";
+export const NAME_RE = /^[a-z][a-z0-9-]{1,40}$/;
+
+/** Rough estimate (~4 chars/token). Good enough for budget enforcement; lint owns precision. */
+export function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+export function standingStub(body: string): string {
+  return (body.split(/\n\s*\n/)[0] ?? "").trim();
+}
+
+export function loadSkill(dir: string): LoadedSkill {
+  const manifestPath = join(dir, "skill.toml");
+  const bodyPath = join(dir, "SKILL.md");
+  if (!existsSync(manifestPath)) throw new Error(`${dir}: missing skill.toml`);
+  if (!existsSync(bodyPath)) throw new Error(`${dir}: missing SKILL.md`);
+
+  const raw = parseToml(readFileSync(manifestPath, "utf8"));
+  const manifest = validate(raw, manifestPath);
+  const body = readFileSync(bodyPath, "utf8");
+  return { dir, manifest, body };
+}
+
+export function loadInstalledSkills(root: string): LoadedSkill[] {
+  const base = join(root, SKILLS_DIR);
+  if (!existsSync(base)) return [];
+  return readdirSync(base, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => loadSkill(join(base, e.name)))
+    .sort((a, b) => a.manifest.skill.name.localeCompare(b.manifest.skill.name));
+}
+
+/**
+ * Resolve {{...}} template variables for compilation.
+ * artifact.* and lore.* compile to path references the agent follows at
+ * invocation time; prompt.* inlines prompts/<name>.md from the skill dir.
+ */
+export function resolveBody(skill: LoadedSkill): string {
+  return skill.body.replace(/\{\{\s*([a-z]+)\.([a-z0-9-]+)\s*\}\}/g, (whole, ns: string, name: string) => {
+    switch (ns) {
+      case "artifact":
+        return `\`.kitbash/artifacts/${name}.json\``;
+      case "lore":
+        return `the project knowledge under \`.kitbash/lore/${name}/\` (skip silently if absent)`;
+      case "prompt": {
+        const p = join(skill.dir, "prompts", `${name}.md`);
+        if (!existsSync(p)) throw new Error(`${skill.manifest.skill.name}: template references missing ${p}`);
+        return readFileSync(p, "utf8").trim();
+      }
+      default:
+        throw new Error(`${skill.manifest.skill.name}: unknown template variable ${whole}`);
+    }
+  });
+}
+
+function validate(raw: TomlTable, source: string): SkillManifest {
+  const errors: string[] = [];
+  const skill = table(raw, "skill");
+  const context = table(raw, "context");
+
+  const name = str(skill, "name") ?? "";
+  const version = str(skill, "version") ?? "";
+  const description = str(skill, "description") ?? "";
+  const budget = num(context, "budget");
+
+  if (!NAME_RE.test(name)) errors.push(`skill.name "${name}" must match ${NAME_RE}`);
+  if (!/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(version)) errors.push(`skill.version "${version}" is not semver`);
+  if (description.length < 10) errors.push("skill.description must be at least 10 characters");
+  if (budget === undefined || budget < 50) errors.push("context.budget is required and must be >= 50");
+
+  if (errors.length) throw new Error(`${source}: invalid manifest\n  - ${errors.join("\n  - ")}`);
+
+  const t = (k: string): TomlTable => table(raw, k);
+  return {
+    skill: { name, version, description, ...opt("license", str(skill, "license")), ...opt("homepage", str(skill, "homepage")) },
+    context: {
+      budget: budget!,
+      standing: num(context, "standing") ?? 100,
+      disclosure: str(context, "disclosure") === "eager" ? "eager" : "lazy",
+    },
+    triggers: { commands: strs(t("triggers"), "commands"), auto: strs(t("triggers"), "auto"), events: strs(t("triggers"), "events") },
+    permissions: {
+      tools: strs(t("permissions"), "tools"),
+      network: bool(t("permissions"), "network") ?? false,
+      write: bool(t("permissions"), "write") ?? false,
+    },
+    artifacts: { produces: strs(t("artifacts"), "produces"), consumes: strs(t("artifacts"), "consumes") },
+    targets: { requires: strs(t("targets"), "requires"), mode: str(t("targets"), "mode") === "gate" ? "gate" : "skill" },
+    lore: { reads: strs(t("lore"), "reads"), writes: strs(t("lore"), "writes") },
+    dependencies: deps(raw),
+  };
+}
+
+function opt<T>(key: string, v: T | undefined): Record<string, T> {
+  return v === undefined ? {} : ({ [key]: v } as Record<string, T>);
+}
+
+function table(raw: TomlTable, key: string): TomlTable {
+  const v = raw[key];
+  return v !== undefined && typeof v === "object" && !Array.isArray(v) ? v : {};
+}
+
+function str(t: TomlTable, key: string): string | undefined {
+  return typeof t[key] === "string" ? (t[key] as string) : undefined;
+}
+
+function num(t: TomlTable, key: string): number | undefined {
+  return typeof t[key] === "number" ? (t[key] as number) : undefined;
+}
+
+function bool(t: TomlTable, key: string): boolean | undefined {
+  return typeof t[key] === "boolean" ? (t[key] as boolean) : undefined;
+}
+
+function strs(t: TomlTable, key: string): string[] {
+  const v = t[key];
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+}
+
+function deps(raw: TomlTable): Record<string, string> {
+  const t = table(raw, "dependencies");
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(t)) if (typeof v === "string") out[k] = v;
+  return out;
+}

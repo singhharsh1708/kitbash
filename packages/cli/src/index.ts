@@ -7,6 +7,8 @@
  * and implementation grow against the same interface.
  */
 
+import { cmdCompile, cmdDoctor, cmdInit, cmdInstall, cmdList, cmdRemove } from "./commands.js";
+
 const VERSION = "0.0.1";
 
 type Command = {
@@ -23,12 +25,12 @@ function todo(name: string, milestone: string) {
 }
 
 const commands: Command[] = [
-  { name: "init", summary: "Set up kitbash in this repository (kitbash.toml)", run: todo("init", "v0.1") },
-  { name: "install", summary: "Install a skill: gh:owner/repo, file:path, or an index short name", run: todo("install", "v0.1") },
-  { name: "remove", summary: "Remove an installed skill", run: todo("remove", "v0.1") },
-  { name: "list", summary: "List installed skills with versions and context cost", run: todo("list", "v0.1") },
-  { name: "compile", summary: "Emit native formats for every detected assistant", run: todo("compile", "v0.1") },
-  { name: "doctor", summary: "Detect assistants, report total standing context cost", run: todo("doctor", "v0.1") },
+  { name: "init", summary: "Set up kitbash in this repository (kitbash.toml)", run: cmdInit },
+  { name: "install", summary: "Install a skill: gh:owner/repo[/path][@ref] or file:path", run: cmdInstall },
+  { name: "remove", summary: "Remove an installed skill", run: cmdRemove },
+  { name: "list", summary: "List installed skills with versions and context cost", run: cmdList },
+  { name: "compile", summary: "Emit native formats for every detected assistant (--strict)", run: cmdCompile },
+  { name: "doctor", summary: "Detect assistants, report total standing context cost", run: cmdDoctor },
   { name: "update", summary: "Update skills, showing instruction diffs before applying", run: todo("update", "v0.2") },
   { name: "diff", summary: "Instruction/permission/budget diff between two skill versions", run: todo("diff", "v0.2") },
   { name: "lint", summary: "Schema, context budgets, dead references, injection heuristics", run: todo("lint", "v0.2") },
