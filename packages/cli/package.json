@@ -1,18 +1,22 @@
 {
   "name": "kitbash",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "The package manager and compiler for AI agent skills — write once, run in every coding agent",
   "license": "Apache-2.0",
+  "author": "Harsh Singh",
   "repository": "github:singhharsh1708/kitbash",
+  "homepage": "https://singhharsh1708.github.io/kitbash/",
+  "bugs": "https://github.com/singhharsh1708/kitbash/issues",
   "type": "module",
   "bin": { "kitbash": "dist/index.js" },
-  "files": ["dist"],
+  "files": ["dist", "README.md"],
   "engines": { "node": ">=20" },
   "scripts": {
     "build": "tsc",
     "check": "tsc --noEmit",
     "dev": "node --experimental-strip-types src/index.ts",
-    "test": "npm run build && node scripts/test.mjs"
+    "test": "npm run build && node scripts/test.mjs",
+    "prepublishOnly": "npm test"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

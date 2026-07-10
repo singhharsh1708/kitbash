@@ -12,6 +12,12 @@ Why Kitbash exists, derived from what already exists and where it stops.
 **What they prove:** single-behavior skills go viral; developers will install agent modifiers in huge numbers; measured claims (Ponytail's %) build trust.
 **Where they stop:** each is one hardcoded philosophy. Distribution is copy-paste or per-assistant plugin. No shared format, no tests, no versioned trust. Every one of them re-solves the "N assistants, N formats" problem by hand — that is the tell that infrastructure is missing.
 
+### Distribution directories
+
+- **[skills.sh](https://www.skills.sh/docs/cli)** (Vercel) — `npx skills add owner/repo` copies SKILL.md folders into 70+ agents; open directory with an install-count leaderboard. The strongest prior art on *distribution* and proof of demand at scale.
+**Where it stops:** it distributes the SKILL.md convention as-is. No manifest — no budgets, permissions, artifacts, dependencies, or gate semantics. Installs are unpinned copies: no lockfile, no diff-on-update, no integrity checking, no tests. Ranking is install counts, i.e. popularity. Distribution without engineering.
+**Kitbash's answer is interop, not rivalry:** a bare SKILL.md folder is KSF-minus-manifest, so `kitbash install` accepts any skills.sh skill directly — flagged as unmanifested, defaults applied. Their catalog is our funnel; our manifest, lock, and evals are the upgrade path.
+
 ### Platform-native extension systems
 
 - **Claude Skills / plugins** — richest model: progressive disclosure via frontmatter, scripts, hooks, subagents, marketplaces. Claude-only.
@@ -29,17 +35,18 @@ Why Kitbash exists, derived from what already exists and where it stops.
 
 ## The gap map
 
-| Capability | Prompt packs | Platform systems | AGENTS.md | **Kitbash** |
+| Capability | Prompt packs | Platform systems | skills.sh | **Kitbash** |
 |---|---|---|---|---|
-| Cross-assistant portability | manual copies | none | text-only floor | **compiler + adapters** |
-| Versioned, pinned installs | git clone at best | marketplace-ish (one platform) | none | **lockfile + content hashes** |
+| Cross-assistant distribution | manual copies | none | **yes — same file copied** | **compiler + adapters (native idioms, visible degradation)** |
+| Versioned, pinned installs | git clone at best | marketplace-ish (one platform) | unpinned copies | **lockfile + content hashes** |
 | Behavior testing | none | none | none | **eval tiers** |
 | Trust / injection review | none | partial review | none | **install-time diff, permissions manifest, signing** |
 | Context cost accounting | none | none | none | **declared budgets, lint-enforced** |
 | Skill composition | none | ad-hoc chaining | none | **typed artifacts + pipelines** |
-| Durable repo knowledge | none | per-platform memory | static text | **lore layer** |
+| Ranking | stars | stars | install counts | **measurement badges** |
+| Durable repo knowledge | none | per-platform memory | none | **lore layer** |
 
-Nobody occupies the infrastructure column. That's the product.
+skills.sh solved distribution. Everything below the first row is still empty — that's the product: skills.sh distributes skills; Kitbash makes them engineering.
 
 ## First principles: what developers actually want
 

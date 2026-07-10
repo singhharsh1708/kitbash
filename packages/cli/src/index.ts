@@ -7,9 +7,10 @@
  * and implementation grow against the same interface.
  */
 
+import { createRequire } from "node:module";
 import { cmdCompile, cmdDoctor, cmdInit, cmdInstall, cmdList, cmdRemove } from "./commands.js";
 
-const VERSION = "0.0.1";
+const VERSION: string = createRequire(import.meta.url)("../package.json").version;
 
 type Command = {
   name: string;
@@ -26,7 +27,7 @@ function todo(name: string, milestone: string) {
 
 const commands: Command[] = [
   { name: "init", summary: "Set up kitbash in this repository (kitbash.toml)", run: cmdInit },
-  { name: "install", summary: "Install a skill: gh:owner/repo[/path][@ref] or file:path", run: cmdInstall },
+  { name: "install", summary: "Install a skill: gh:owner/repo[/path][@ref], owner/repo, or file:path (SKILL.md-only skills supported)", run: cmdInstall },
   { name: "remove", summary: "Remove an installed skill", run: cmdRemove },
   { name: "list", summary: "List installed skills with versions and context cost", run: cmdList },
   { name: "compile", summary: "Emit native formats for every detected assistant (--strict)", run: cmdCompile },
