@@ -34,8 +34,9 @@
   nav .links a { color: var(--muted); }
   nav .links a:hover { color: var(--amber); text-decoration: none; }
 
-  .hero { text-align: center; padding: 48px 0 24px; }
-  .hero .mascot { width: 200px; height: 200px; margin: 0 auto 28px; }
+  .hero { text-align: center; padding: 40px 0 24px; }
+  .hero .mascot { width: 150px; height: 150px; margin: 0 auto 24px; }
+  .hero .sub { margin-top: 34px !important; }
   .hero h1 { font-size: clamp(28px, 5vw, 46px); line-height: 1.2; letter-spacing: -0.5px; }
   .hero h1 em { font-style: normal; color: var(--amber); }
   .hero .sub { color: var(--muted); font-size: clamp(15px, 2.2vw, 19px); max-width: 640px; margin: 18px auto 0; }
@@ -185,28 +186,31 @@
       <circle cx="256" cy="256" r="238" fill="none" stroke="#ffb454" stroke-width="5"/>
     </svg>
   </div>
-  <h1>Write a skill once.<br>Run it in <em>every</em> coding agent.</h1>
-  <p class="sub">Kitbash is the open standard for portable AI agent skills — a package manager and compiler. One format, compiled to Claude Code, Cursor, Codex, Copilot, Gemini CLI, and more — versioned, tested, and pinned like real software.</p>
+  <h1>Write AI skills once.<br>Run them <em>everywhere</em>.</h1>
+
+  <div class="term">
+    <div class="bar"><i></i><i></i><i></i></div>
+    <pre><span class="p">$</span> kitbash install gh:addyosmani/agent-skills/skills/code-review-and-quality
+<span class="ok">✓</span> installed code-review-and-quality@0.0.0
+<span class="dim">  budget 6000 tokens · standing 250 · mode skill · pinned in kitbash.lock</span>
+<span class="out">⚠</span> unmanifested (SKILL.md only) — defaults applied
+
+<span class="p">$</span> kitbash compile
+<span class="out">→</span> .claude/skills/code-review-and-quality/SKILL.md
+<span class="out">→</span> .cursor/rules/code-review-and-quality.mdc
+<span class="out">→</span> AGENTS.md <span class="dim">§code-review-and-quality</span>
+<span class="out">⚠</span> agentsmd cannot lazy-load — this skill costs <b style="color:var(--amber)">~5,044 tokens standing</b>
+<span class="dim">compiled 1 skill(s) for 3 agent target(s)</span></pre>
+  </div>
+  <p style="margin-top:14px;font-size:13px;color:var(--muted);font-family:var(--mono)">↑ real session — a third-party skills.sh skill, compiled to three agents, with its hidden token cost measured. <a href="https://github.com/singhharsh1708/kitbash#thirty-seconds">Works today.</a></p>
+
+  <p class="sub">Kitbash is the open standard, package manager, and compiler for AI agent skills — versioned, tested, and pinned like real software.</p>
   <div class="ladder">packages → <b>npm</b> &nbsp;·&nbsp; containers → <b>Docker</b> &nbsp;·&nbsp; lint rules → <b>ESLint</b> &nbsp;·&nbsp; agent skills → <b>kitbash</b></div>
   <div class="status">pre-alpha · spec draft v0.1 · Apache-2.0</div>
   <div class="cta">
     <a class="btn primary" href="https://github.com/singhharsh1708/kitbash">★ Star on GitHub</a>
     <a class="btn" href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md">Read the spec</a>
   </div>
-
-  <div class="term">
-    <div class="bar"><i></i><i></i><i></i></div>
-    <pre><span class="p">$</span> kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview
-<span class="ok">✓</span> installed prereview@0.1.0
-<span class="dim">  budget 1500 tokens · standing 60 · mode gate</span>
-
-<span class="p">$</span> kitbash compile
-<span class="out">→</span> .claude/skills/prereview/SKILL.md
-<span class="out">→</span> .cursor/rules/prereview.mdc
-<span class="out">→</span> AGENTS.md <span class="dim">§prereview</span>
-<span class="dim">compiled 1 skill(s) for 3 agent target(s)</span></pre>
-  </div>
-  <p style="margin-top:14px;font-size:13px;color:var(--muted);font-family:var(--mono)">↑ real output — works today, <a href="https://github.com/singhharsh1708/kitbash#thirty-seconds">build from source</a></p>
   </div>
 </div>
 

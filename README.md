@@ -18,19 +18,13 @@ Agent skills         →  Kitbash
 
 ## Thirty seconds
 
-```
-$ kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview
-installed prereview@0.1.0 — Review the working diff against this team's real standards…
-  budget 1500 tokens · standing 60 · mode gate
+<p align="center">
+  <img src="assets/demo.svg" width="740" alt="Real session: kitbash init, install a third-party skills.sh skill, compile to Claude Code, Cursor, and AGENTS.md — with a standing token cost warning">
+</p>
 
-$ kitbash compile
-→ .claude/skills/prereview/SKILL.md
-→ .cursor/rules/prereview.mdc
-→ AGENTS.md
-compiled 1 skill(s) for 3 agent target(s)
-```
+That's a **real session**: a third-party [skills.sh](https://www.skills.sh)-convention skill, installed and compiled into three agent formats. Note the last warning — Kitbash *measured* the skill during compile and reported that it silently costs **~5,044 tokens on every request** for agents that can't lazy-load. A converter translates formats; a compiler analyzes them. No other tool shows you that number.
 
-One skill, in every agent your team uses. **This works today, from source:**
+**This works today, from source:**
 
 ```bash
 git clone https://github.com/singhharsh1708/kitbash && cd kitbash/packages/cli

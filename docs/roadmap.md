@@ -35,6 +35,7 @@ Deferred out of v0.1 on purpose: more adapters, more skills, index, evals tier 2
 ## v0.3 — proof (weeks 10–16)
 
 - Eval tiers 1–2 in `kitbash test`; behavioral evals (tier 3) on `claude -p` first, other headless CLIs as available.
+- `kitbash score <skill>`: the measurement badge, locally — token efficiency, permission risk, derived compatibility matrix, eval-based quality. Skills become measurable artifacts.
 - Gates: `kitbash gate run <skill>` with deterministic exit codes; pre-push + GitHub Actions recipes.
 - `verify` and `triage` skills ship (they need the eval/gate machinery).
 - Artifacts v1: `plan@1`, `findings@1`, `verify@1` schemas frozen.
