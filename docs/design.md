@@ -101,6 +101,8 @@ The highest-leverage missing primitive. Every assistant has session amnesia; eve
 
 Lore entries are markdown with frontmatter, diffable and reviewable. No database, no service. This is deliberately boring technology.
 
+Lore is also deliberately **separable**: nothing in KSF hard-couples to it (skills declare `[lore]` reads/writes, but absent lore they degrade gracefully). If it outgrows the core — and it might; portable repo memory is arguably a product of its own — it ships as `@kitbash/lore` without breaking a single skill.
+
 ## Context budgets
 
 Every skill declares `[context] budget` (tokens) and `disclosure = "lazy" | "eager"`. The compiler measures actual compiled size per adapter, fails builds over budget, and `kitbash doctor` reports total standing context cost across installed skills — the number nobody today can see.
