@@ -4,7 +4,7 @@ Goal is not stars. Goal: **five people we don't know install Kitbash, write or i
 
 ## Prerequisites (blockers)
 
-- [ ] `npm publish` — quickstart must be `npm i -g kitbash`, not clone-and-build. **Blocked on npm login.**
+- [x] `npm publish` — **kitbash@0.3.0 live**: https://www.npmjs.com/package/kitbash
 - [x] Demo (animated real session in README)
 - [x] skills.sh interop (import path for existing skills)
 - [x] Lockfile + drift detection (the trust story is demonstrable)
