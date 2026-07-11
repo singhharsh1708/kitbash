@@ -182,6 +182,60 @@ try {
   rmSync(tmp, { recursive: true, force: true });
 }
 
+// ---- CLI surface & error handling (isolated repo, offline) ----
+const neg = mkdtempSync(join(tmpdir(), "kitbash-neg-"));
+try {
+  const pkgVersion = JSON.parse(readFileSync(join(here, "../package.json"), "utf8")).version;
+
+  const version = run(["--version"], neg);
+  check("--version matches package.json", version.status === 0 && version.out.trim() === pkgVersion, version.out);
+
+  const help = run([], neg);
+  check("no command prints usage, exits 0", help.status === 0 && help.out.includes("Usage: kitbash"), help.out);
+
+  const unknown = run(["bogus-command"], neg);
+  check("unknown command exits 1 with usage", unknown.status === 1 && unknown.out.includes('unknown command "bogus-command"'), unknown.out);
+
+  const installNoArg = run(["install"], neg);
+  check("install with no source exits 1 with usage", installNoArg.status === 1 && installNoArg.out.includes("usage: kitbash install"), installNoArg.out);
+
+  const removeNoArg = run(["remove"], neg);
+  check("remove with no name exits 1 with usage", removeNoArg.status === 1 && removeNoArg.out.includes("usage: kitbash remove"), removeNoArg.out);
+
+  run(["init"], neg);
+
+  const missingLocal = run(["install", "file:./does-not-exist"], neg);
+  check("install missing local path exits 1 with clear message", missingLocal.status === 1 && missingLocal.out.includes("local path not found"), missingLocal.out);
+
+  const testEmpty = run(["test"], neg);
+  check("test with no skills exits 1", testEmpty.status === 1 && testEmpty.out.includes("no skills installed"), testEmpty.out);
+
+  const testMissing = run(["test", "ghost"], neg);
+  check("test on a non-installed skill exits 1", testMissing.status === 1 && testMissing.out.includes("ghost is not installed"), testMissing.out);
+
+  // manifest validation surfaces at install with an actionable message
+  const badManifest = join(neg, "bad-manifest");
+  mkdirSync(badManifest);
+  writeFileSync(
+    join(badManifest, "skill.toml"),
+    '[skill]\nname = "ok-name"\nversion = "not-semver"\ndescription = "short"\n[context]\nbudget = 10\n',
+  );
+  writeFileSync(join(badManifest, "SKILL.md"), "Body.\n");
+  const badInstall = run(["install", `file:${badManifest}`], neg);
+  check(
+    "invalid manifest rejected at install with reasons",
+    badInstall.status === 1 && badInstall.out.includes("is not semver") && badInstall.out.includes("context.budget"),
+    badInstall.out,
+  );
+
+  // unknown compile target in kitbash.toml is a clear error, not a silent skip
+  writeFileSync(join(neg, "kitbash.toml"), '[project]\ntargets = ["not-a-real-target"]\n');
+  const badTarget = run(["compile"], neg);
+  check("unknown compile target exits 1 with known-list", badTarget.status === 1 && badTarget.out.includes("unknown target(s)"), badTarget.out);
+} finally {
+  rmSync(neg, { recursive: true, force: true });
+}
+
 if (failures) {
   console.error(`\n${failures} test(s) failed`);
   process.exit(1);

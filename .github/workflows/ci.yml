@@ -21,6 +21,8 @@ jobs:
         working-directory: packages/cli
       - run: node dist/index.js --version
         working-directory: packages/cli
+      - name: Benchmark is deterministic and its committed output is fresh
+        run: npm run bench --prefix packages/cli && git diff --exit-code docs/benchmarks/README.md
 
   schema:
     runs-on: ubuntu-latest
