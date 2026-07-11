@@ -30,6 +30,15 @@ export async function cmdInit(): Promise<number> {
   return 0;
 }
 
+function hasGit(): boolean {
+  try {
+    execFileSync("git", ["--version"], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Accepts gh:owner/repo[/path][@ref], bare owner/repo[/path][@ref], file:path, or a local path. */
 function normalizeSource(source: string, root: string): { kind: "gh" | "local"; value: string } {
   if (source.startsWith("gh:")) return { kind: "gh", value: source.slice(3) };
@@ -54,25 +63,53 @@ export async function cmdInstall(args: string[]): Promise<number> {
     if (normalized.kind === "gh") {
       const m = normalized.value.match(/^([^/@]+)\/([^/@]+)(?:\/([^@]+))?(?:@(.+))?$/);
       if (!m) {
-        console.error(`invalid source: ${source} (expected gh:owner/repo[/path][@ref])`);
+        console.error(`invalid source "${source}".`);
+        console.error("  expected: gh:owner/repo, owner/repo, owner/repo/path/to/skill, or owner/repo@ref");
+        return 1;
+      }
+      if (!hasGit()) {
+        console.error("git is required to install from GitHub but was not found on PATH.");
+        console.error("  install git, or use a local source: kitbash install file:./path/to/skill");
         return 1;
       }
       const [, owner, repo, subpath, ref] = m;
       cleanup = mkdtempSync(join(tmpdir(), "kitbash-"));
       const url = `https://github.com/${owner}/${repo}.git`;
       const cloneArgs = ref ? ["clone", "--quiet", url, cleanup] : ["clone", "--quiet", "--depth", "1", url, cleanup];
-      execFileSync("git", cloneArgs, { stdio: ["ignore", "ignore", "inherit"] });
-      if (ref) execFileSync("git", ["-C", cleanup, "checkout", "--quiet", ref], { stdio: ["ignore", "ignore", "inherit"] });
+      try {
+        execFileSync("git", cloneArgs, { stdio: ["ignore", "ignore", "pipe"] });
+      } catch {
+        console.error(`could not clone https://github.com/${owner}/${repo}.`);
+        console.error("  check the repo exists and is public, the name is spelled right, and you're online.");
+        return 1;
+      }
+      if (ref) {
+        try {
+          execFileSync("git", ["-C", cleanup, "checkout", "--quiet", ref], { stdio: ["ignore", "ignore", "pipe"] });
+        } catch {
+          console.error(`ref "${ref}" not found in ${owner}/${repo} (not a branch, tag, or commit).`);
+          return 1;
+        }
+      }
       dir = subpath ? join(cleanup, subpath) : cleanup;
+      if (subpath && !existsSync(dir)) {
+        console.error(`path "${subpath}" not found in ${owner}/${repo}.`);
+        console.error("  point at the folder that contains skill.toml (or SKILL.md).");
+        return 1;
+      }
     } else {
       dir = normalized.value;
+      if (!existsSync(dir)) {
+        console.error(`local path not found: ${dir}`);
+        return 1;
+      }
     }
 
     const skill = loadSkill(dir);
     const { name, version, description } = skill.manifest.skill;
     const dest = join(root, SKILLS_DIR, name);
     if (existsSync(dest)) {
-      console.error(`${name} is already installed — kitbash remove ${name} first (update lands in v0.2)`);
+      console.error(`${name} is already installed. To reinstall: kitbash remove ${name} && kitbash install ${source}`);
       return 1;
     }
     mkdirSync(dirname(dest), { recursive: true });
@@ -100,7 +137,9 @@ export async function cmdRemove(args: string[]): Promise<number> {
   const root = process.cwd();
   const dir = join(root, SKILLS_DIR, name);
   if (!existsSync(dir)) {
-    console.error(`${name} is not installed`);
+    const installed = loadInstalledSkills(root).map((s) => s.manifest.skill.name);
+    console.error(`${name} is not installed.`);
+    console.error(installed.length ? `  installed: ${installed.join(", ")}` : "  no skills installed yet.");
     return 1;
   }
   rmSync(dir, { recursive: true });

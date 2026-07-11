@@ -44,7 +44,9 @@ export function standingStub(body: string): string {
 export function loadSkill(dir: string): LoadedSkill {
   const manifestPath = join(dir, "skill.toml");
   const bodyPath = join(dir, "SKILL.md");
-  if (!existsSync(bodyPath)) throw new Error(`${dir}: missing SKILL.md`);
+  if (!existsSync(bodyPath)) {
+    throw new Error(`no skill found at ${dir}\n  a skill is a folder with SKILL.md (and optionally skill.toml). Point the source at that folder.`);
+  }
   if (!existsSync(manifestPath)) return loadBareSkill(dir, bodyPath);
 
   const raw = parseToml(readFileSync(manifestPath, "utf8"));
