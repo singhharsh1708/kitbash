@@ -1,6 +1,6 @@
-# Kitbash Skill Format (KSF) — spec draft v0.1
+# Kitbash Skill Format (KSF)
 
-Status: **draft**. Everything here may change before 1.0. Changes land via [RFCs](../rfcs/README.md).
+Status: **stable core**. Per [RFC 0002](../rfcs/0002-ksf-1.0-stabilization.md), the core manifest fields are frozen and evolve additive-only within the major version — existing fields never change meaning or type. Fields still marked *provisional* (see §2) may change; everything else is safe to build against. Changes land via [RFCs](../rfcs/README.md).
 
 KSF is designed to outlive its reference implementation. Independent implementations are encouraged — "supports KSF" is the goal, not "requires Kitbash." Conformance is defined in §9; at spec 1.0, KSF moves to its own repository under open governance.
 
