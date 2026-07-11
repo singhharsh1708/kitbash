@@ -48,11 +48,18 @@ export class TomlError extends Error {
   }
 }
 
+/** A quote at index i is escaped only if an ODD number of backslashes precede it. */
+function isEscaped(s: string, i: number): boolean {
+  let backslashes = 0;
+  for (let j = i - 1; j >= 0 && s[j] === "\\"; j--) backslashes++;
+  return backslashes % 2 === 1;
+}
+
 function stripComment(line: string): string {
   let inString = false;
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
-    if (ch === '"' && line[i - 1] !== "\\") inString = !inString;
+    if (ch === '"' && !isEscaped(line, i)) inString = !inString;
     if (ch === "#" && !inString) return line.slice(0, i);
   }
   return line;
@@ -100,7 +107,11 @@ function parseValue(raw: string, line: number): TomlValue {
     if (!raw.endsWith("]")) throw new TomlError(line, `arrays must be single-line: ${raw}`);
     const inner = raw.slice(1, -1).trim();
     if (!inner) return [];
-    return splitTopLevel(inner, line).map((item) => parseValue(item.trim(), line));
+    const items = splitTopLevel(inner, line);
+    // A single trailing comma is legal TOML (leaves one empty item); drop it.
+    if (items.length > 1 && items[items.length - 1]!.trim() === "") items.pop();
+    if (items.some((item) => item.trim() === "")) throw new TomlError(line, `malformed array (empty element): ${raw}`);
+    return items.map((item) => parseValue(item.trim(), line));
   }
   if (raw === "true") return true;
   if (raw === "false") return false;
@@ -116,7 +127,7 @@ function splitTopLevel(inner: string, line: number): string[] {
   let start = 0;
   for (let i = 0; i < inner.length; i++) {
     const ch = inner[i];
-    if (ch === '"' && inner[i - 1] !== "\\") inString = !inString;
+    if (ch === '"' && !isEscaped(inner, i)) inString = !inString;
     if (inString) continue;
     if (ch === "[") depth++;
     if (ch === "]") depth--;

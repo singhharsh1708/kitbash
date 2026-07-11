@@ -7,6 +7,8 @@ import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSyn
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseToml } from "../dist/toml.js";
+import { resolveSubpath } from "../dist/commands.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../..");
@@ -239,6 +241,51 @@ try {
   check("unknown compile target exits 1 with known-list", badTarget.status === 1 && badTarget.out.includes("unknown target(s)"), badTarget.out);
 } finally {
   rmSync(neg, { recursive: true, force: true });
+}
+
+// --- issue #43 regressions ---
+
+// TOML parser edge cases
+check("toml: trailing comma in array parses", JSON.stringify(parseToml('a = ["x", "y",]').a) === '["x","y"]');
+check("toml: string ending in backslash before comment parses", parseToml('k = "foo\\\\" # c').k === "foo\\");
+let tomlThrew = false;
+try {
+  parseToml('a = ["x",,"y"]');
+} catch {
+  tomlThrew = true;
+}
+check("toml: empty array element rejected", tomlThrew);
+
+// subpath traversal guard (the gh: installer security fix)
+check("subpath: normal nested path allowed", resolveSubpath("/tmp/repo", "skills/a") === "/tmp/repo/skills/a");
+check("subpath: parent traversal blocked", resolveSubpath("/tmp/repo", "../../etc/passwd") === null);
+check("subpath: nested sneaky traversal blocked", resolveSubpath("/tmp/repo", "a/../../b") === null);
+
+// two skills writing the same output path warn instead of silently overwriting
+const conflict = mkdtempSync(join(tmpdir(), "kitbash-conflict-"));
+try {
+  mkdirSync(join(conflict, ".claude"));
+  run(["init"], conflict);
+  for (const n of ["alpha", "beta"]) {
+    const d = join(conflict, `${n}-src`);
+    mkdirSync(d);
+    writeFileSync(
+      join(d, "skill.toml"),
+      `[skill]\nname = "${n}"\nversion = "0.1.0"\ndescription = "Skill ${n} for conflict test"\n[context]\nbudget = 500\nstanding = 80\n[triggers]\ncommands = ["/dup"]\n`,
+    );
+    writeFileSync(join(d, "SKILL.md"), `Body of ${n}.\n\nMore.\n`);
+    run(["install", `file:${d}`], conflict);
+  }
+  const comp = run(["compile"], conflict);
+  check(
+    "output-path conflict surfaced as a warning",
+    comp.out.includes("conflict:") && comp.out.includes(".claude/commands/dup.md"),
+    comp.out,
+  );
+  const strictComp = run(["compile", "--strict"], conflict);
+  check("output-path conflict fails under --strict", strictComp.status === 1, strictComp.out);
+} finally {
+  rmSync(conflict, { recursive: true, force: true });
 }
 
 if (failures) {
