@@ -255,6 +255,21 @@ try {
   tomlThrew = true;
 }
 check("toml: empty array element rejected", tomlThrew);
+check("toml: single-quoted literal string", parseToml("a = 'prereview'").a === "prereview");
+check("toml: quoted key", parseToml('"name" = "x-value"').name === "x-value");
+check("toml: positive signed integer", parseToml("b = +1500").b === 1500);
+check("toml: positive signed float", parseToml("c = +0.5").c === 0.5);
+check("toml: whitespace in table header", JSON.stringify(parseToml("[ project ]\nx = 1")) === '{"project":{"x":1}}');
+check("toml: hash inside single-quote is not a comment", parseToml("s = 'foo#bar'").s === "foo#bar");
+let escThrew = false;
+let escName = "";
+try {
+  parseToml('x = "\\x41"');
+} catch (e) {
+  escThrew = true;
+  escName = e.name;
+}
+check("toml: invalid escape throws TomlError, not raw SyntaxError", escThrew && escName === "TomlError");
 
 // subpath traversal guard (the gh: installer security fix)
 check("subpath: normal nested path allowed", resolveSubpath("/tmp/repo", "skills/a") === "/tmp/repo/skills/a");

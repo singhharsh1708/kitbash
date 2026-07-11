@@ -20,22 +20,21 @@ export function parseToml(src: string): TomlTable {
     if (!line) continue;
 
     if (line.startsWith("[[")) {
-      const m = line.match(/^\[\[([A-Za-z0-9_.-]+)\]\]$/);
+      const m = line.match(/^\[\[\s*([A-Za-z0-9_.\- ]+?)\s*\]\]$/);
       if (!m) throw new TomlError(i + 1, `invalid array-of-tables header: ${line}`);
-      current = appendArrayTable(root, m[1]!.split("."), i + 1);
+      current = appendArrayTable(root, splitKeyPath(m[1]!, i + 1), i + 1);
       continue;
     }
     if (line.startsWith("[")) {
-      const m = line.match(/^\[([A-Za-z0-9_.-]+)\]$/);
+      const m = line.match(/^\[\s*([A-Za-z0-9_.\- ]+?)\s*\]$/);
       if (!m) throw new TomlError(i + 1, `invalid table header: ${line}`);
-      current = ensureTable(root, m[1]!.split("."), i + 1);
+      current = ensureTable(root, splitKeyPath(m[1]!, i + 1), i + 1);
       continue;
     }
 
     const eq = line.indexOf("=");
     if (eq < 0) throw new TomlError(i + 1, `expected "key = value": ${line}`);
-    const key = line.slice(0, eq).trim();
-    if (!/^[A-Za-z0-9_-]+$/.test(key)) throw new TomlError(i + 1, `invalid key: ${key}`);
+    const key = parseKey(line.slice(0, eq).trim(), i + 1);
     current[key] = parseValue(line.slice(eq + 1).trim(), i + 1);
   }
   return root;
@@ -55,12 +54,37 @@ function isEscaped(s: string, i: number): boolean {
   return backslashes % 2 === 1;
 }
 
+/** Split a (possibly dotted, possibly space-padded) table name into validated segments. */
+function splitKeyPath(name: string, line: number): string[] {
+  const parts = name.split(".").map((p) => p.trim());
+  for (const p of parts) if (!/^[A-Za-z0-9_-]+$/.test(p)) throw new TomlError(line, `invalid table name segment: "${p}"`);
+  return parts;
+}
+
+/** Bare keys match [A-Za-z0-9_-]; quoted keys ("x" or 'x') are unwrapped verbatim. */
+function parseKey(raw: string, line: number): string {
+  if (raw.length >= 2 && ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'")))) {
+    return raw.slice(1, -1);
+  }
+  if (!/^[A-Za-z0-9_-]+$/.test(raw)) throw new TomlError(line, `invalid key: ${raw}`);
+  return raw;
+}
+
+// Comment/array scanning tracks strings of both quote styles. Double-quoted strings honor
+// backslash escapes; single-quoted literals do not (no escaping in TOML literal strings).
 function stripComment(line: string): string {
-  let inString = false;
+  let quote = ""; // "", '"', or "'"
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
-    if (ch === '"' && !isEscaped(line, i)) inString = !inString;
-    if (ch === "#" && !inString) return line.slice(0, i);
+    if (quote === '"') {
+      if (ch === '"' && !isEscaped(line, i)) quote = "";
+    } else if (quote === "'") {
+      if (ch === "'") quote = "";
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+    } else if (ch === "#") {
+      return line.slice(0, i);
+    }
   }
   return line;
 }
@@ -101,7 +125,16 @@ function isTable(v: TomlValue): v is TomlTable {
 function parseValue(raw: string, line: number): TomlValue {
   if (raw.startsWith('"')) {
     if (!/^"(?:[^"\\]|\\.)*"$/.test(raw)) throw new TomlError(line, `unterminated string: ${raw}`);
-    return JSON.parse(raw) as string;
+    try {
+      return JSON.parse(raw) as string;
+    } catch {
+      throw new TomlError(line, `invalid string escape: ${raw}`);
+    }
+  }
+  if (raw.startsWith("'")) {
+    // literal string: no escape processing, verbatim between the quotes
+    if (raw.length < 2 || !raw.endsWith("'")) throw new TomlError(line, `unterminated literal string: ${raw}`);
+    return raw.slice(1, -1);
   }
   if (raw.startsWith("[")) {
     if (!raw.endsWith("]")) throw new TomlError(line, `arrays must be single-line: ${raw}`);
@@ -115,20 +148,30 @@ function parseValue(raw: string, line: number): TomlValue {
   }
   if (raw === "true") return true;
   if (raw === "false") return false;
-  if (/^-?\d+$/.test(raw)) return Number.parseInt(raw, 10);
-  if (/^-?\d+\.\d+$/.test(raw)) return Number.parseFloat(raw);
+  if (/^[+-]?\d+$/.test(raw)) return Number.parseInt(raw, 10);
+  if (/^[+-]?\d+\.\d+$/.test(raw)) return Number.parseFloat(raw);
   throw new TomlError(line, `unsupported value: ${raw}`);
 }
 
 function splitTopLevel(inner: string, line: number): string[] {
   const parts: string[] = [];
   let depth = 0;
-  let inString = false;
+  let quote = ""; // "", '"', or "'"
   let start = 0;
   for (let i = 0; i < inner.length; i++) {
     const ch = inner[i];
-    if (ch === '"' && !isEscaped(inner, i)) inString = !inString;
-    if (inString) continue;
+    if (quote === '"') {
+      if (ch === '"' && !isEscaped(inner, i)) quote = "";
+      continue;
+    }
+    if (quote === "'") {
+      if (ch === "'") quote = "";
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
     if (ch === "[") depth++;
     if (ch === "]") depth--;
     if (ch === "," && depth === 0) {
@@ -136,7 +179,7 @@ function splitTopLevel(inner: string, line: number): string[] {
       start = i + 1;
     }
   }
-  if (inString || depth !== 0) throw new TomlError(line, `malformed array: [${inner}]`);
+  if (quote || depth !== 0) throw new TomlError(line, `malformed array: [${inner}]`);
   parts.push(inner.slice(start));
   return parts;
 }
