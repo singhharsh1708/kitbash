@@ -31,12 +31,17 @@ That's an actual session. A third-party skill from the [skills.sh](https://www.s
 
 That gap is measured, not asserted — see the [benchmark](docs/benchmarks/README.md): the same skill costs ~40 standing tokens on a lazy target and ~490 on an eager one, a 12× per-session tax that a team running four agents pays four times over. Reproduce it with `npm run bench`.
 
-Try it:
+Install with npm or Homebrew:
 
 ```bash
 npm install -g kitbash
+# or
+brew install singhharsh1708/tap/kitbash
+```
 
-cd your-repo
+Then, in a repo:
+
+```bash
 kitbash init
 kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview
 kitbash compile
