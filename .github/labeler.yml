@@ -1,0 +1,30 @@
+# Path-based PR auto-labeling (actions/labeler v5 syntax).
+# Labels are additive — a PR can match several.
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/cli/package.json"
+          - "packages/cli/package-lock.json"
+
+automation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+          - ".github/dependabot.yml"
+          - ".github/labeler.yml"
+
+benchmark:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/benchmarks/**"
+          - "packages/cli/scripts/benchmark.mjs"
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**"
+          - "spec/**"
+          - "rfcs/**"
+          - "site/**"
