@@ -32,6 +32,10 @@ const tmp = mkdtempSync(join(tmpdir(), "kitbash-e2e-"));
 try {
   mkdirSync(join(tmp, ".claude"));
   mkdirSync(join(tmp, ".cursor"));
+  mkdirSync(join(tmp, ".clinerules"));
+  mkdirSync(join(tmp, ".windsurf"));
+  mkdirSync(join(tmp, ".github"));
+  writeFileSync(join(tmp, "GEMINI.md"), "# Project notes\n");
 
   const init = run(["init"], tmp);
   check("init exits 0", init.status === 0, init.out);
@@ -49,7 +53,7 @@ try {
 
   const compile = run(["compile"], tmp);
   check("compile exits 0", compile.status === 0, compile.out);
-  check("compile summary", compile.out.includes("compiled 1 skill(s) for 3 agent target(s)"), compile.out);
+  check("compile summary", compile.out.includes("compiled 1 skill(s) for 7 agent target(s)"), compile.out);
 
   const claude = join(tmp, ".claude/skills/prereview/SKILL.md");
   const cursor = join(tmp, ".cursor/rules/prereview.mdc");
@@ -57,6 +61,13 @@ try {
   check("claude-code output exists", existsSync(claude));
   check("cursor output exists", existsSync(cursor));
   check("agentsmd output exists", existsSync(agents));
+  check("copilot output exists", existsSync(join(tmp, ".github/instructions/prereview.instructions.md")));
+  check("cline output exists", existsSync(join(tmp, ".clinerules/prereview.md")));
+  check("windsurf output exists", existsSync(join(tmp, ".windsurf/rules/prereview.md")));
+  const gemini = readFileSync(join(tmp, "GEMINI.md"), "utf8");
+  check("gemini markers merged, user content kept", gemini.includes("kitbash:begin prereview") && gemini.startsWith("# Project notes"), gemini.slice(0, 120));
+  const shim = join(tmp, ".claude/commands/prereview.md");
+  check("slash-command shim compiled", existsSync(shim) && readFileSync(shim, "utf8").includes(".claude/skills/prereview/SKILL.md"));
 
   const claudeContent = readFileSync(claude, "utf8");
   check("claude output has frontmatter name", claudeContent.includes("name: prereview"));
@@ -115,9 +126,13 @@ try {
   const pruneCompile = run(["compile"], tmp);
   check("compile prunes stale claude output", !existsSync(join(tmp, ".claude/skills/prereview")), pruneCompile.out);
   check("compile prunes stale cursor output", !existsSync(join(tmp, ".cursor/rules/prereview.mdc")), pruneCompile.out);
+  check("compile prunes stale command shim", !existsSync(join(tmp, ".claude/commands/prereview.md")), pruneCompile.out);
+  check("compile prunes stale cline output", !existsSync(join(tmp, ".clinerules/prereview.md")), pruneCompile.out);
   const prunedAgents = readFileSync(join(tmp, "AGENTS.md"), "utf8");
   check("compile prunes stale AGENTS.md section", !prunedAgents.includes("kitbash:begin prereview"), prunedAgents.slice(0, 200));
   check("surviving skill section intact", prunedAgents.includes("kitbash:begin tidy-commits"));
+  const prunedGemini = readFileSync(join(tmp, "GEMINI.md"), "utf8");
+  check("GEMINI.md section pruned, user content kept", !prunedGemini.includes("kitbash:begin prereview") && prunedGemini.startsWith("# Project notes"));
 } finally {
   rmSync(tmp, { recursive: true, force: true });
 }

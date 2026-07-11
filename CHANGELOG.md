@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.3.0] — 2026-07-11
+
+### Added
+- Four new adapters — `copilot` (`.github/instructions/*.instructions.md`), `cline` (`.clinerules/`), `windsurf` (`.windsurf/rules/`), `gemini` (GEMINI.md marker merge) — **7 targets total**.
+- Commands compilation: `triggers.commands` now emit native slash commands (Claude Code `.claude/commands/*.md` shims).
+- Generalized marker-merge for shared files (AGENTS.md, GEMINI.md): user content preserved, sections idempotent, stale sections pruned.
+- Pruning generalized to written-set semantics across all managed output locations — covers removed skills and renamed commands.
+- README: badges, status-quo-vs-kitbash comparison, FAQ; social preview asset; demo regenerated from a real 7-target session.
+
 ## [0.2.0] — 2026-07-11
 
 ### Added

@@ -28,7 +28,8 @@ Deferred out of v0.1 on purpose: more adapters, more skills, index, evals tier 2
 - `kitbash preview <skill>`: the playground — render exactly what each adapter will emit, with per-agent token counts, before installing.
 - `kitbash explain <skill> <adapter>`: why a compilation degraded — which required capability the adapter lacks, what got rewritten.
 - Permissions manifest compiled to Claude Code permission rules; advisory elsewhere, honestly labeled.
-- Remaining launch adapters: `copilot`, `codex` (native prompts beyond the AGENTS.md floor).
+- ✅ Adapter sprint: `copilot`, `cline`, `windsurf`, `gemini` — 7 targets total.
+- ✅ Declared trigger commands compiled to native slash commands (Claude Code shims; more hosts as they support commands).
 - Second and third first-party skills: `excavate`, `plan`.
 - Exit criterion: no code path exists where a skill's instructions change on disk without a human seeing a diff.
 
