@@ -27,6 +27,13 @@ export interface Adapter {
   id: string;
   /** Capabilities this target supports, matched against targets.requires. */
   capabilities: string[];
+  /**
+   * How the target loads a compiled skill:
+   * - "lazy": kept out of context until invoked (Claude Code SKILL.md, Cursor agent-requested rules)
+   * - "eager": always in the context window (AGENTS.md, GEMINI.md, Copilot applyTo, Cline/Windsurf rules)
+   * An eager target cannot honor a skill authored to lazy-load; that costs its full body as standing context.
+   */
+  loading: "eager" | "lazy";
   detect(root: string): boolean;
   emit(skill: LoadedSkill, body: string, root: string): AdapterOutput;
 }
@@ -49,31 +56,41 @@ function markers(name: string): { begin: string; end: string } {
   return { begin: `<!-- kitbash:begin ${name} -->`, end: `<!-- kitbash:end ${name} -->` };
 }
 
+/**
+ * A skill authored to lazy-load (disclosure = "lazy") cannot lazy-load on an eager
+ * target — the whole body sits in context every session. Surface that cost so the
+ * warning matches reality on ALL eager targets, not just the shared-file ones.
+ */
+function eagerStandingWarning(skill: LoadedSkill, adapter: Adapter, body: string): string[] {
+  if (adapter.loading !== "eager" || skill.manifest.context.disclosure !== "lazy") return [];
+  const { name } = skill.manifest.skill;
+  return [
+    `${name} → ${adapter.id}: ${adapter.id} is eager and cannot lazy-load; this skill costs ~${estimateTokens(body)} tokens standing every session (declared limit: ${skill.manifest.context.standing})`,
+  ];
+}
+
 /** Shared-file adapters (AGENTS.md, GEMINI.md): eager-loaded, marker-merged. */
-function mergedFileAdapter(id: string, file: string, note: string, detect: (root: string) => boolean): Adapter {
+function mergedFileAdapter(id: string, file: string, detect: (root: string) => boolean): Adapter {
   return {
     id,
     capabilities: [],
+    loading: "eager",
     detect,
     emit(skill, body) {
       const { name } = skill.manifest.skill;
       const { begin, end } = markers(name);
       const section = `${begin}\n${header(skill)}\n\n## Skill: ${name}\n\n${body.trim()}\n${end}`;
-      const warnings = degradationWarnings(skill, this);
-      if (skill.manifest.context.disclosure === "lazy") {
-        warnings.push(
-          `${name} → ${id}: ${note} cannot lazy-load; §${name} costs ~${estimateTokens(body)} tokens standing (declared limit: ${skill.manifest.context.standing})`,
-        );
-      }
+      const warnings = [...degradationWarnings(skill, this), ...eagerStandingWarning(skill, this, body)];
       return { files: [{ path: file, content: section, merge: true }], warnings };
     },
   };
 }
 
-/** Simple per-skill file adapters that differ only in path and frontmatter. */
+/** Simple per-skill file adapters that differ only in path, loading mode, and frontmatter. */
 function fileAdapter(
   id: string,
   capabilities: string[],
+  loading: "eager" | "lazy",
   detect: (root: string) => boolean,
   pathFor: (name: string) => string,
   frontmatter: (skill: LoadedSkill) => string,
@@ -81,11 +98,15 @@ function fileAdapter(
   return {
     id,
     capabilities,
+    loading,
     detect,
     emit(skill, body) {
       const { name } = skill.manifest.skill;
       const content = `${frontmatter(skill)}${header(skill)}\n\n${body}`;
-      return { files: [{ path: pathFor(name), content }], warnings: degradationWarnings(skill, this) };
+      return {
+        files: [{ path: pathFor(name), content }],
+        warnings: [...degradationWarnings(skill, this), ...eagerStandingWarning(skill, this, body)],
+      };
     },
   };
 }
@@ -93,6 +114,7 @@ function fileAdapter(
 const claudeCode: Adapter = {
   id: "claude-code",
   capabilities: ["scripts", "hooks", "subagents"],
+  loading: "lazy",
   detect: (root) => existsSync(join(root, ".claude")),
   emit(skill, body) {
     const { name, description } = skill.manifest.skill;
@@ -114,33 +136,41 @@ const claudeCode: Adapter = {
   },
 };
 
+// Cursor rules with alwaysApply:false are agent-requested — lazy.
 const cursor = fileAdapter(
   "cursor",
   [],
+  "lazy",
   (root) => existsSync(join(root, ".cursor")),
   (name) => `.cursor/rules/${name}.mdc`,
   (skill) => `---\ndescription: ${skill.manifest.skill.description}\nalwaysApply: false\n---\n`,
 );
 
+// Copilot applyTo:"**" applies to every request — eager.
 const copilot = fileAdapter(
   "copilot",
   [],
+  "eager",
   (root) => existsSync(join(root, ".github")),
   (name) => `.github/instructions/${name}.instructions.md`,
   () => `---\napplyTo: "**"\n---\n`,
 );
 
+// Cline rule files are always loaded — eager.
 const cline = fileAdapter(
   "cline",
   [],
+  "eager",
   (root) => existsSync(join(root, ".clinerules")),
   (name) => `.clinerules/${name}.md`,
   () => "",
 );
 
+// Windsurf rule files are always loaded — eager.
 const windsurf = fileAdapter(
   "windsurf",
   [],
+  "eager",
   (root) => existsSync(join(root, ".windsurf")),
   (name) => `.windsurf/rules/${name}.md`,
   () => "",
@@ -149,12 +179,11 @@ const windsurf = fileAdapter(
 const gemini = mergedFileAdapter(
   "gemini",
   "GEMINI.md",
-  "GEMINI.md",
   (root) => existsSync(join(root, "GEMINI.md")) || existsSync(join(root, ".gemini")),
 );
 
 /** The floor: everything that reads AGENTS.md (Codex and many others). */
-const agentsmd = mergedFileAdapter("agentsmd", "AGENTS.md", "AGENTS.md", () => true);
+const agentsmd = mergedFileAdapter("agentsmd", "AGENTS.md", () => true);
 
 export const ADAPTERS: Adapter[] = [claudeCode, cursor, copilot, cline, windsurf, gemini, agentsmd];
 
