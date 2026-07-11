@@ -234,6 +234,20 @@
     .mobile-menu-toggle { display: inline-flex; }
     .hero h1 { font-size: 2.5rem; }
   }
+
+  /* mascot */
+  .hero-mascot { width: 132px; height: 132px; margin: 0 auto 1.6rem; filter: drop-shadow(0 16px 40px color-mix(in srgb, var(--accent) 22%, transparent)); }
+  .hero-mascot svg { width: 100%; height: 100%; display: block; }
+
+  /* pipeline */
+  .pipeline { margin-top: 1.4rem; padding: 1.4rem 1.25rem; border: 1px solid var(--line); border-radius: 8px; background: var(--code-bg); color: var(--code-text); overflow-x: auto; text-align: center; font-family: "SFMono-Regular", Consolas, ui-monospace, monospace; font-size: .84rem; line-height: 2; }
+  .pipeline .step { color: var(--accent-strong); font-weight: 700; }
+  .pipeline .art { color: color-mix(in srgb, var(--accent) 70%, var(--text)); font-size: .76rem; }
+  .pipeline .arr { color: var(--muted); padding: 0 .35rem; }
+
+  /* sponsor */
+  .sponsor-card { display: flex; flex-direction: column; align-items: flex-start; gap: 1rem; padding: 1.6rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-card); }
+  .sponsor-card iframe { width: 100%; max-width: 600px; height: 225px; border: 0; border-radius: 10px; }
 </style>
 </head>
 <body>
@@ -291,6 +305,76 @@
 <main id="top">
 
   <section class="hero">
+    <div class="hero-mascot">
+    <svg viewBox="0 0 512 512" role="img" aria-label="The Kitbasher">
+      <defs>
+        <radialGradient id="bg" cx="50%" cy="42%" r="72%"><stop offset="0%" stop-color="#28324a"/><stop offset="100%" stop-color="#141924"/></radialGradient>
+        <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3e4a61"/><stop offset="100%" stop-color="#2c3444"/></linearGradient>
+        <radialGradient id="iris" cx="50%" cy="38%" r="65%"><stop offset="0%" stop-color="#ffc76b"/><stop offset="100%" stop-color="#b06a1a"/></radialGradient>
+        <clipPath id="badge"><circle cx="256" cy="256" r="236"/></clipPath>
+      </defs>
+      <circle cx="256" cy="256" r="236" fill="url(#bg)"/>
+      <g clip-path="url(#badge)">
+        <g transform="translate(84,314) rotate(-14)" stroke="#8b96ab" fill="none">
+          <rect x="0" y="0" width="84" height="104" rx="10" stroke-width="7"/>
+          <path d="M 42 0 V 104 M 0 52 H 84" stroke-width="5"/>
+          <circle cx="21" cy="26" r="13" stroke="#ffb454" stroke-width="6" stroke-dasharray="4 5"/>
+          <circle cx="21" cy="26" r="4" fill="#ffb454" stroke="none"/>
+          <path d="M 63 18 l 8 5 v 9 l -8 5 l -8 -5 v -9 z" fill="#8b96ab" stroke="none"/>
+          <rect x="12" y="70" width="18" height="16" rx="5" fill="#35516e" stroke-width="4"/>
+          <circle cx="63" cy="78" r="9" stroke-width="5"/>
+        </g>
+        <circle cx="428" cy="180" r="20" fill="none" stroke="#8b96ab" stroke-width="8" stroke-dasharray="6 6"/>
+        <circle cx="428" cy="180" r="6" fill="#ffb454"/>
+        <rect x="422" y="316" width="26" height="26" rx="6" transform="rotate(20 435 329)" fill="#35516e" stroke="#8b96ab" stroke-width="4"/>
+        <path d="M 150 111 l 2.5 6.5 l 6.5 2.5 l -6.5 2.5 l -2.5 6.5 l -2.5 -6.5 l -6.5 -2.5 l 6.5 -2.5 z" fill="#ffd98c"/>
+        <path d="M 392 101 l 2.5 6.5 l 6.5 2.5 l -6.5 2.5 l -2.5 6.5 l -2.5 -6.5 l -6.5 -2.5 l 6.5 -2.5 z" fill="#ffd98c"/>
+        <path d="M 118 391 l 2.5 6.5 l 6.5 2.5 l -6.5 2.5 l -2.5 6.5 l -2.5 -6.5 l -6.5 -2.5 l 6.5 -2.5 z" fill="#ffd98c"/>
+        <path d="M 234 320 L 234 388 Q 256 398 278 388 L 278 320 Z" fill="#ffd8b4"/>
+        <path d="M 234 320 L 234 352 Q 256 362 278 352 L 278 320 Z" fill="#edb88c"/>
+        <path d="M 118 512 C 126 436 178 396 256 392 C 334 396 386 436 394 512 Z" fill="#35516e"/>
+        <path d="M 256 414 L 232 392 L 214 410 L 244 428 Z" fill="#2a415a"/>
+        <path d="M 256 414 L 280 392 L 298 410 L 268 428 Z" fill="#2a415a"/>
+        <path d="M 256 424 L 256 512" stroke="#ffb454" stroke-width="3.5"/>
+        <rect x="152" y="446" width="34" height="24" rx="6" transform="rotate(-12 169 458)" fill="#ffb454" opacity="0.9"/>
+        <path d="M 158 282 C 146 190 168 130 196 104 L 206 64 L 224 94 L 244 86 L 258 46 L 274 86 L 292 92 L 310 60 L 322 100 C 350 128 366 190 354 282 C 344 238 336 218 328 208 L 184 208 C 176 218 168 238 158 282 Z" fill="url(#hair)"/>
+        <ellipse cx="172" cy="256" rx="11" ry="17" fill="#ffd8b4"/>
+        <ellipse cx="340" cy="256" rx="11" ry="17" fill="#ffd8b4"/>
+        <path d="M 174 238 C 174 190 208 148 256 148 C 304 148 338 190 338 238 C 338 288 310 336 256 352 C 202 336 174 288 174 238 Z" fill="#ffd8b4"/>
+        <path d="M 174 238 C 174 288 202 336 256 352 C 228 338 194 300 188 240 C 186 210 190 186 198 170 C 182 186 174 210 174 238 Z" fill="#c98850" opacity="0.18"/>
+        <ellipse cx="198" cy="298" rx="13" ry="6.5" fill="#f79a7a" opacity="0.32"/>
+        <ellipse cx="316" cy="298" rx="13" ry="6.5" fill="#f79a7a" opacity="0.32"/>
+        <ellipse cx="215" cy="264" rx="21" ry="15" fill="#ffffff"/>
+        <ellipse cx="297" cy="264" rx="21" ry="15" fill="#ffffff"/>
+        <circle cx="215" cy="266" r="12" fill="url(#iris)"/>
+        <circle cx="297" cy="266" r="12" fill="url(#iris)"/>
+        <circle cx="215" cy="266" r="5.5" fill="#1d1509"/>
+        <circle cx="297" cy="266" r="5.5" fill="#1d1509"/>
+        <circle cx="211" cy="261" r="3.5" fill="#ffffff"/>
+        <circle cx="293" cy="261" r="3.5" fill="#ffffff"/>
+        <circle cx="220" cy="271" r="1.8" fill="#ffffff" opacity="0.8"/>
+        <circle cx="302" cy="271" r="1.8" fill="#ffffff" opacity="0.8"/>
+        <path d="M 188 256 L 193 262 Q 215 246 237 258" fill="none" stroke="#232a38" stroke-width="6.5" stroke-linecap="round"/>
+        <path d="M 275 258 Q 297 246 319 262 L 324 256" fill="none" stroke="#232a38" stroke-width="6.5" stroke-linecap="round"/>
+        <path d="M 228 282 q 6 3 12 1" fill="none" stroke="#232a38" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+        <path d="M 272 283 q 6 2 12 0" fill="none" stroke="#232a38" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+        <path d="M 192 234 Q 214 224 234 231" fill="none" stroke="#232a38" stroke-width="6" stroke-linecap="round"/>
+        <path d="M 278 228 Q 300 216 320 225" fill="none" stroke="#232a38" stroke-width="6" stroke-linecap="round"/>
+        <path d="M 256 294 q 4 6 0 11" fill="none" stroke="#d99a6c" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M 232 316 Q 258 336 286 312" fill="none" stroke="#232a38" stroke-width="5" stroke-linecap="round"/>
+        <path d="M 286 312 q 6 -2 8 -8" fill="none" stroke="#232a38" stroke-width="4" stroke-linecap="round"/>
+        <path d="M 178 252 C 176 194 200 160 256 158 C 312 160 336 194 334 252 L 314 218 L 296 254 L 278 216 L 258 252 L 240 214 L 222 250 L 204 218 Z" fill="url(#hair)"/>
+        <path d="M 174 186 C 200 156 312 156 338 186 L 338 164 C 312 134 200 134 174 164 Z" fill="#232a38"/>
+        <circle cx="216" cy="158" r="25" fill="#ffcf7d" stroke="#4c576e" stroke-width="7"/>
+        <circle cx="296" cy="158" r="25" fill="#ffcf7d" stroke="#4c576e" stroke-width="7"/>
+        <ellipse cx="208" cy="150" rx="7" ry="4" transform="rotate(-20 208 150)" fill="#ffffff" opacity="0.85"/>
+        <ellipse cx="288" cy="150" rx="7" ry="4" transform="rotate(-20 288 150)" fill="#ffffff" opacity="0.85"/>
+        <rect x="168" y="162" width="10" height="16" rx="3" fill="#4c576e"/>
+        <rect x="334" y="162" width="10" height="16" rx="3" fill="#4c576e"/>
+      </g>
+      <circle cx="256" cy="256" r="238" fill="none" stroke="#ffb454" stroke-width="5"/>
+    </svg>
+    </div>
     <p class="eyebrow">Open format for AI agent skills · v0.1 preview</p>
     <h1>Write an agent skill once. Run it <em>everywhere</em>.</h1>
     <div class="actions">
@@ -358,7 +442,11 @@ commands = [<span class="s">"/prereview"</span>]
 
 [permissions]
 <span class="k">tools</span> = [<span class="s">"read"</span>, <span class="s">"grep"</span>, <span class="s">"bash:git diff *"</span>]
-<span class="k">network</span> = false</pre>
+<span class="k">network</span> = false
+
+[artifacts]
+<span class="k">produces</span> = [<span class="s">"findings@1"</span>]
+<span class="k">consumes</span> = [<span class="s">"plan@1"</span>]</pre>
       <div class="stack">
         <div class="feature">
           <h3>Budgets, enforced</h3>
@@ -373,6 +461,16 @@ commands = [<span class="s">"/prereview"</span>]
           <p>An agent that can't run scripts gets an instruction-only build with a visible warning, never a quiet downgrade. Seven targets today, from Claude Code to the AGENTS.md fallback.</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="section" id="artifacts">
+    <div class="section-header">
+      <h2><span class="hash">#</span>Skills that feed each other</h2>
+      <p>Typed artifacts are stdin/stdout for agents. A skill declares what it <code>produces</code> and <code>consumes</code>, so skills pipe into each other through data instead of prompt-chaining hope — with gates between steps that pass or fail on exit codes, not vibes.</p>
+    </div>
+    <div class="pipeline">
+      <span class="step">/plan</span><span class="arr">─</span><span class="art">plan@1</span><span class="arr">→</span>implement<span class="arr">→</span><span class="step">/verify</span><span class="arr">─</span><span class="art">verify@1</span><span class="arr">→</span><span class="step">/prereview</span><span class="arr">─</span><span class="art">findings@1</span><span class="arr">→</span>ship
     </div>
   </section>
 
@@ -425,6 +523,16 @@ kitbash init &amp;&amp; kitbash compile</pre></div>
         <h3>Roadmap</h3>
         <p>What v0.1 covers on purpose, and what registry, lore, and pipelines come next.</p>
       </a>
+    </div>
+  </section>
+
+  <section class="section" id="sponsor">
+    <div class="section-header">
+      <h2><span class="hash">#</span>Support the project</h2>
+      <p>Kitbash is Apache-2.0 and built in the open. If it saves your team time, sponsoring funds the work toward a real standard — spec, adapters, and evals.</p>
+    </div>
+    <div class="sponsor-card">
+      <iframe src="https://github.com/sponsors/singhharsh1708/card" title="Sponsor singhharsh1708" loading="lazy"></iframe>
     </div>
   </section>
 
