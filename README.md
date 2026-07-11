@@ -19,6 +19,8 @@ If you've used npm for packages, Docker for containers, or ESLint for lint rules
 
 It works today, though the KSF spec is still moving and will probably change some before 1.0.
 
+> **Compiler insight** — Kitbash measures a skill's *standing token cost* (what it adds to your context every session) at compile time, before you ever install it. On a lazy target that's ~40 tokens; compiled to an eager one it's ~490 — a [12× per-session tax](docs/benchmarks/README.md) no other format surfaces. Run `npm run bench` for the numbers.
+
 ## A quick look
 
 <p align="center">
