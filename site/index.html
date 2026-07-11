@@ -2,313 +2,535 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width">
 <title>Kitbash — one skill, every coding agent</title>
-<meta name="description" content="The package manager and compiler for AI agent skills. Write a skill once, run it in Claude Code, Cursor, Codex, Copilot, Gemini CLI, and more.">
+<meta name="description" content="An open format for AI agent skills, plus a compiler that turns one skill into whatever each coding agent reads — Claude Code, Cursor, Copilot, Codex, Gemini, and more.">
+<link rel="canonical" href="https://github.com/singhharsh1708/kitbash">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="kitbash">
+<meta property="og:title" content="Kitbash — one skill, every coding agent">
+<meta property="og:description" content="Write an agent skill once. Compile it to every coding agent your team uses.">
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
 <style>
   :root {
+    color-scheme: light;
+    --bg: #fbfaf7;
+    --surface: #ffffff;
+    --surface-muted: #f4f1ea;
+    --surface-card: rgba(255, 255, 255, 0.72);
+    --text: #1b1a17;
+    --muted: #6b6459;
+    --line: #e7e2d8;
+    --accent: #b4740f;
+    --accent-strong: #8a5709;
+    --amber: #b7791f;
+    --header-bg: rgba(251, 250, 247, 0.88);
+    --code-bg: #f5f2ec;
+    --code-text: #1b1a17;
+    --logo-accent: #d4820f;
+    --shadow: 0 18px 60px rgba(28, 22, 12, 0.10);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
     --bg: #12161f;
-    --panel: #1a2130;
-    --panel-2: #1f2839;
-    --line: #2c3444;
+    --surface: #1a2130;
+    --surface-muted: #1f2839;
+    --surface-card: rgba(26, 33, 48, 0.78);
     --text: #dbe2ee;
     --muted: #8b96ab;
+    --line: #2c3444;
+    --accent: #ffb454;
+    --accent-strong: #ffc576;
     --amber: #ffb454;
-    --amber-dim: #c98850;
-    --green: #7fd18c;
-    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --header-bg: rgba(18, 22, 31, 0.88);
+    --code-bg: #0d1119;
+    --code-text: #dbe2ee;
+    --logo-accent: #ffb454;
+    --shadow: 0 22px 70px rgba(0, 0, 0, 0.45);
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.6; }
-  a { color: var(--amber); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .wrap { max-width: 1020px; margin: 0 auto; padding: 0 24px; }
 
-  nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
-  nav .brand { font-family: var(--mono); font-weight: 700; font-size: 18px; color: var(--text); }
-  nav .brand span { color: var(--amber); }
-  nav .links { display: flex; gap: 22px; font-size: 14px; }
-  nav .links a { color: var(--muted); }
-  nav .links a:hover { color: var(--amber); text-decoration: none; }
+  * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 45%, transparent) transparent; }
+  *::-webkit-scrollbar { width: .5rem; height: .5rem; }
+  *::-webkit-scrollbar-thumb { border: .15rem solid transparent; border-radius: 999px; background: color-mix(in srgb, var(--muted) 35%, transparent); background-clip: content-box; }
+  *::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--muted) 58%, transparent); background-clip: content-box; }
 
-  .hero { text-align: center; padding: 40px 0 24px; }
-  .hero .mascot { width: 150px; height: 150px; margin: 0 auto 24px; }
-  .hero .sub { margin-top: 34px !important; }
-  .hero h1 { font-size: clamp(28px, 5vw, 46px); line-height: 1.2; letter-spacing: -0.5px; }
-  .hero h1 em { font-style: normal; color: var(--amber); }
-  .hero .sub { color: var(--muted); font-size: clamp(15px, 2.2vw, 19px); max-width: 640px; margin: 18px auto 0; }
-  .ladder { margin-top: 24px; font-family: var(--mono); font-size: 13px; color: var(--muted); }
-  .ladder b { color: var(--amber); font-weight: 700; }
-  .status { display: inline-block; margin-top: 18px; font-family: var(--mono); font-size: 12px; color: var(--amber-dim); border: 1px solid var(--line); border-radius: 20px; padding: 5px 14px; }
-  .cta { display: flex; gap: 14px; justify-content: center; margin-top: 30px; flex-wrap: wrap; }
-  .btn { font-family: var(--mono); font-size: 14px; padding: 11px 22px; border-radius: 8px; border: 1px solid var(--line); color: var(--text); }
-  .btn:hover { text-decoration: none; border-color: var(--amber); }
-  .btn.primary { background: var(--amber); color: #12161f; font-weight: 700; border-color: var(--amber); }
-  .btn.primary:hover { background: #ffc576; }
+  html { background: var(--bg); color: var(--text); scroll-behavior: smooth; scroll-padding-top: 5.5rem; }
+  body {
+    margin: 0; min-width: 320px; line-height: 1.6;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 11%, transparent), transparent 26rem),
+      var(--bg);
+  }
+  a { color: inherit; }
+  code, pre { font-family: "SFMono-Regular", Consolas, "Liberation Mono", ui-monospace, monospace; }
 
-  .term { background: #0d1119; border: 1px solid var(--line); border-radius: 10px; text-align: left; font-family: var(--mono); font-size: 13.5px; overflow-x: auto; margin: 40px auto 0; max-width: 720px; }
-  .term .bar { display: flex; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
-  .term .bar i { width: 11px; height: 11px; border-radius: 50%; background: var(--line); }
-  .term pre { padding: 18px 20px; line-height: 1.75; }
-  .term .p { color: var(--muted); }
-  .term .ok { color: var(--green); }
-  .term .out { color: var(--amber); }
-  .term .dim { color: var(--muted); }
+  /* header */
+  .site-header {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between; gap: .9rem;
+    padding: 1rem max(1.25rem, calc((100vw - 1120px) / 2));
+    background: var(--header-bg); backdrop-filter: blur(18px);
+    transition: transform 260ms cubic-bezier(.4,0,.2,1);
+  }
+  .site-header.header-hidden { transform: translateY(-110%); }
+  .brand { display: inline-flex; align-items: center; gap: .6rem; font-weight: 760; font-size: 1.08rem; text-decoration: none; }
+  .brand .kit { color: var(--accent-strong); }
+  .logo-mark { width: 1.7rem; height: 1.7rem; flex: 0 0 auto; }
+  .top-nav { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; font-size: .94rem; color: var(--muted); }
+  .top-nav a { display: inline-flex; align-items: center; gap: .42rem; text-decoration: none; }
+  .top-nav a:hover { color: var(--accent-strong); }
+  .top-nav svg { width: 1rem; height: 1rem; fill: currentColor; flex: 0 0 auto; }
+  .icon-link { color: var(--text); }
+  .nav-heart {
+    min-height: 2.2rem; padding: 0 .72rem;
+    border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line)); border-radius: 999px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent), var(--surface);
+    color: var(--accent-strong); font-weight: 760;
+    box-shadow: 0 10px 28px color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+  .nav-heart:hover { transform: translateY(-1px); }
 
-  section { padding: 72px 0 0; }
-  section h2 { font-size: clamp(22px, 3.5vw, 30px); margin-bottom: 8px; }
-  section .lead { color: var(--muted); max-width: 700px; margin-bottom: 32px; }
-  section h2 .hash { color: var(--amber); font-family: var(--mono); margin-right: 8px; }
+  .theme-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 2rem; width: 2rem; padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+  .theme-toggle svg { width: 1.4rem; height: 1.4rem; fill: currentColor; }
+  .moon-icon, .theme-toggle[aria-pressed="true"] .sun-icon { display: none; }
+  .theme-toggle[aria-pressed="true"] .moon-icon { display: block; }
+  .theme-toggle:hover { color: var(--text); }
 
-  .formats { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-  .fmt { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; font-size: 13px; }
-  .fmt b { display: block; color: var(--text); font-weight: 600; }
-  .fmt code { font-family: var(--mono); color: var(--amber-dim); font-size: 12px; }
+  .mobile-menu-toggle { display: none; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--text); cursor: pointer; }
+  .mobile-menu-toggle svg { width: 1.55rem; height: 1.55rem; }
+  .mobile-close-icon, .site-header.menu-open .mobile-menu-icon { display: none; }
+  .site-header.menu-open .mobile-close-icon { display: block; }
+  .mobile-menu {
+    position: absolute; top: calc(100% + .6rem); right: max(1rem, calc((100vw - 1120px) / 2)); z-index: 30;
+    width: min(17rem, calc(100vw - 2rem)); opacity: 0; visibility: hidden;
+    transform: translateY(-.4rem) scale(.96); transform-origin: top right;
+    transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
+  }
+  .site-header.menu-open .mobile-menu { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+  .mobile-menu-card { display: grid; gap: .2rem; padding: .8rem; border: 1px solid var(--line); border-radius: 14px 14px 22px 14px; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: var(--shadow); backdrop-filter: blur(18px); }
+  .mobile-menu-head { padding: .1rem .25rem .35rem; color: var(--muted); font-size: .7rem; font-weight: 760; text-transform: uppercase; letter-spacing: .12em; }
+  .mobile-menu a { display: flex; align-items: center; gap: .45rem; min-height: 2.55rem; padding: 0 .75rem; border-radius: 8px; color: var(--muted); text-decoration: none; }
+  .mobile-menu a svg { width: 1rem; height: 1rem; fill: currentColor; }
+  .mobile-menu a:hover { background: var(--surface-muted); color: var(--text); }
+  .mobile-menu .nav-heart { justify-content: center; margin-top: .25rem; color: var(--accent-strong); }
+  .mobile-backdrop { position: fixed; inset: 0; z-index: 9; background: rgba(10,12,16,0); pointer-events: none; transition: background-color 180ms ease, backdrop-filter 180ms ease; }
+  .site-header.menu-open + .mobile-backdrop { background: rgba(10,12,16,0.18); backdrop-filter: blur(2px); pointer-events: auto; }
 
-  .pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 22px; }
-  .card h3 { font-size: 16px; margin-bottom: 8px; }
-  .card h3 code { font-family: var(--mono); color: var(--amber); font-size: 14px; }
-  .card p { color: var(--muted); font-size: 14px; }
+  /* hero */
+  .hero { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 1100px; margin: 0 auto; padding: 6rem 1.25rem 4rem; }
+  .eyebrow { margin: 0 0 1rem; color: var(--accent-strong); font-size: .82rem; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; }
+  .hero h1 { max-width: 20ch; margin: 0; font-size: clamp(2.5rem, 6vw, 4.6rem); line-height: 1.06; letter-spacing: -0.015em; }
+  .hero h1 em { font-style: normal; color: var(--accent-strong); }
+  .actions { display: flex; gap: .8rem; flex-wrap: wrap; justify-content: center; margin-top: 2.2rem; }
+  .hero-copy { max-width: 46rem; margin: 3rem 0 0; color: var(--muted); font-size: 1.12rem; line-height: 1.75; }
+  .hero-copy code, .section-header code { color: var(--text); }
+  .ladder { margin-top: 1.5rem; font-family: "SFMono-Regular", Consolas, ui-monospace, monospace; font-size: .82rem; color: var(--muted); }
+  .ladder b { color: var(--accent-strong); }
 
-  .code { background: #0d1119; border: 1px solid var(--line); border-radius: 10px; font-family: var(--mono); font-size: 13px; overflow-x: auto; }
-  .code pre { padding: 18px 20px; line-height: 1.7; }
-  .code .k { color: var(--amber); }
-  .code .s { color: var(--green); }
-  .code .c { color: var(--muted); }
-  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-  @media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+  .button { display: inline-flex; align-items: center; justify-content: center; min-height: 2.85rem; padding: 0 1.15rem; border: 1px solid var(--accent); border-radius: 8px; background: var(--accent); color: #fff; font-weight: 700; text-decoration: none; }
+  :root[data-theme="dark"] .button { color: #12161f; }
+  .button.secondary { background: transparent; color: var(--accent-strong); }
+  :root[data-theme="dark"] .button.secondary { color: var(--accent-strong); }
 
-  .skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
-  .skill { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; }
-  .skill .cmd { font-family: var(--mono); color: var(--amber); font-size: 15px; font-weight: 700; }
-  .skill .tag { float: right; font-family: var(--mono); font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 12px; padding: 2px 10px; }
-  .skill p { color: var(--muted); font-size: 14px; margin-top: 8px; }
+  /* terminal demo */
+  .hero-demo { margin-top: 3.5rem; width: 100%; max-width: 780px; border-radius: 14px; overflow: hidden; background: #070908; box-shadow: 0 0 0 1px rgba(0,0,0,.14), 0 40px 90px rgba(16,20,19,.2), 0 10px 28px rgba(16,20,19,.1); }
+  :root[data-theme="dark"] .hero-demo { box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 40px 90px rgba(0,0,0,.55); }
+  .terminal-chrome { display: flex; align-items: center; padding: .72rem 1rem; background: #171d26; border-bottom: 1px solid rgba(255,255,255,.07); user-select: none; }
+  .chrome-dots { display: flex; gap: .44rem; }
+  .chrome-dots span { width: .72rem; height: .72rem; border-radius: 50%; }
+  .chrome-dots span:nth-child(1) { background: #ff5f57; }
+  .chrome-dots span:nth-child(2) { background: #febc2e; }
+  .chrome-dots span:nth-child(3) { background: #28c840; }
+  .chrome-title { flex: 1; text-align: center; color: rgba(255,255,255,.32); font-size: .78rem; font-family: "SFMono-Regular", Consolas, ui-monospace, monospace; pointer-events: none; }
+  .term-body { margin: 0; padding: 1.15rem 1.3rem; text-align: left; font-size: .8rem; line-height: 1.85; color: #dbe2ee; background: #070908; overflow-x: auto; }
+  .term-body .p { color: #8b96ab; }
+  .term-body .ok { color: #7fd18c; }
+  .term-body .warn, .term-body .out { color: #ffb454; }
+  .term-body .dim { color: #8b96ab; }
+  .term-body .hi { color: #ffb454; font-weight: 700; }
+  .demo-caption { margin: 1rem 0 0; font-size: .8rem; color: var(--muted); font-family: "SFMono-Regular", Consolas, ui-monospace, monospace; }
+  .demo-caption b { color: var(--accent-strong); }
 
-  .pipeline { background: #0d1119; border: 1px solid var(--line); border-radius: 10px; padding: 26px 20px; font-family: var(--mono); font-size: 13.5px; overflow-x: auto; text-align: center; }
-  .pipeline .step { color: var(--amber); font-weight: 700; }
-  .pipeline .art { color: var(--green); font-size: 12px; }
-  .pipeline .arr { color: var(--muted); padding: 0 6px; }
+  /* sections */
+  .section { max-width: 1120px; margin: 0 auto; padding: 3.5rem 1.25rem; }
+  .section-header { max-width: 42rem; margin-bottom: 1.6rem; }
+  .section-header h2 { margin: 0; font-size: clamp(1.9rem, 4vw, 3rem); letter-spacing: -0.01em; }
+  .section-header h2 .hash { color: var(--accent-strong); font-family: "SFMono-Regular", ui-monospace, monospace; margin-right: .4rem; }
+  .section-header p { margin: .8rem 0 0; color: var(--muted); line-height: 1.7; }
 
-  .principles li { margin: 10px 0 10px 20px; color: var(--muted); }
-  .principles li b { color: var(--text); }
+  .formats { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: .8rem; }
+  .fmt { padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-card); }
+  .fmt b { display: block; color: var(--text); }
+  .fmt code { color: var(--muted); font-size: .82rem; }
 
-  footer { margin-top: 90px; border-top: 1px solid var(--line); padding: 34px 0 46px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: 14px; }
-  footer .tag { font-family: var(--mono); }
+  .feature-grid, .docs-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .feature, .doc-link { padding: 1.3rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-card); }
+  .feature h3, .doc-link h3 { margin: 0; font-size: 1.02rem; }
+  .feature p, .doc-link p { margin: .6rem 0 0; color: var(--muted); line-height: 1.65; }
+  .doc-link { text-decoration: none; display: block; }
+  .doc-link h3 { color: var(--accent-strong); }
+  .doc-link:hover { border-color: var(--accent); box-shadow: 0 12px 35px color-mix(in srgb, var(--accent) 18%, transparent); }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+  .stack { display: grid; gap: .8rem; }
+  .code-sample { margin: 0; padding: 1.1rem 1.25rem; border: 1px solid var(--line); border-radius: 8px; background: var(--code-bg); color: var(--code-text); overflow-x: auto; font-size: .82rem; line-height: 1.7; }
+  .code-sample .c { color: var(--muted); }
+  .code-sample .k { color: var(--accent-strong); }
+  .code-sample .s { color: color-mix(in srgb, var(--accent) 70%, var(--text)); }
+
+  .skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(285px, 1fr)); gap: 1rem; }
+  .skill { padding: 1.25rem 1.35rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-card); }
+  .skill .cmd { font-family: "SFMono-Regular", ui-monospace, monospace; color: var(--accent-strong); font-size: 1.02rem; font-weight: 760; }
+  .skill .tag { float: right; font-family: "SFMono-Regular", ui-monospace, monospace; font-size: .68rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: .12rem .6rem; text-transform: uppercase; letter-spacing: .04em; }
+  .skill .tag.ships { color: var(--accent-strong); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+  .skill p { margin: .7rem 0 0; color: var(--muted); font-size: .92rem; line-height: 1.6; }
+
+  /* install strip */
+  .install-strip { display: grid; grid-template-columns: minmax(12rem, .62fr) minmax(0, 1fr) auto; gap: 1rem; align-items: center; padding: 1.15rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); box-shadow: 0 14px 45px rgba(28,22,12,.06); }
+  .install-strip > div { display: grid; gap: .25rem; }
+  .install-strip strong { color: var(--text); }
+  .install-strip span { color: var(--muted); font-size: .92rem; line-height: 1.5; }
+  .code-frame { position: relative; }
+  .install-strip pre { margin: 0; padding: .85rem 1rem; border: 1px solid var(--line); border-radius: 8px; background: var(--code-bg); color: var(--code-text); overflow-x: auto; line-height: 1.55; font-size: .85rem; }
+  .copy-code-button { position: absolute; top: 0; right: .8rem; transform: translateY(-50%); min-height: 1.8rem; padding: 0 .58rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); font: inherit; font-size: .74rem; font-weight: 700; cursor: pointer; }
+  .copy-code-button:hover { color: var(--accent-strong); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+
+  .attribution-section { padding-block: 1rem 2rem; }
+  .attribution { margin: 0 auto; max-width: 660px; text-align: center; color: var(--muted); font-size: .92rem; line-height: 1.65; }
+  .attribution a { color: var(--accent-strong); text-decoration: none; }
+  .attribution a:hover { text-decoration: underline; }
+
+  /* footer */
+  .site-footer { max-width: 1120px; margin: 2rem auto 0; padding: 0 1.25rem 2.8rem; color: var(--muted); }
+  .footer-divider { width: 100%; height: 1px; margin-bottom: 2.4rem; background: var(--line); }
+  .footer-inner { display: flex; flex-direction: column; align-items: center; gap: 1.35rem; text-align: center; }
+  .footer-brand { display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+  .footer-brand .logo-mark { width: 2.6rem; height: 2.6rem; }
+  .footer-brand strong { color: var(--text); font-size: 1.3rem; }
+  .footer-brand span { color: var(--muted); }
+  .footer-nav, .footer-actions { display: flex; align-items: center; justify-content: center; gap: .9rem; flex-wrap: wrap; }
+  .footer-nav a, .footer-actions a { display: inline-flex; align-items: center; gap: .42rem; color: var(--muted); text-decoration: none; }
+  .footer-nav a:hover, .footer-actions a:hover { color: var(--accent-strong); }
+  .footer-actions svg { width: 1rem; height: 1rem; fill: currentColor; }
+  .footer-meta { margin: 0; font-size: .78rem; text-transform: uppercase; letter-spacing: .12em; }
+
+  @media (max-width: 980px) {
+    .site-header { flex-wrap: wrap; }
+    .install-strip { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 860px) {
+    .hero { padding-top: 3.5rem; }
+    .hero-demo { max-width: 100%; }
+    .feature-grid, .docs-grid { grid-template-columns: 1fr; }
+    .split { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .site-header { display: flex; flex-wrap: nowrap; align-items: center; gap: .55rem; padding: .65rem 1rem; }
+    .top-nav { display: none; }
+    .theme-toggle { margin-left: auto; }
+    .mobile-menu-toggle { display: inline-flex; }
+    .hero h1 { font-size: 2.5rem; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
 
-<nav>
-  <div class="brand"><span>kit</span>bash</div>
-  <div class="links">
-    <a href="#problem">Problem</a>
+<header class="site-header" data-header>
+  <a class="brand" href="#top" aria-label="kitbash home">
+    <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+    </svg>
+    <span><span class="kit">kit</span>bash</span>
+  </a>
+  <nav class="top-nav" aria-label="Main navigation">
+    <a href="#why">Why</a>
     <a href="#how">How</a>
     <a href="#skills">Skills</a>
-    <a href="#principles">Principles</a>
-    <a href="#sponsor">Sponsor</a>
-    <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md">Manifesto</a>
-    <a href="https://github.com/singhharsh1708/kitbash">GitHub</a>
+    <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">Manifesto</a>
+    <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+      <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+      Support
+    </a>
+    <a class="icon-link" href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener" aria-label="GitHub repository">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+      <span>GitHub</span>
+    </a>
+  </nav>
+  <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
+    <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-14.7a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 16.8a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1Zm9.5-8.3a1 1 0 1 1 0 2h-1.2a1 1 0 1 1 0-2h1.2ZM4.7 11a1 1 0 1 1 0 2H3.5a1 1 0 1 1 0-2h1.2Zm13.74-6.44a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0ZM7.83 16.17a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0Zm9.76 0 .85.85a1 1 0 1 1-1.42 1.42l-.85-.85a1 1 0 0 1 1.42-1.42ZM6.98 4.56l.85.85a1 1 0 0 1-1.42 1.42l-.85-.85a1 1 0 1 1 1.42-1.42Z"></path></svg>
+    <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 14.58A8.2 8.2 0 0 1 9.42 3a9.25 9.25 0 1 0 11.59 11.59Z"></path></svg>
+  </button>
+  <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-label="Open menu" aria-expanded="false">
+    <svg class="mobile-menu-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+    <svg class="mobile-close-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+  </button>
+  <div class="mobile-menu" data-mobile-menu>
+    <div class="mobile-menu-card">
+      <div class="mobile-menu-head">Menu</div>
+      <a href="#why">Why</a>
+      <a href="#how">How</a>
+      <a href="#skills">Skills</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">Manifesto</a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+    </div>
   </div>
-</nav>
+</header>
+<div class="mobile-backdrop" data-mobile-backdrop></div>
 
-<div class="hero">
-  <div class="mascot">
-    <svg viewBox="0 0 512 512" role="img" aria-label="The Kitbasher">
-      <defs>
-        <radialGradient id="bg" cx="50%" cy="42%" r="72%"><stop offset="0%" stop-color="#28324a"/><stop offset="100%" stop-color="#141924"/></radialGradient>
-        <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3e4a61"/><stop offset="100%" stop-color="#2c3444"/></linearGradient>
-        <radialGradient id="iris" cx="50%" cy="38%" r="65%"><stop offset="0%" stop-color="#ffc76b"/><stop offset="100%" stop-color="#b06a1a"/></radialGradient>
-        <clipPath id="badge"><circle cx="256" cy="256" r="236"/></clipPath>
-      </defs>
-      <circle cx="256" cy="256" r="236" fill="url(#bg)"/>
-      <g clip-path="url(#badge)">
-        <g transform="translate(84,314) rotate(-14)" stroke="#8b96ab" fill="none">
-          <rect x="0" y="0" width="84" height="104" rx="10" stroke-width="7"/>
-          <path d="M 42 0 V 104 M 0 52 H 84" stroke-width="5"/>
-          <circle cx="21" cy="26" r="13" stroke="#ffb454" stroke-width="6" stroke-dasharray="4 5"/>
-          <circle cx="21" cy="26" r="4" fill="#ffb454" stroke="none"/>
-          <path d="M 63 18 l 8 5 v 9 l -8 5 l -8 -5 v -9 z" fill="#8b96ab" stroke="none"/>
-          <rect x="12" y="70" width="18" height="16" rx="5" fill="#35516e" stroke-width="4"/>
-          <circle cx="63" cy="78" r="9" stroke-width="5"/>
-        </g>
-        <circle cx="428" cy="180" r="20" fill="none" stroke="#8b96ab" stroke-width="8" stroke-dasharray="6 6"/>
-        <circle cx="428" cy="180" r="6" fill="#ffb454"/>
-        <rect x="422" y="316" width="26" height="26" rx="6" transform="rotate(20 435 329)" fill="#35516e" stroke="#8b96ab" stroke-width="4"/>
-        <path d="M 150 111 l 2.5 6.5 l 6.5 2.5 l -6.5 2.5 l -2.5 6.5 l -2.5 -6.5 l -6.5 -2.5 l 6.5 -2.5 z" fill="#ffd98c"/>
-        <path d="M 392 101 l 2.5 6.5 l 6.5 2.5 l -6.5 2.5 l -2.5 6.5 l -2.5 -6.5 l -6.5 -2.5 l 6.5 -2.5 z" fill="#ffd98c"/>
-        <path d="M 118 391 l 2.5 6.5 l 6.5 2.5 l -6.5 2.5 l -2.5 6.5 l -2.5 -6.5 l -6.5 -2.5 l 6.5 -2.5 z" fill="#ffd98c"/>
-        <path d="M 234 320 L 234 388 Q 256 398 278 388 L 278 320 Z" fill="#ffd8b4"/>
-        <path d="M 234 320 L 234 352 Q 256 362 278 352 L 278 320 Z" fill="#edb88c"/>
-        <path d="M 118 512 C 126 436 178 396 256 392 C 334 396 386 436 394 512 Z" fill="#35516e"/>
-        <path d="M 256 414 L 232 392 L 214 410 L 244 428 Z" fill="#2a415a"/>
-        <path d="M 256 414 L 280 392 L 298 410 L 268 428 Z" fill="#2a415a"/>
-        <path d="M 256 424 L 256 512" stroke="#ffb454" stroke-width="3.5"/>
-        <rect x="152" y="446" width="34" height="24" rx="6" transform="rotate(-12 169 458)" fill="#ffb454" opacity="0.9"/>
-        <path d="M 158 282 C 146 190 168 130 196 104 L 206 64 L 224 94 L 244 86 L 258 46 L 274 86 L 292 92 L 310 60 L 322 100 C 350 128 366 190 354 282 C 344 238 336 218 328 208 L 184 208 C 176 218 168 238 158 282 Z" fill="url(#hair)"/>
-        <ellipse cx="172" cy="256" rx="11" ry="17" fill="#ffd8b4"/>
-        <ellipse cx="340" cy="256" rx="11" ry="17" fill="#ffd8b4"/>
-        <path d="M 174 238 C 174 190 208 148 256 148 C 304 148 338 190 338 238 C 338 288 310 336 256 352 C 202 336 174 288 174 238 Z" fill="#ffd8b4"/>
-        <path d="M 174 238 C 174 288 202 336 256 352 C 228 338 194 300 188 240 C 186 210 190 186 198 170 C 182 186 174 210 174 238 Z" fill="#c98850" opacity="0.18"/>
-        <ellipse cx="198" cy="298" rx="13" ry="6.5" fill="#f79a7a" opacity="0.32"/>
-        <ellipse cx="316" cy="298" rx="13" ry="6.5" fill="#f79a7a" opacity="0.32"/>
-        <ellipse cx="215" cy="264" rx="21" ry="15" fill="#ffffff"/>
-        <ellipse cx="297" cy="264" rx="21" ry="15" fill="#ffffff"/>
-        <circle cx="215" cy="266" r="12" fill="url(#iris)"/>
-        <circle cx="297" cy="266" r="12" fill="url(#iris)"/>
-        <circle cx="215" cy="266" r="5.5" fill="#1d1509"/>
-        <circle cx="297" cy="266" r="5.5" fill="#1d1509"/>
-        <circle cx="211" cy="261" r="3.5" fill="#ffffff"/>
-        <circle cx="293" cy="261" r="3.5" fill="#ffffff"/>
-        <circle cx="220" cy="271" r="1.8" fill="#ffffff" opacity="0.8"/>
-        <circle cx="302" cy="271" r="1.8" fill="#ffffff" opacity="0.8"/>
-        <path d="M 188 256 L 193 262 Q 215 246 237 258" fill="none" stroke="#232a38" stroke-width="6.5" stroke-linecap="round"/>
-        <path d="M 275 258 Q 297 246 319 262 L 324 256" fill="none" stroke="#232a38" stroke-width="6.5" stroke-linecap="round"/>
-        <path d="M 228 282 q 6 3 12 1" fill="none" stroke="#232a38" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
-        <path d="M 272 283 q 6 2 12 0" fill="none" stroke="#232a38" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
-        <path d="M 192 234 Q 214 224 234 231" fill="none" stroke="#232a38" stroke-width="6" stroke-linecap="round"/>
-        <path d="M 278 228 Q 300 216 320 225" fill="none" stroke="#232a38" stroke-width="6" stroke-linecap="round"/>
-        <path d="M 256 294 q 4 6 0 11" fill="none" stroke="#d99a6c" stroke-width="3.5" stroke-linecap="round"/>
-        <path d="M 232 316 Q 258 336 286 312" fill="none" stroke="#232a38" stroke-width="5" stroke-linecap="round"/>
-        <path d="M 286 312 q 6 -2 8 -8" fill="none" stroke="#232a38" stroke-width="4" stroke-linecap="round"/>
-        <path d="M 178 252 C 176 194 200 160 256 158 C 312 160 336 194 334 252 L 314 218 L 296 254 L 278 216 L 258 252 L 240 214 L 222 250 L 204 218 Z" fill="url(#hair)"/>
-        <path d="M 174 186 C 200 156 312 156 338 186 L 338 164 C 312 134 200 134 174 164 Z" fill="#232a38"/>
-        <circle cx="216" cy="158" r="25" fill="#ffcf7d" stroke="#4c576e" stroke-width="7"/>
-        <circle cx="296" cy="158" r="25" fill="#ffcf7d" stroke="#4c576e" stroke-width="7"/>
-        <ellipse cx="208" cy="150" rx="7" ry="4" transform="rotate(-20 208 150)" fill="#ffffff" opacity="0.85"/>
-        <ellipse cx="288" cy="150" rx="7" ry="4" transform="rotate(-20 288 150)" fill="#ffffff" opacity="0.85"/>
-        <rect x="168" y="162" width="10" height="16" rx="3" fill="#4c576e"/>
-        <rect x="334" y="162" width="10" height="16" rx="3" fill="#4c576e"/>
-      </g>
-      <circle cx="256" cy="256" r="238" fill="none" stroke="#ffb454" stroke-width="5"/>
-    </svg>
-  </div>
-  <h1>Write AI skills once.<br>Run them <em>everywhere</em>.</h1>
+<main id="top">
 
-  <div class="term">
-    <div class="bar"><i></i><i></i><i></i></div>
-    <pre><span class="p">$</span> kitbash install gh:addyosmani/agent-skills/skills/code-review-and-quality
+  <section class="hero">
+    <p class="eyebrow">Open format for AI agent skills · v0.1 preview</p>
+    <h1>Write an agent skill once. Run it <em>everywhere</em>.</h1>
+    <div class="actions">
+      <a class="button" href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener">Install kitbash</a>
+      <a class="button secondary" href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">Read the spec</a>
+    </div>
+
+    <div class="hero-demo">
+      <div class="terminal-chrome">
+        <span class="chrome-dots"><span></span><span></span><span></span></span>
+        <span class="chrome-title">kitbash — bash</span>
+      </div>
+<pre class="term-body"><span class="p">$</span> kitbash install gh:addyosmani/agent-skills/skills/code-review-and-quality
 <span class="ok">✓</span> installed code-review-and-quality@0.0.0
 <span class="dim">  budget 6000 tokens · standing 250 · mode skill · pinned in kitbash.lock</span>
-<span class="out">⚠</span> unmanifested (SKILL.md only) — defaults applied
+<span class="warn">⚠</span> <span class="dim">unmanifested (SKILL.md only) — defaults applied</span>
 
 <span class="p">$</span> kitbash compile
 <span class="out">→</span> .claude/skills/code-review-and-quality/SKILL.md
 <span class="out">→</span> .cursor/rules/code-review-and-quality.mdc
 <span class="out">→</span> AGENTS.md <span class="dim">§code-review-and-quality</span>
-<span class="out">⚠</span> agentsmd cannot lazy-load — this skill costs <b style="color:var(--amber)">~5,044 tokens standing</b>
-<span class="dim">compiled 1 skill(s) for 3 agent target(s)</span></pre>
-  </div>
-  <p style="margin-top:14px;font-size:13px;color:var(--muted);font-family:var(--mono)">↑ real session — a third-party skills.sh skill compiled to 7 agent targets, hidden token cost measured.<br><b style="color:var(--amber)">npm install -g kitbash</b> — <a href="https://www.npmjs.com/package/kitbash">live on npm</a></p>
+<span class="warn">⚠</span> agentsmd can't lazy-load — this skill costs <span class="hi">~5,044 tokens</span> standing
+<span class="dim">compiled 1 skill for 3 agent targets</span></pre>
+    </div>
+    <p class="demo-caption">A real session — a third-party skills.sh skill compiled to three agents, its hidden token cost measured. <b>npm install -g kitbash</b></p>
 
-  <p class="sub">Kitbash is the open standard, package manager, and compiler for AI agent skills — versioned, tested, and pinned like real software.</p>
-  <div class="ladder">packages → <b>npm</b> &nbsp;·&nbsp; containers → <b>Docker</b> &nbsp;·&nbsp; lint rules → <b>ESLint</b> &nbsp;·&nbsp; agent skills → <b>kitbash</b></div>
-  <div class="status">early preview · spec evolving toward 1.0 · Apache-2.0</div>
-  <div class="cta">
-    <a class="btn primary" href="https://github.com/singhharsh1708/kitbash">★ Star on GitHub</a>
-    <a class="btn" href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md">Read the spec</a>
-  </div>
-</div>
+    <p class="hero-copy">Kitbash is an open format for agent skills and a compiler that turns one source folder into whatever each coding agent actually reads. Write the skill once and compile it to Claude Code, Cursor, Copilot, Codex, Gemini, and more — instead of hand-maintaining a copy per agent.</p>
+    <p class="ladder">packages → <b>npm</b> &nbsp;·&nbsp; containers → <b>Docker</b> &nbsp;·&nbsp; lint rules → <b>ESLint</b> &nbsp;·&nbsp; agent skills → <b>kitbash</b></p>
+  </section>
 
-<section id="problem">
-  <h2><span class="hash">#</span>Every agent invented its own format</h2>
-  <p class="lead">Your team runs four different coding agents. A great skill written for one is dead weight for the other three — so everyone maintains divergent rule files that silently drift apart.</p>
-  <div class="formats">
-    <div class="fmt"><b>Claude Code</b><code>.claude/skills/*/SKILL.md</code></div>
-    <div class="fmt"><b>Cursor</b><code>.cursor/rules/*.mdc</code></div>
-    <div class="fmt"><b>GitHub Copilot</b><code>.github/copilot-instructions.md</code></div>
-    <div class="fmt"><b>Codex</b><code>AGENTS.md</code></div>
-    <div class="fmt"><b>Windsurf</b><code>.windsurfrules</code></div>
-    <div class="fmt"><b>Cline / Roo</b><code>.clinerules</code></div>
-    <div class="fmt"><b>Aider</b><code>CONVENTIONS.md</code></div>
-    <div class="fmt"><b>Gemini CLI</b><code>GEMINI.md</code></div>
-  </div>
-</section>
+  <section class="section" id="why">
+    <div class="section-header">
+      <h2><span class="hash">#</span>Every agent invented its own format</h2>
+      <p>Your team runs several coding agents, and each reads its instructions from a different place. A skill written for one is dead weight for the rest — so people keep divergent rule files that quietly drift apart.</p>
+    </div>
+    <div class="formats">
+      <div class="fmt"><b>Claude Code</b><code>.claude/skills/*/SKILL.md</code></div>
+      <div class="fmt"><b>Cursor</b><code>.cursor/rules/*.mdc</code></div>
+      <div class="fmt"><b>GitHub Copilot</b><code>.github/copilot-instructions.md</code></div>
+      <div class="fmt"><b>Codex</b><code>AGENTS.md</code></div>
+      <div class="fmt"><b>Windsurf</b><code>.windsurf/rules/*.md</code></div>
+      <div class="fmt"><b>Cline</b><code>.clinerules/*.md</code></div>
+      <div class="fmt"><b>Gemini CLI</b><code>GEMINI.md</code></div>
+      <div class="fmt"><b>Aider</b><code>CONVENTIONS.md</code></div>
+    </div>
+  </section>
 
-<section id="how">
-  <h2><span class="hash">#</span>One manifest, compiled everywhere</h2>
-  <p class="lead">A Kitbash skill declares things no other format has a field for: an enforced token budget, tool permissions, and typed artifacts so skills compose through data instead of prompt-chaining hope.</p>
-  <div class="split">
-    <div class="code"><pre><span class="c"># skill.toml</span>
+  <section class="section" id="how">
+    <div class="section-header">
+      <h2><span class="hash">#</span>One source folder, compiled everywhere</h2>
+      <p>A Kitbash skill is a directory with a small manifest. It declares things no other format has a field for — an enforced token budget and tool permissions — and compiles to each agent's native layout.</p>
+    </div>
+    <div class="split">
+<pre class="code-sample"><span class="c"># skill.toml</span>
 [skill]
 name = <span class="s">"prereview"</span>
 version = <span class="s">"0.1.0"</span>
 
+[triggers]
+commands = [<span class="s">"/prereview"</span>]
+
 [context]
-<span class="k">budget</span> = 1500   <span class="c"># enforced, not vibes</span>
-<span class="k">standing</span> = 60  <span class="c"># cost when idle</span>
+<span class="k">budget</span> = 1500    <span class="c"># enforced at compile</span>
+<span class="k">standing</span> = 60   <span class="c"># cost while idle</span>
 
 [permissions]
 <span class="k">tools</span> = [<span class="s">"read"</span>, <span class="s">"grep"</span>, <span class="s">"bash:git diff *"</span>]
-<span class="k">network</span> = false
-
-[artifacts]
-<span class="k">produces</span> = [<span class="s">"findings@1"</span>]
-<span class="k">consumes</span> = [<span class="s">"plan@1"</span>]</pre></div>
-    <div class="pillars" style="grid-template-columns:1fr">
-      <div class="card"><h3>Trust the diff</h3><p>Installs pin a content hash in <code>kitbash.lock</code>. Updates show you the instruction diff like a code review — because that's what it is. No skill ever changes behavior silently.</p></div>
-      <div class="card"><h3>Skills with tests</h3><p>Three eval tiers: static lint, instruction audit, and behavioral runs against fixture repos through headless agents. Ranked by measurement, not stars.</p></div>
-      <div class="card"><h3>Honest degradation</h3><p>An agent that can't run scripts gets an instruction-only variant — with a visible build warning, never a silent downgrade.</p></div>
+<span class="k">network</span> = false</pre>
+      <div class="stack">
+        <div class="feature">
+          <h3>Budgets, enforced</h3>
+          <p>Every skill declares its token cost. <code>compile</code> measures the output and warns — or fails with <code>--strict</code> — when a skill goes over, instead of letting rules pile up unmeasured.</p>
+        </div>
+        <div class="feature">
+          <h3>Review the diff</h3>
+          <p>Installs pin a content hash in <code>kitbash.lock</code>. Drift is detected, and updates show up as an instruction diff you can read — not a silent change.</p>
+        </div>
+        <div class="feature">
+          <h3>Honest degradation</h3>
+          <p>An agent that can't run scripts gets an instruction-only build with a visible warning, never a quiet downgrade. Seven targets today, from Claude Code to the AGENTS.md fallback.</p>
+        </div>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section id="skills">
-  <h2><span class="hash">#</span>Flagship skills</h2>
-  <p class="lead">Selection rule: if a frontier model already does it well from a bare prompt, it's not a skill. Skills earn their place through project grounding, enforcement, or composition.</p>
-  <div class="skills">
-    <div class="skill"><span class="tag">gate</span><span class="cmd">/prereview</span><p>Reviews your diff against your team's <i>actual</i> standards — mined from what reviewers on this repo really flag, not a generic checklist.</p></div>
-    <div class="skill"><span class="tag">research</span><span class="cmd">/excavate</span><p>Answers "why is this code like this?" with the commit, PR thread, and issue that made it so — then records the answer durably.</p></div>
-    <div class="skill"><span class="tag">ci</span><span class="cmd">/triage</span><p>Turns a red CI run into a verdict: flake, environment, or real regression — with the decisive log line and the likely culprit.</p></div>
-    <div class="skill"><span class="tag">planning</span><span class="cmd">/plan</span><p>Issue → file-level implementation plan with risks and test plan, as a typed artifact downstream skills consume.</p></div>
-    <div class="skill"><span class="tag">gate</span><span class="cmd">/verify</span><p>Drives the changed behavior end-to-end in the running app. Tests passing is evidence, never the verdict.</p></div>
-    <div class="skill"><span class="tag">campaign</span><span class="cmd">/migrate</span><p>Checkpointed migration batches — resumable across sessions and teammates, every batch independently revertable.</p></div>
-    <div class="skill"><span class="tag">team</span><span class="cmd">/onboard</span><p>A personalized, task-anchored codebase tour that regenerates on demand — never a stale wiki page.</p></div>
-  </div>
-</section>
+  <section class="section">
+    <div class="section-header">
+      <h2><span class="hash">#</span>Start in one line</h2>
+      <p>Install from npm, set Kitbash up in a repo, add a skill, and compile.</p>
+    </div>
+    <div class="install-strip">
+      <div>
+        <strong>npm global install</strong>
+        <span>Zero-runtime CLI. Compiled output is plain files in your repo — no runtime, no lock-in.</span>
+      </div>
+      <div class="code-frame"><pre class="copyable">npm install -g kitbash
+kitbash init &amp;&amp; kitbash compile</pre></div>
+      <a class="button secondary" href="https://github.com/singhharsh1708/kitbash#readme" target="_blank" rel="noopener">Read the guide</a>
+    </div>
+  </section>
 
-<section>
-  <h2><span class="hash">#</span>Skills that feed each other</h2>
-  <p class="lead">Typed artifacts are stdin/stdout for agents — skills pipe into each other. A pipeline is a declared graph with gates between steps: exit codes, not vibes.</p>
-  <div class="pipeline">
-    <span class="step">/plan</span><span class="arr">─</span><span class="art">plan@1</span><span class="arr">→</span>implement<span class="arr">→</span><span class="step">/verify</span><span class="arr">─</span><span class="art">verify@1</span><span class="arr">→</span><span class="step">/prereview</span><span class="arr">─</span><span class="art">findings@1</span><span class="arr">→</span>ship
-  </div>
-</section>
+  <section class="section" id="skills">
+    <div class="section-header">
+      <h2><span class="hash">#</span>Skills</h2>
+      <p>One skill ships today as a worked example. The rest are sketched in the catalog and land as the compiler earns them.</p>
+    </div>
+    <div class="skills">
+      <div class="skill"><span class="tag ships">ships today</span><span class="cmd">/prereview</span><p>Reviews your diff against your team's actual standards — mined from what reviewers on this repo really flag, not a generic checklist.</p></div>
+      <div class="skill"><span class="tag">planned</span><span class="cmd">/excavate</span><p>Answers "why is this code like this?" with the commit, PR thread, and issue that made it so.</p></div>
+      <div class="skill"><span class="tag">planned</span><span class="cmd">/triage</span><p>Turns a red CI run into a verdict: flake, environment, or real regression — with the decisive log line.</p></div>
+      <div class="skill"><span class="tag">planned</span><span class="cmd">/plan</span><p>Issue to file-level implementation plan, with risks and a test plan, as an artifact later skills consume.</p></div>
+      <div class="skill"><span class="tag">planned</span><span class="cmd">/verify</span><p>Drives the changed behavior end-to-end in the running app. Tests passing is evidence, not the verdict.</p></div>
+      <div class="skill"><span class="tag">planned</span><span class="cmd">/migrate</span><p>Checkpointed migration batches — resumable across sessions, every batch independently revertable.</p></div>
+    </div>
+  </section>
 
-<section id="principles">
-  <h2><span class="hash">#</span>What Kitbash refuses to be</h2>
-  <ul class="principles">
-    <li><b>Not another prompt collection.</b> Unversioned, untested prompt piles are the problem, not the product.</li>
-    <li><b>Not an agent framework.</b> We don't compete with your agent; we make your investment in skills portable across all of them.</li>
-    <li><b>Not a personality store.</b> Cosmetic personas don't change outcomes. Skills here are measured by their evals.</li>
-    <li><b>Not lock-in.</b> Compiled output is plain files in your repo. Leave any time; everything keeps working.</li>
-  </ul>
-</section>
+  <section class="section">
+    <div class="section-header">
+      <h2><span class="hash">#</span>Read more</h2>
+      <p>The format is a draft and everything is in the open. These are the pages worth starting with.</p>
+    </div>
+    <div class="docs-grid">
+      <a class="doc-link" href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">
+        <h3>The spec (KSF)</h3>
+        <p>Skill layout, the <code>skill.toml</code> manifest, budgets, permissions, and conformance.</p>
+      </a>
+      <a class="doc-link" href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">
+        <h3>Manifesto</h3>
+        <p>Why prompts deserve the same versioning, review, and budgets as the rest of your code.</p>
+      </a>
+      <a class="doc-link" href="https://github.com/singhharsh1708/kitbash/blob/main/docs/roadmap.md" target="_blank" rel="noopener">
+        <h3>Roadmap</h3>
+        <p>What v0.1 covers on purpose, and what registry, lore, and pipelines come next.</p>
+      </a>
+    </div>
+  </section>
 
-<section id="sponsor">
-  <h2><span class="hash">#</span>Support the project</h2>
-  <p class="lead">Kitbash is Apache-2.0 and built in the open. If it saves you time, or your team relies on it, consider sponsoring its development — sponsorship funds the work toward a real standard: spec, adapters, evals.</p>
-  <iframe src="https://github.com/sponsors/singhharsh1708/card" title="Sponsor singhharsh1708" height="225" style="border:0;width:100%;max-width:600px;border-radius:10px" loading="lazy"></iframe>
-</section>
+  <section class="section attribution-section">
+    <p class="attribution">Already have skills? A plain SKILL.md folder — the <a href="https://www.skills.sh" target="_blank" rel="noopener">skills.sh</a> / Claude Skills convention — installs directly with <code>kitbash install owner/repo</code>. No manifest, so it's marked <code>unmanifested</code> and defaults are applied. skills.sh distributes skills; Kitbash treats them like real engineering artifacts.</p>
+  </section>
 
-<footer>
-  <div>
-    <div class="tag"><span style="color:var(--amber)">kit</span>bash — stop rewriting your skills, start kitbashing.</div>
-    <div style="margin-top:6px">Apache-2.0 · early preview</div>
-  </div>
-  <div>
-    <a href="https://github.com/singhharsh1708/kitbash">GitHub</a> ·
-    <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md">Manifesto</a> ·
-    <a href="https://github.com/singhharsh1708/kitbash/blob/main/docs/design.md">Design</a> ·
-    <a href="https://github.com/singhharsh1708/kitbash/blob/main/docs/roadmap.md">Roadmap</a> ·
-    <a href="https://github.com/singhharsh1708/kitbash/blob/main/CONTRIBUTING.md">Contribute</a>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-divider"></div>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+        <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+      </svg>
+      <strong>kitbash</strong>
+      <span>One skill, every coding agent.</span>
+    </div>
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">Spec</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">Manifesto</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/docs/design.md" target="_blank" rel="noopener">Design</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/docs/roadmap.md" target="_blank" rel="noopener">Roadmap</a>
+    </nav>
+    <div class="footer-actions">
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+    </div>
+    <p class="footer-meta">Apache-2.0 · early preview</p>
   </div>
 </footer>
 
-</div>
+<script>
+  // theme
+  (() => {
+    const key = 'kitbash-theme';
+    const root = document.documentElement;
+    const stored = localStorage.getItem(key);
+    const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const apply = (t) => {
+      root.dataset.theme = t;
+      document.querySelector('[data-theme-toggle]')?.setAttribute('aria-pressed', String(t === 'dark'));
+    };
+    apply(stored || preferred);
+    document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem(key, next);
+      apply(next);
+    });
+  })();
+
+  // hide header on scroll down
+  (() => {
+    const header = document.querySelector('[data-header]');
+    if (!header) return;
+    let lastY = window.scrollY, ticking = false;
+    const update = () => {
+      const y = window.scrollY;
+      if (header.classList.contains('menu-open')) { lastY = y; ticking = false; return; }
+      if (y <= 60) header.classList.remove('header-hidden');
+      else if (y > lastY) header.classList.add('header-hidden');
+      else header.classList.remove('header-hidden');
+      lastY = y; ticking = false;
+    };
+    window.addEventListener('scroll', () => { if (!ticking) { requestAnimationFrame(update); ticking = true; } }, { passive: true });
+  })();
+
+  // mobile menu
+  (() => {
+    const header = document.querySelector('[data-header]');
+    const toggle = document.querySelector('[data-mobile-menu-toggle]');
+    const backdrop = document.querySelector('[data-mobile-backdrop]');
+    const menu = document.querySelector('[data-mobile-menu]');
+    const close = () => { header?.classList.remove('menu-open'); toggle?.setAttribute('aria-expanded', 'false'); };
+    const open = () => { header?.classList.add('menu-open'); toggle?.setAttribute('aria-expanded', 'true'); };
+    toggle?.addEventListener('click', () => header?.classList.contains('menu-open') ? close() : open());
+    backdrop?.addEventListener('click', close);
+    menu?.querySelectorAll('a').forEach((a) => a.addEventListener('click', close));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  })();
+
+  // copy buttons on marked code
+  (() => {
+    document.querySelectorAll('pre.copyable').forEach((pre) => {
+      const btn = document.createElement('button');
+      btn.className = 'copy-code-button';
+      btn.type = 'button';
+      btn.textContent = 'Copy';
+      pre.parentElement?.appendChild(btn);
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(pre.textContent || '');
+          btn.textContent = 'Copied';
+        } catch { btn.textContent = 'Failed'; }
+        setTimeout(() => (btn.textContent = 'Copy'), 1300);
+      });
+    });
+  })();
+</script>
 </body>
 </html>
