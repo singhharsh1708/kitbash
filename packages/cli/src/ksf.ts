@@ -139,6 +139,37 @@ export function resolveBody(skill: LoadedSkill): string {
   });
 }
 
+const KNOWN_TABLES = ["skill", "context", "triggers", "permissions", "artifacts", "targets", "lore", "dependencies"];
+const EVENTS_ENUM = ["pre-push", "pre-commit", "ci", "pr-open"];
+const REQUIRES_ENUM = ["scripts", "hooks", "subagents", "network"];
+const LORE_ENUM = ["decisions", "conventions", "invariants", "map"];
+
+/**
+ * Schema-conformance lints (spec/schema/skill.schema.json) surfaced as warnings by `kitbash test`.
+ * Per RFC 0002 these warn rather than fail: unknown tables and unrecognized enum values stay
+ * forward-compatible (a newer skill on an older compiler shouldn't hard-error).
+ */
+export function schemaLints(dir: string): string[] {
+  const p = join(dir, "skill.toml");
+  if (!existsSync(p)) return [];
+  let raw: TomlTable;
+  try {
+    raw = parseToml(readText(p));
+  } catch {
+    return [];
+  }
+  const out: string[] = [];
+  for (const k of Object.keys(raw)) if (!KNOWN_TABLES.includes(k)) out.push(`unknown table [${k}] — typo or unsupported, ignored`);
+  const enumCheck = (tbl: string, key: string, allowed: string[]) => {
+    for (const v of strs(table(raw, tbl), key)) if (!allowed.includes(v)) out.push(`${tbl}.${key} "${v}" is not one of ${allowed.join(", ")}`);
+  };
+  enumCheck("triggers", "events", EVENTS_ENUM);
+  enumCheck("targets", "requires", REQUIRES_ENUM);
+  enumCheck("lore", "reads", LORE_ENUM);
+  enumCheck("lore", "writes", LORE_ENUM);
+  return out;
+}
+
 function validate(raw: TomlTable, source: string): SkillManifest {
   const errors: string[] = [];
   const skill = table(raw, "skill");
@@ -148,11 +179,14 @@ function validate(raw: TomlTable, source: string): SkillManifest {
   const version = str(skill, "version") ?? "";
   const description = str(skill, "description") ?? "";
   const budget = num(context, "budget");
+  const standing = num(context, "standing");
 
+  // Bounds mirror spec/schema/skill.schema.json — value constraints on frozen fields.
   if (!NAME_RE.test(name)) errors.push(`skill.name "${name}" must match ${NAME_RE}`);
   if (!/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(version)) errors.push(`skill.version "${version}" is not semver`);
-  if (description.length < 10) errors.push("skill.description must be at least 10 characters");
-  if (budget === undefined || budget < 50) errors.push("context.budget is required and must be >= 50");
+  if (description.length < 10 || description.length > 200) errors.push("skill.description must be 10–200 characters");
+  if (budget === undefined || budget < 50 || budget > 20000) errors.push("context.budget is required and must be 50–20000");
+  if (standing !== undefined && (standing < 0 || standing > 500)) errors.push("context.standing must be 0–500");
 
   if (errors.length) throw new Error(`${source}: invalid manifest\n  - ${errors.join("\n  - ")}`);
 
@@ -161,7 +195,7 @@ function validate(raw: TomlTable, source: string): SkillManifest {
     skill: { name, version, description, ...opt("license", str(skill, "license")), ...opt("homepage", str(skill, "homepage")) },
     context: {
       budget: budget!,
-      standing: num(context, "standing") ?? 100,
+      standing: standing ?? 100,
       disclosure: str(context, "disclosure") === "eager" ? "eager" : "lazy",
     },
     triggers: { commands: strs(t("triggers"), "commands"), auto: strs(t("triggers"), "auto"), events: strs(t("triggers"), "events") },

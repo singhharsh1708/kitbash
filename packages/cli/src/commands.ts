@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { ADAPTERS, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, type CompiledFile } from "./adapters.js";
 import { dropLock, integrityOf, readLock, upsertLock, LOCK_FILE } from "./lock.js";
-import { estimateTokens, loadInstalledSkills, loadSkill, resolveBody, standingStub, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
+import { estimateTokens, loadInstalledSkills, loadSkill, resolveBody, schemaLints, standingStub, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
 import { parseToml } from "./toml.js";
 
 const CONFIG = "kitbash.toml";
@@ -375,6 +375,10 @@ function staticChecks(skill: LoadedSkill): Check[] {
   // command triggers must be slash-prefixed
   const badCommands = m.triggers.commands.filter((c) => !c.startsWith("/"));
   if (badCommands.length) checks.push({ name: "triggers", ok: false, detail: `commands must start with '/': ${badCommands.join(", ")}` });
+
+  // schema-conformance lints: unknown tables, unrecognized enum values (warn, per RFC 0002)
+  const lints = schemaLints(skill.dir);
+  if (lints.length) checks.push({ name: "schema", ok: true, warn: true, detail: lints.join("; ") });
 
   // injection heuristics (warn only)
   if (body !== undefined) {
