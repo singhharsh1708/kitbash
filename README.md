@@ -4,6 +4,14 @@
 
 # Kitbash
 
+<p align="center">
+  <a href="https://github.com/singhharsh1708/kitbash/stargazers"><img src="https://img.shields.io/github/stars/singhharsh1708/kitbash?style=flat&color=ffb454" alt="GitHub stars"></a>
+  <a href="https://github.com/singhharsh1708/kitbash/releases"><img src="https://img.shields.io/github/v/release/singhharsh1708/kitbash?color=ffb454" alt="release"></a>
+  <a href="https://github.com/singhharsh1708/kitbash/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/singhharsh1708/kitbash/ci.yml?branch=main" alt="CI"></a>
+  <img src="https://img.shields.io/badge/agent_targets-7-ffb454" alt="7 agent targets">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/singhharsh1708/kitbash?color=8b96ab" alt="Apache-2.0"></a>
+</p>
+
 > **The open standard for portable AI agent skills.**
 > Write a skill once. Run it in every coding agent you use.
 
@@ -32,13 +40,28 @@ npm install && npm run build && npm link
 cd ~/your-repo && kitbash init && kitbash doctor
 ```
 
-Working now: `init` · `install` (gh:/`owner/repo`/file:) · `compile` (claude-code, cursor, AGENTS.md floor) · `doctor` · `list` · `remove` · budget enforcement · content-hash lockfile with drift detection · stale-output pruning · `--strict`. Evals, update diffs, and the rest land per the [roadmap](docs/roadmap.md).
+Working now: `init` · `install` (gh:/`owner/repo`/file:) · `compile` to **7 targets** (Claude Code, Cursor, Copilot, Cline, Windsurf, GEMINI.md, AGENTS.md floor) · declared `/commands` compiled to native slash commands · `doctor` · `list` · `remove` · budget enforcement · content-hash lockfile with drift detection · stale-output pruning · `--strict`. Evals, update diffs, and the rest land per the [roadmap](docs/roadmap.md).
 
 **Interop:** a plain SKILL.md folder — the [skills.sh](https://www.skills.sh) / Claude Skills convention — installs directly (`kitbash install owner/repo`). It's KSF-minus-manifest: defaults get applied and it's flagged `unmanifested`, because nobody declared its budget or permissions. skills.sh distributes skills; Kitbash makes them engineering.
 
 ## The problem
 
 Every assistant invented its own extension format — `.claude/skills/`, `.cursor/rules/*.mdc`, `copilot-instructions.md`, `AGENTS.md`, `.windsurfrules`, `.clinerules`, `CONVENTIONS.md`, `GEMINI.md`. A great skill written for one agent is dead weight for the rest of your team. And the skills people do share are unversioned, untested, unreviewable prompt files.
+
+This is not hypothetical. The most-starred skill on GitHub ships its one ruleset as **twenty hand-maintained copies** — `.cursor/rules/`, `.clinerules/`, `.kiro/steering/`, `.github/copilot-instructions.md`, six plugin manifests, and more — plus a CI script whose only job is checking the copies haven't drifted apart. Compare:
+
+```
+        the status quo                     kitbash
+  ─────────────────────────        ───────────────────────
+  .cursor/rules/skill.mdc           skill/
+  .clinerules/skill.md                skill.toml
+  .kiro/steering/skill.md             SKILL.md
+  .github/copilot-instructions.md
+  .windsurf/rules/skill.md          $ kitbash compile
+  AGENTS.md, GEMINI.md, …           → 7 native outputs
+  + a sync-check script             budgets enforced,
+  × every update, forever           hashes pinned
+```
 
 Prompts are code. Nobody is treating them that way. The full argument: [**MANIFESTO.md**](MANIFESTO.md).
 
@@ -87,6 +110,23 @@ Full specs and the rejection list: [docs/skills-catalog.md](docs/skills-catalog.
 ## Roadmap
 
 v0.1 is a deliberately thin slice: **KSF + `compile` + three adapters + one skill**, done incredibly well. Registry, lore, and pipelines earn their place after the compiler proves itself. Full plan: [docs/roadmap.md](docs/roadmap.md).
+
+## FAQ
+
+**Is this another prompt collection?**
+No. It's a compiler, a package manager, and a format spec. The prompt collections are what get compiled.
+
+**I already use skills.sh / Claude skills.**
+Keep them — they install directly (`kitbash install owner/repo`). You gain seven targets, a lockfile, and a token-cost report; you lose nothing.
+
+**What happens if I stop using Kitbash?**
+Nothing. Compiled output is plain files in your repo. Delete `kitbash.toml` and everything keeps working exactly as it does today.
+
+**Why would a skill author bother with the manifest?**
+Because unmanifested skills compile with a warning label. A declared budget, permission set, and version is how your skill earns trust — and it's ~15 lines of TOML.
+
+**Does my agent need a Kitbash runtime?**
+No. There is no runtime. Your agent reads its own native format and never knows Kitbash exists.
 
 ## What Kitbash refuses to be
 
