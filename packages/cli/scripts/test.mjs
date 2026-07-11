@@ -315,6 +315,50 @@ try {
   rmSync(iss44, { recursive: true, force: true });
 }
 
+// --- issue #46 regressions: validator bounds, schema lints, YAML escaping ---
+const iss46 = mkdtempSync(join(tmpdir(), "kitbash-iss46-"));
+try {
+  mkdirSync(join(iss46, ".claude"));
+  mkdirSync(join(iss46, ".cursor"));
+  run(["init"], iss46);
+
+  const writeSkill = (name, toml) => {
+    const d = join(iss46, name);
+    mkdirSync(d);
+    writeFileSync(join(d, "skill.toml"), toml);
+    writeFileSync(join(d, "SKILL.md"), "Body content here.\n");
+    return d;
+  };
+
+  const overBudget = writeSkill("overbudget", '[skill]\nname = "overbudget"\nversion = "0.1.0"\ndescription = "A valid length description"\n[context]\nbudget = 50000\n');
+  const ob = run(["install", `file:${overBudget}`], iss46);
+  check("validator rejects budget over 20000", ob.status === 1 && ob.out.includes("50–20000"), ob.out);
+
+  const longDesc = writeSkill("longdesc", `[skill]\nname = "longdesc"\nversion = "0.1.0"\ndescription = "${"x".repeat(210)}"\n[context]\nbudget = 500\n`);
+  const ld = run(["install", `file:${longDesc}`], iss46);
+  check("validator rejects description over 200 chars", ld.status === 1 && ld.out.includes("10–200"), ld.out);
+
+  const badStanding = writeSkill("badstanding", '[skill]\nname = "badstanding"\nversion = "0.1.0"\ndescription = "A valid length description"\n[context]\nbudget = 500\nstanding = 999\n');
+  const bs = run(["install", `file:${badStanding}`], iss46);
+  check("validator rejects standing over 500", bs.status === 1 && bs.out.includes("0–500"), bs.out);
+
+  // schema-conformance lints surface in `kitbash test` (warn, not fail — RFC 0002)
+  const lintDir = writeSkill("lintme", '[skill]\nname = "lintme"\nversion = "0.1.0"\ndescription = "A valid length description"\n[context]\nbudget = 500\n[triggers]\nevents = ["not-an-event"]\n[bogustable]\nx = 1\n');
+  run(["install", `file:${lintDir}`], iss46);
+  const lintTest = run(["test", "lintme"], iss46);
+  check("test warns on bad enum + unknown table", lintTest.out.includes("not one of") && lintTest.out.includes("unknown table [bogustable]"), lintTest.out);
+  check("schema lints fail under test --strict", run(["test", "lintme", "--strict"], iss46).status === 1);
+
+  // YAML frontmatter escaping for a hostile description
+  const yd = writeSkill("yamlesc", '[skill]\nname = "yamlesc"\nversion = "0.1.0"\ndescription = "Helper: review \\"code\\" here"\n[context]\nbudget = 500\n');
+  run(["install", `file:${yd}`], iss46);
+  run(["compile"], iss46);
+  const cc = readFileSync(join(iss46, ".claude/skills/yamlesc/SKILL.md"), "utf8");
+  check("claude frontmatter description is quoted and escaped", cc.includes('description: "Helper: review \\"code\\" here"'), cc.slice(0, 140));
+} finally {
+  rmSync(iss46, { recursive: true, force: true });
+}
+
 if (failures) {
   console.error(`\n${failures} test(s) failed`);
   process.exit(1);

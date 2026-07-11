@@ -15,8 +15,8 @@ Token counts are estimates (~4 chars/token), the same estimator the compiler enf
 
 | Target | Loaded (tok) | Standing (tok) | Loading |
 |---|--:|--:|:--|
-| claude-code | 514 | 40 | lazy |
-| cursor | 515 | 40 | lazy |
+| claude-code | 515 | 40 | lazy |
+| cursor | 516 | 40 | lazy |
 | copilot | 492 | 492 | eager |
 | cline | 486 | 486 | eager |
 | windsurf | 486 | 486 | eager |
