@@ -27,6 +27,8 @@ It works today, though the KSF spec is still moving and will probably change som
 
 That's an actual session. A third-party skill from the [skills.sh](https://www.skills.sh) convention gets installed and compiled into three agent formats. The thing to notice is the last warning: during compile, Kitbash measured the skill and pointed out that it quietly costs about 5,044 tokens on every request for agents that can't lazy-load. A converter would just translate the format. The compiler reads it and tells you what it's going to cost you. I haven't found another tool that surfaces that number.
 
+That gap is measured, not asserted — see the [benchmark](docs/benchmarks/README.md): the same skill costs ~40 standing tokens on a lazy target and ~490 on an eager one, a 12× per-session tax that a team running four agents pays four times over. Reproduce it with `npm run bench`.
+
 Try it:
 
 ```bash

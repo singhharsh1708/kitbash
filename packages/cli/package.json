@@ -23,6 +23,7 @@
     "check": "tsc --noEmit",
     "dev": "node --experimental-strip-types src/index.ts",
     "test": "npm run build && node scripts/test.mjs",
+    "bench": "npm run build && node scripts/benchmark.mjs",
     "prepublishOnly": "npm test"
   },
   "devDependencies": {
