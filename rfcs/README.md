@@ -16,4 +16,4 @@ Small fixes (typos, clarifications that don't change meaning) skip this process.
 | RFC | Title | Status |
 |---|---|---|
 | [0001](0001-ksf.md) | Kitbash Skill Format (KSF) | accepted (draft spec) |
-| [0002](0002-ksf-1.0-stabilization.md) | KSF 1.0 stabilization | proposed |
+| [0002](0002-ksf-1.0-stabilization.md) | KSF 1.0 stabilization | accepted |

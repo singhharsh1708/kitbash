@@ -17,7 +17,7 @@ Kitbash is an open format for AI agent skills, plus a compiler that turns one sk
 
 If you've used npm for packages, Docker for containers, or ESLint for lint rules, it's the same idea for agent skills.
 
-It works today, though the KSF spec is still moving and will probably change some before 1.0.
+**Stable specification, experimental ecosystem.** The KSF core is stabilized through [RFC 0002](rfcs/0002-ksf-1.0-stabilization.md): the manifest fields are frozen and evolve additive-only within the major version, so you can author skills and write adapters against a contract that won't shift under you. The ecosystem around it — more adapters, the index, first-party skills — is still early.
 
 > **Compiler insight** — Kitbash measures a skill's *standing token cost* (what it adds to your context every session) at compile time, before you ever install it. On a lazy target that's ~40 tokens; compiled to an eager one it's ~490 — a [12× per-session tax](docs/benchmarks/README.md) no other format surfaces. Run `npm run bench` for the numbers.
 
@@ -136,7 +136,7 @@ It's not a prompt collection, not an agent framework, and not a personality stor
 
 ## Contributing
 
-The spec is still a draft, which makes now a good time to help shape it: [CONTRIBUTING.md](CONTRIBUTING.md). The research behind the design is in [docs/research.md](docs/research.md).
+The core spec is stable, but the provisional fields and the whole ecosystem around it are wide open — now is a good time to help shape them: [CONTRIBUTING.md](CONTRIBUTING.md). Spec-level changes go through [RFCs](rfcs/README.md). The research behind the design is in [docs/research.md](docs/research.md).
 
 ## Sponsor
 
