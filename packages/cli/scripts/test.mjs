@@ -77,6 +77,11 @@ try {
   const agentsContent = readFileSync(agents, "utf8");
   check("agentsmd markers present", agentsContent.includes("<!-- kitbash:begin prereview -->") && agentsContent.includes("<!-- kitbash:end prereview -->"));
   check("eager-load warning surfaced", compile.out.includes("cannot lazy-load"), compile.out);
+  // every eager target must report the standing cost; lazy targets must not
+  const eagerWarned = ["copilot", "cline", "windsurf", "gemini", "agentsmd"].every((t) => compile.out.includes(`→ ${t}: ${t} is eager and cannot lazy-load`));
+  check("all eager targets report standing cost", eagerWarned, compile.out);
+  const lazyQuiet = !compile.out.includes("→ claude-code: claude-code is eager") && !compile.out.includes("→ cursor: cursor is eager");
+  check("lazy targets (claude-code, cursor) do not warn", lazyQuiet, compile.out);
 
   const recompile = run(["compile"], tmp);
   const markerCount = (readFileSync(agents, "utf8").match(/kitbash:begin prereview/g) ?? []).length;
