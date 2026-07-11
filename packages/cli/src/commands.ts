@@ -217,10 +217,6 @@ export async function cmdCompile(args: string[]): Promise<number> {
   const strict = args.includes("--strict");
   const root = process.cwd();
   const skills = loadInstalledSkills(root);
-  if (!skills.length) {
-    console.error("no skills installed — kitbash install <source> first");
-    return 1;
-  }
 
   const adaptersOrError = configuredAdapters(root);
   if (typeof adaptersOrError === "string") {
@@ -269,8 +265,23 @@ export async function cmdCompile(args: string[]): Promise<number> {
     writeFileSync(abs, f.content.endsWith("\n") ? f.content : `${f.content}\n`);
     console.log(`→ ${f.path}`);
   }
+  // Shared marker files not rewritten this compile still need stale sections pruned —
+  // e.g. after removing the last skill that wrote to them, no adapter emits to rebuild them.
+  for (const rel of MANAGED_SHARED_FILES) {
+    if (files.has(rel) || !existsSync(join(root, rel))) continue;
+    const before = readFileSync(join(root, rel), "utf8");
+    const after = pruneSections(before, installedNames);
+    if (after !== before) {
+      writeFileSync(join(root, rel), after.endsWith("\n") ? after : `${after}\n`);
+      console.log(`✂ pruned stale section(s) from ${rel}`);
+    }
+  }
   for (const pruned of pruneStaleOutputs(root, new Set(files.keys()))) console.log(`✂ ${pruned}`);
   for (const w of warnings) console.log(`⚠ ${w}`);
+  if (!skills.length) {
+    console.log("no skills installed — kitbash install <source> to add one");
+    return 0;
+  }
   console.log(`compiled ${skills.length} skill(s) for ${adapters.length} agent target(s)`);
   if (strict && warnings.length) {
     console.error(`--strict: failing on ${warnings.length} warning(s)`);
@@ -410,6 +421,9 @@ function budgetViolations(skill: LoadedSkill, body: string): string[] {
  * deleted only if it bears the generated header AND was not written by the
  * current compile — covers removed skills and renamed commands alike.
  */
+/** Shared marker-merged files whose stale sections are pruned even when no adapter rewrites them. */
+const MANAGED_SHARED_FILES = ["AGENTS.md", "GEMINI.md"];
+
 const MANAGED_DIRS: { dir: string; suffix: string; wholeDir?: boolean }[] = [
   { dir: ".claude/skills", suffix: "/SKILL.md", wholeDir: true },
   { dir: ".claude/commands", suffix: ".md" },
