@@ -31,15 +31,7 @@ That's an actual session. A third-party skill from the [skills.sh](https://www.s
 
 That gap is measured, not asserted — see the [benchmark](docs/benchmarks/README.md): the same skill costs ~40 standing tokens on a lazy target and ~490 on an eager one, a 12× per-session tax that a team running four agents pays four times over. Reproduce it with `npm run bench`.
 
-Install with npm or Homebrew:
-
-```bash
-npm install -g kitbash
-# or
-brew install singhharsh1708/tap/kitbash
-```
-
-Then, in a repo:
+Install it (npm or Homebrew — see [Installation](#installation)), then in a repo:
 
 ```bash
 kitbash init
@@ -50,6 +42,43 @@ kitbash compile
 What's working right now: `init`, `install` (via `gh:`, `owner/repo`, or `file:`), and `compile` to seven targets — Claude Code, Cursor, Copilot, Cline, Windsurf, GEMINI.md, and the AGENTS.md floor. Declared `/commands` compile down to native slash commands. You also get `doctor`, `list`, `remove`, budget enforcement, a content-hash lockfile with drift detection, stale-output pruning, and `--strict`. Evals, update diffs, and everything else are on the [roadmap](docs/roadmap.md).
 
 Already have skills? A plain SKILL.md folder — the [skills.sh](https://www.skills.sh) / Claude Skills convention — installs directly with `kitbash install owner/repo`. It's basically KSF without the manifest, so Kitbash fills in defaults and marks it `unmanifested` since nobody declared a budget or permissions for it. skills.sh is good at distributing skills; Kitbash is about treating them like real engineering artifacts.
+
+## Installation
+
+Zero-dependency CLI. Needs Node 20+ (npm route) or Homebrew.
+
+**Install**
+
+```bash
+npm install -g kitbash
+# or
+brew install singhharsh1708/tap/kitbash
+```
+
+Verify with `kitbash --version`.
+
+**Update**
+
+```bash
+# npm
+npm install -g kitbash@latest
+
+# Homebrew
+brew update && brew upgrade kitbash
+```
+
+**Uninstall**
+
+```bash
+# npm
+npm uninstall -g kitbash
+
+# Homebrew
+brew uninstall kitbash
+brew untap singhharsh1708/tap   # optional — removes the tap too
+```
+
+Uninstalling the CLI never touches your repo: compiled output is plain files you own. To clean a skill's generated files first, run `kitbash remove <skill> && kitbash compile` (prunes its outputs), then uninstall.
 
 ## Why this exists
 
