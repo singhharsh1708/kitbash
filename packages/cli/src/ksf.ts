@@ -43,8 +43,17 @@ export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
+/**
+ * The standing stub is the first real description paragraph (spec §3). Skip leading
+ * markdown headings so a `# Title` line isn't mistaken for the stub — otherwise a
+ * bloated description below a header would slip past `context.standing` enforcement.
+ */
 export function standingStub(body: string): string {
-  return (body.split(/\n\s*\n/)[0] ?? "").trim();
+  for (const para of body.split(/\n\s*\n/)) {
+    const lines = para.split(/\r?\n/).filter((l) => l.trim() && !/^#{1,6}\s/.test(l.trim()));
+    if (lines.length) return lines.join("\n").trim();
+  }
+  return "";
 }
 
 export function loadSkill(dir: string): LoadedSkill {
@@ -122,7 +131,7 @@ export function loadInstalledSkills(root: string): LoadedSkill[] {
  * invocation time; prompt.* inlines prompts/<name>.md from the skill dir.
  */
 export function resolveBody(skill: LoadedSkill): string {
-  return skill.body.replace(/\{\{\s*([a-z]+)\.([a-z0-9-]+)\s*\}\}/g, (whole, ns: string, name: string) => {
+  const resolved = skill.body.replace(/\{\{\s*([a-z]+)\.([a-z0-9-]+)\s*\}\}/g, (whole, ns: string, name: string) => {
     switch (ns) {
       case "artifact":
         return `\`.kitbash/artifacts/${name}.json\``;
@@ -137,6 +146,11 @@ export function resolveBody(skill: LoadedSkill): string {
         throw new Error(`${skill.manifest.skill.name}: unknown template variable ${whole}`);
     }
   });
+  // Anything still in {{...}} form is unknown or malformed (e.g. spaces around the dot,
+  // underscore namespace) — a lint error (spec §3), not something to leak into output.
+  const leftover = resolved.match(/\{\{[\s\S]*?\}\}/);
+  if (leftover) throw new Error(`${skill.manifest.skill.name}: unresolved template variable "${leftover[0].trim()}" — unknown namespace or malformed (spec §3)`);
+  return resolved;
 }
 
 const KNOWN_TABLES = ["skill", "context", "triggers", "permissions", "artifacts", "targets", "lore", "dependencies"];

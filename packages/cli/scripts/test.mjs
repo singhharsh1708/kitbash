@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import { parseToml } from "../dist/toml.js";
 import { resolveSubpath } from "../dist/commands.js";
 import { integrityOf } from "../dist/lock.js";
+import { standingStub } from "../dist/ksf.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../..");
@@ -316,6 +317,28 @@ try {
 } finally {
   rmSync(lfDir, { recursive: true, force: true });
   rmSync(crlfDir, { recursive: true, force: true });
+}
+
+// --- issue #54: standing stub skips markdown headers ---
+check("standingStub skips a leading markdown header", standingStub("# Title\n\nThe real description here.") === "The real description here.");
+check("standingStub strips an inline header line", standingStub("# Title\nInline description.") === "Inline description.");
+
+// --- issue #51.2: unknown/malformed template variables must not leak silently ---
+const leakTmp = mkdtempSync(join(tmpdir(), "kitbash-leak-"));
+try {
+  mkdirSync(join(leakTmp, ".claude"));
+  run(["init"], leakTmp);
+  const d = join(leakTmp, "leak-src");
+  mkdirSync(d);
+  writeFileSync(join(d, "skill.toml"), '[skill]\nname = "leaky"\nversion = "0.1.0"\ndescription = "Has a malformed template variable"\n[context]\nbudget = 500\n');
+  writeFileSync(join(d, "SKILL.md"), "Body with {{ prompt. thing }} that cannot resolve.\n");
+  run(["install", `file:${d}`], leakTmp);
+  const comp = run(["compile"], leakTmp);
+  check("compile fails on unresolved template variable", comp.status === 1 && comp.out.includes("unresolved template variable"), comp.out);
+  const t = run(["test", "leaky"], leakTmp);
+  check("test flags unresolved template variable", t.status === 1 && t.out.includes("unresolved template variable"), t.out);
+} finally {
+  rmSync(leakTmp, { recursive: true, force: true });
 }
 
 // --- issue #48.3 / #53: doctor lockfile completeness ---
