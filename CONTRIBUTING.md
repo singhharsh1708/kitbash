@@ -15,8 +15,11 @@ Pre-alpha. The most valuable contributions right now are **spec review** and **a
 cd packages/cli
 npm install
 npm run check     # typecheck
+npm test          # build + full e2e suite
 npm run dev -- doctor
 ```
+
+Before a release, walk the whole lifecycle by hand — see [docs/release-checklist.md](docs/release-checklist.md). Unit tests alone miss lifecycle bugs (a stale-output prune bug only showed up when removing the last installed skill).
 
 ## Commit style
 
