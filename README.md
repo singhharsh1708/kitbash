@@ -6,7 +6,8 @@
 
 <p align="center">
   <a href="https://github.com/singhharsh1708/kitbash/stargazers"><img src="https://img.shields.io/github/stars/singhharsh1708/kitbash?style=flat&color=ffb454" alt="GitHub stars"></a>
-  <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/v/kitbash?color=ffb454" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/v/kitbash?color=ffb454" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/dm/kitbash?color=ffb454" alt="npm downloads"></a>
   <a href="https://github.com/singhharsh1708/kitbash/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/singhharsh1708/kitbash/ci.yml?branch=main" alt="CI"></a>
   <img src="https://img.shields.io/badge/agent_targets-7-ffb454" alt="7 agent targets">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/singhharsh1708/kitbash?color=8b96ab" alt="Apache-2.0"></a>
@@ -22,7 +23,7 @@ Lint rules           →  ESLint
 Agent skills         →  Kitbash
 ```
 
-**Status: pre-alpha. Spec draft v0.1. Nothing here is stable yet.**
+**Works today.** The KSF specification is still evolving and may change before 1.0.
 
 ## Thirty seconds
 
@@ -138,6 +139,10 @@ Not a prompt collection. Not an agent framework. Not a personality store. Not lo
 ## Contributing
 
 The spec is a draft and this is the best time to shape it: [CONTRIBUTING.md](CONTRIBUTING.md). Landscape research behind the design: [docs/research.md](docs/research.md).
+
+## Sponsor
+
+If Kitbash saves you time, or your team relies on it, consider [sponsoring its development](https://github.com/sponsors/singhharsh1708). Sponsorship funds the work toward a real standard — spec, adapters, evals.
 
 ## License
 
