@@ -1,0 +1,50 @@
+name: benchmark-refresh
+
+# Regenerate the committed benchmark and open a PR if the numbers drifted.
+# CI already *fails* a PR whose committed benchmark is stale; this is the
+# other half — it proactively produces the fix. Weekly, or on demand.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+        working-directory: packages/cli
+      - run: npm run bench --prefix packages/cli
+
+      - name: Open a PR if the benchmark changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- docs/benchmarks/README.md; then
+            echo "benchmark unchanged — nothing to do"
+            exit 0
+          fi
+          branch="bot/benchmark-refresh"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add docs/benchmarks/README.md
+          git commit -m "bench: refresh measured token cost"
+          git push -f -u origin "$branch"
+          if [ -z "$(gh pr list --head "$branch" --state open --json number -q '.[].number')" ]; then
+            gh pr create --head "$branch" --base main \
+              --title "bench: refresh measured token cost" \
+              --body "Automated by the \`benchmark-refresh\` workflow: the compile output changed, so the committed benchmark numbers were stale. Regenerated with \`npm run bench\`. Review the diff and merge to keep the published numbers honest."
+          else
+            echo "PR from $branch already open — updated the branch in place"
+          fi
