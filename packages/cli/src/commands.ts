@@ -3,7 +3,7 @@
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { ADAPTERS, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, type CompiledFile } from "./adapters.js";
 import { dropLock, integrityOf, readLock, upsertLock, LOCK_FILE } from "./lock.js";
 import { estimateTokens, loadInstalledSkills, loadSkill, resolveBody, standingStub, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
@@ -28,6 +28,15 @@ export async function cmdInit(): Promise<number> {
   console.log(`created ${CONFIG} and ${SKILLS_DIR}/`);
   console.log("next: kitbash install <gh:owner/repo | owner/repo | file:path>, then kitbash compile");
   return 0;
+}
+
+/**
+ * Confine an install subpath to the cloned repo. Returns the resolved absolute
+ * path, or null if it escapes `base` (e.g. "../../etc") — a directory-traversal guard.
+ */
+export function resolveSubpath(base: string, subpath: string): string | null {
+  const resolved = resolve(base, subpath);
+  return resolved === base || resolved.startsWith(base + sep) ? resolved : null;
 }
 
 function hasGit(): boolean {
@@ -91,7 +100,17 @@ export async function cmdInstall(args: string[]): Promise<number> {
           return 1;
         }
       }
-      dir = subpath ? join(cleanup, subpath) : cleanup;
+      if (subpath) {
+        const resolved = resolveSubpath(cleanup, subpath);
+        if (!resolved) {
+          console.error(`invalid subpath "${subpath}": it escapes the repository.`);
+          console.error("  use a path inside the repo, e.g. owner/repo/skills/my-skill.");
+          return 1;
+        }
+        dir = resolved;
+      } else {
+        dir = cleanup;
+      }
       if (subpath && !existsSync(dir)) {
         console.error(`path "${subpath}" not found in ${owner}/${repo}.`);
         console.error("  point at the folder that contains skill.toml (or SKILL.md).");
@@ -227,6 +246,7 @@ export async function cmdCompile(args: string[]): Promise<number> {
   const installedNames = new Set(skills.map((s) => s.manifest.skill.name));
 
   const files = new Map<string, string>();
+  const owners = new Map<string, string>(); // non-merge path → skill that wrote it, for conflict detection
   const warnings: string[] = [];
   // shared marker-merged files (AGENTS.md, GEMINI.md): start from pruned on-disk content
   const mergedFiles = new Map<string, string>();
@@ -252,6 +272,11 @@ export async function cmdCompile(args: string[]): Promise<number> {
           mergedFiles.set(f.path, merged);
           files.set(f.path, merged);
         } else {
+          const prev = owners.get(f.path);
+          if (prev && prev !== name) {
+            warnings.push(`conflict: "${prev}" and "${name}" both write ${f.path} — "${name}" wins. Rename the clashing trigger command or skill.`);
+          }
+          owners.set(f.path, name);
           files.set(f.path, f.content);
         }
       }
