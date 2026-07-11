@@ -167,6 +167,17 @@ try {
   check("surviving skill section intact", prunedAgents.includes("kitbash:begin tidy-commits"));
   const prunedGemini = readFileSync(join(tmp, "GEMINI.md"), "utf8");
   check("GEMINI.md section pruned, user content kept", !prunedGemini.includes("kitbash:begin prereview") && prunedGemini.startsWith("# Project notes"));
+
+  // remove the LAST remaining skill, then compile — must still prune, not bail early
+  const removeLast = run(["remove", "tidy-commits"], tmp);
+  check("remove last skill exits 0", removeLast.status === 0, removeLast.out);
+  const emptyCompile = run(["compile"], tmp);
+  check("compile with no skills exits 0 (cleanup, not error)", emptyCompile.status === 0, emptyCompile.out);
+  check("last-skill claude output pruned", !existsSync(join(tmp, ".claude/skills/tidy-commits")), emptyCompile.out);
+  const emptyAgents = readFileSync(join(tmp, "AGENTS.md"), "utf8");
+  check("last-skill AGENTS.md section pruned", !emptyAgents.includes("kitbash:begin tidy-commits"), emptyAgents.slice(0, 200));
+  const emptyGemini = readFileSync(join(tmp, "GEMINI.md"), "utf8");
+  check("GEMINI.md fully pruned, user content kept", !emptyGemini.includes("kitbash:begin") && emptyGemini.startsWith("# Project notes"), emptyGemini.slice(0, 120));
 } finally {
   rmSync(tmp, { recursive: true, force: true });
 }
