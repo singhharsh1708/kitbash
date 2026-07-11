@@ -288,6 +288,33 @@ try {
   rmSync(conflict, { recursive: true, force: true });
 }
 
+// --- issue #44 regressions: UTF-8 BOM + stray skills subdirectories ---
+const iss44 = mkdtempSync(join(tmpdir(), "kitbash-iss44-"));
+try {
+  mkdirSync(join(iss44, ".claude"));
+  run(["init"], iss44);
+
+  // a UTF-8 BOM before the frontmatter must not break parsing (folder name differs from declared name)
+  const bomDir = join(iss44, "bom-src");
+  mkdirSync(bomDir);
+  writeFileSync(join(bomDir, "SKILL.md"), "﻿---\nname: bomskill\ndescription: Skill with a UTF-8 BOM prefix\n---\n\nBody content here.\n");
+  run(["install", `file:${bomDir}`], iss44);
+  const bomList = run(["list"], iss44);
+  check("BOM: frontmatter name parsed, not the folder name", bomList.out.includes("bomskill@") && !bomList.out.includes("bom-src@"), bomList.out);
+  run(["compile"], iss44);
+  const bomBody = readFileSync(join(iss44, ".claude/skills/bomskill/SKILL.md"), "utf8");
+  check("BOM: frontmatter not leaked into compiled body, no BOM", (bomBody.match(/name: bomskill/g) ?? []).length === 1 && bomBody.charCodeAt(0) !== 0xfeff, bomBody.slice(0, 80));
+
+  // a stray directory without SKILL.md must be skipped, not crash the CLI
+  mkdirSync(join(iss44, ".kitbash/skills/empty-aborted"), { recursive: true });
+  const strayList = run(["list"], iss44);
+  check("stray skills subdir does not crash list", strayList.status === 0 && strayList.out.includes("bomskill@"), strayList.out);
+  const strayDoctor = run(["doctor"], iss44);
+  check("stray skills subdir does not crash doctor", strayDoctor.status === 0, strayDoctor.out);
+} finally {
+  rmSync(iss44, { recursive: true, force: true });
+}
+
 if (failures) {
   console.error(`\n${failures} test(s) failed`);
   process.exit(1);

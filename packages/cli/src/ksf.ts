@@ -32,6 +32,12 @@ export interface LoadedSkill {
 export const SKILLS_DIR = ".kitbash/skills";
 export const NAME_RE = /^[a-z][a-z0-9-]{1,40}$/;
 
+/** Read a UTF-8 file, stripping a leading BOM — editors on Windows add one and it breaks `^---` / `^[table]` matching. */
+function readText(path: string): string {
+  const s = readFileSync(path, "utf8");
+  return s.charCodeAt(0) === 0xfeff ? s.slice(1) : s;
+}
+
 /** Rough estimate (~4 chars/token). Good enough for budget enforcement; lint owns precision. */
 export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
@@ -49,9 +55,9 @@ export function loadSkill(dir: string): LoadedSkill {
   }
   if (!existsSync(manifestPath)) return loadBareSkill(dir, bodyPath);
 
-  const raw = parseToml(readFileSync(manifestPath, "utf8"));
+  const raw = parseToml(readText(manifestPath));
   const manifest = validate(raw, manifestPath);
-  const body = readFileSync(bodyPath, "utf8");
+  const body = readText(bodyPath);
   return { dir, manifest, body, bare: false };
 }
 
@@ -61,7 +67,7 @@ export function loadSkill(dir: string): LoadedSkill {
  * the caller surfaces "unmanifested" warnings at install and compile.
  */
 function loadBareSkill(dir: string, bodyPath: string): LoadedSkill {
-  const raw = readFileSync(bodyPath, "utf8");
+  const raw = readText(bodyPath);
   const fm = parseFrontmatter(raw);
   const body = raw.replace(FRONTMATTER_RE, "").trimStart();
 
@@ -102,8 +108,10 @@ function parseFrontmatter(raw: string): Record<string, string> {
 export function loadInstalledSkills(root: string): LoadedSkill[] {
   const base = join(root, SKILLS_DIR);
   if (!existsSync(base)) return [];
+  // Only load directories that actually contain a skill — skip aborted installs,
+  // backups, or stray folders (.git, empty dirs) instead of crashing every command.
   return readdirSync(base, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
+    .filter((e) => e.isDirectory() && existsSync(join(base, e.name, "SKILL.md")))
     .map((e) => loadSkill(join(base, e.name)))
     .sort((a, b) => a.manifest.skill.name.localeCompare(b.manifest.skill.name));
 }
