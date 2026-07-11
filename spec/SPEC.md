@@ -64,6 +64,19 @@ plan = "^1.0"                  # other skills this one builds on, semver ranges
 
 Required tables: `[skill]`, `[context]`. Everything else defaults to the most restrictive value.
 
+### Field stability (toward 1.0)
+
+Per [RFC 0002](../rfcs/0002-ksf-1.0-stabilization.md), fields are marked for the 1.0 freeze:
+
+| Table | Status |
+|---|---|
+| `[skill]`, `[context]`, `[triggers]`, `[targets]`, `[artifacts]` | **stable** — frozen at 1.0; additive changes only within a major |
+| `[permissions]` | **stable shape**; the tool-string grammar (`"bash:git *"`) is provisional and advisory today |
+| `[dependencies]` | **provisional** — resolution works, but conflict/private-index behavior is unproven |
+| `[lore]` | **experimental** — separable from core KSF; surface may move to `@kitbash/lore` |
+
+Post-1.0 compatibility is additive-only within a major: existing fields never change meaning or type; unknown fields are ignored with a lint warning.
+
 ### Semantics that adapters MUST honor
 
 - **`context.budget`** — compiled output for the active state must fit; compilers fail the build otherwise.
