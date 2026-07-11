@@ -318,6 +318,26 @@ try {
   rmSync(crlfDir, { recursive: true, force: true });
 }
 
+// --- issue #48.3 / #53: doctor lockfile completeness ---
+const docTmp = mkdtempSync(join(tmpdir(), "kitbash-doc-"));
+try {
+  run(["init"], docTmp);
+  run(["install", `file:${fixture}`], docTmp);
+  // a skill dir present on disk but absent from the lockfile
+  const strayInstalled = join(docTmp, ".kitbash/skills/manual-copy");
+  mkdirSync(strayInstalled, { recursive: true });
+  writeFileSync(join(strayInstalled, "SKILL.md"), "---\nname: manual-copy\ndescription: Manually copied, not pinned\n---\n\nBody.\n");
+  const unpinned = run(["doctor"], docTmp);
+  check("doctor flags installed-but-unpinned skill", unpinned.status === 1 && unpinned.out.includes("not pinned"), unpinned.out);
+  rmSync(strayInstalled, { recursive: true, force: true });
+  // lockfile deleted while skills remain installed
+  rmSync(join(docTmp, "kitbash.lock"), { force: true });
+  const noLock = run(["doctor"], docTmp);
+  check("doctor flags missing lockfile when skills installed", noLock.status === 1 && noLock.out.includes("is missing"), noLock.out);
+} finally {
+  rmSync(docTmp, { recursive: true, force: true });
+}
+
 // --- issue #44 regressions: UTF-8 BOM + stray skills subdirectories ---
 const iss44 = mkdtempSync(join(tmpdir(), "kitbash-iss44-"));
 try {

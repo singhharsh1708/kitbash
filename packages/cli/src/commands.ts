@@ -197,8 +197,16 @@ export async function cmdDoctor(): Promise<number> {
   console.log(`installed skills: ${skills.length}`);
   console.log(`standing context cost: ~${standing} tokens (stubs); worst-case active: ${active} tokens (budgets)`);
 
-  let drift = 0;
-  for (const entry of readLock(root)) {
+  // Skills installed but no lockfile at all — nothing is pinned.
+  if (skills.length && !existsSync(join(root, LOCK_FILE))) {
+    console.error(`  ✗ ${skills.length} skill(s) installed but ${LOCK_FILE} is missing — nothing is pinned. Reinstall to regenerate it.`);
+    return 1;
+  }
+
+  const lock = readLock(root);
+  const pinned = new Set(lock.map((e) => e.name));
+  let problems = 0;
+  for (const entry of lock) {
     const dir = join(root, SKILLS_DIR, entry.name);
     if (!existsSync(dir)) {
       console.log(`  ⚠ ${entry.name}: in ${LOCK_FILE} but not installed`);
@@ -206,11 +214,18 @@ export async function cmdDoctor(): Promise<number> {
     }
     if (integrityOf(dir) !== entry.integrity) {
       console.error(`  ✗ ${entry.name}: integrity drift — installed files differ from ${LOCK_FILE}`);
-      drift++;
+      problems++;
     }
   }
-  if (drift) {
-    console.error(`${drift} skill(s) drifted from their lock — reinstall or investigate`);
+  // Installed but never pinned (manual copy, leftover, or dropped lock entry).
+  for (const s of skills) {
+    if (!pinned.has(s.manifest.skill.name)) {
+      console.error(`  ✗ ${s.manifest.skill.name}: installed but not pinned in ${LOCK_FILE} — reinstall to pin it.`);
+      problems++;
+    }
+  }
+  if (problems) {
+    console.error(`${problems} integrity problem(s) — reinstall or investigate`);
     return 1;
   }
   console.log("lock integrity: ok");
