@@ -18,7 +18,7 @@ Goal is not stars. Goal: **five people we don't know install Kitbash, write or i
 ## Channels, in order of expected signal
 
 1. **skills.sh / agent-skills community** — people who already installed skills; the import path is zero-friction for them. Comment on active issues asking for cross-agent support.
-2. **Show HN** — title: "Show HN: Kitbash – write an AI agent skill once, compile it for every coding agent". First comment: the ~5,044-token measurement story (the "compiler, not converter" moment) + honest status (pre-alpha, what works, what doesn't).
+2. **Show HN** — title: "Show HN: Kitbash – write an AI agent skill once, compile it for every coding agent". First comment: the ~5,044-token measurement story (the "compiler, not converter" moment) + honest status (stable spec core via RFC 0002, experimental ecosystem — what works, what doesn't).
 3. **r/ClaudeAI, r/cursor** — teams split across agents are the exact wedge persona.
 4. **Ponytail/Caveman discussion threads** — users who maintain N hand-copied variants; Kitbash removes that job.
 
