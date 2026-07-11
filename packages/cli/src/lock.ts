@@ -35,7 +35,7 @@ export function readLock(root: string): LockEntry[] {
 }
 
 export function writeLock(root: string, entries: LockEntry[]): void {
-  const sorted = [...entries].sort((a, b) => a.name.localeCompare(b.name));
+  const sorted = [...entries].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   const blocks = sorted.map(
     (e) =>
       `[[skill]]\nname = ${JSON.stringify(e.name)}\nversion = ${JSON.stringify(e.version)}\nsource = ${JSON.stringify(e.source)}\nintegrity = ${JSON.stringify(e.integrity)}`,
@@ -51,23 +51,36 @@ export function dropLock(root: string, name: string): void {
   writeLock(root, readLock(root).filter((e) => e.name !== name));
 }
 
-/** Deterministic hash over a skill directory: sorted relative paths + contents. */
+/**
+ * Deterministic hash over a skill directory: sorted relative paths + contents.
+ * Cross-platform stable: paths are NFC-normalized (macOS returns NFD), sorted by
+ * binary code-unit order (locale-independent), and text content is CRLF→LF
+ * normalized so a Windows checkout with core.autocrlf doesn't read as drift.
+ */
 export function integrityOf(dir: string): string {
   const hash = createHash("sha256");
   for (const rel of walk(dir, "")) {
-    hash.update(rel);
+    hash.update(rel); // NFC-normalized in walk()
     hash.update("\0");
-    hash.update(readFileSync(join(dir, rel)));
+    hash.update(hashableContent(readFileSync(join(dir, rel))));
     hash.update("\0");
   }
   return `sha256-${hash.digest("hex")}`;
 }
 
+/** Normalize line endings for text files (leave binary untouched) so CRLF vs LF isn't false drift. */
+function hashableContent(buf: Buffer): Buffer {
+  if (buf.includes(0)) return buf; // NUL byte ⇒ treat as binary, hash verbatim
+  return Buffer.from(buf.toString("utf8").replace(/\r\n/g, "\n"), "utf8");
+}
+
 function walk(base: string, rel: string): string[] {
   const out: string[] = [];
-  const entries = readdirSync(join(base, rel), { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
-  for (const e of entries) {
-    const r = rel ? `${rel}/${e.name}` : e.name;
+  const entries = readdirSync(join(base, rel), { withFileTypes: true })
+    .map((e) => ({ e, name: e.name.normalize("NFC") }))
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  for (const { e, name } of entries) {
+    const r = rel ? `${rel}/${name}` : name;
     if (e.isDirectory()) out.push(...walk(base, r));
     else if (e.isFile()) out.push(r);
   }

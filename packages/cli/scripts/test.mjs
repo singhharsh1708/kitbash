@@ -9,6 +9,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseToml } from "../dist/toml.js";
 import { resolveSubpath } from "../dist/commands.js";
+import { integrityOf } from "../dist/lock.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../..");
@@ -301,6 +302,20 @@ try {
   check("output-path conflict fails under --strict", strictComp.status === 1, strictComp.out);
 } finally {
   rmSync(conflict, { recursive: true, force: true });
+}
+
+// lockfile integrity is cross-platform: CRLF/LF-insensitive, but still catches real changes
+const lfDir = mkdtempSync(join(tmpdir(), "kitbash-lf-"));
+const crlfDir = mkdtempSync(join(tmpdir(), "kitbash-crlf-"));
+try {
+  writeFileSync(join(lfDir, "SKILL.md"), "line one\nline two\n");
+  writeFileSync(join(crlfDir, "SKILL.md"), "line one\r\nline two\r\n");
+  check("integrity hash is CRLF/LF-insensitive", integrityOf(lfDir) === integrityOf(crlfDir));
+  writeFileSync(join(crlfDir, "SKILL.md"), "line one\r\nCHANGED\r\n");
+  check("integrity hash still detects real content changes", integrityOf(lfDir) !== integrityOf(crlfDir));
+} finally {
+  rmSync(lfDir, { recursive: true, force: true });
+  rmSync(crlfDir, { recursive: true, force: true });
 }
 
 // --- issue #44 regressions: UTF-8 BOM + stray skills subdirectories ---
