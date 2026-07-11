@@ -1,6 +1,6 @@
 {
   "name": "kitbash",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The package manager and compiler for AI agent skills — write once, run in every coding agent",
   "license": "Apache-2.0",
   "author": "Harsh Singh",
@@ -8,9 +8,16 @@
   "homepage": "https://singhharsh1708.github.io/kitbash/",
   "bugs": "https://github.com/singhharsh1708/kitbash/issues",
   "type": "module",
-  "bin": { "kitbash": "dist/index.js" },
-  "files": ["dist", "README.md"],
-  "engines": { "node": ">=20" },
+  "bin": {
+    "kitbash": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc",
     "check": "tsc --noEmit",
@@ -19,8 +26,18 @@
     "prepublishOnly": "npm test"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
   },
-  "keywords": ["ai", "agents", "skills", "claude-code", "cursor", "copilot", "codex", "cli", "package-manager"]
+  "keywords": [
+    "ai",
+    "agents",
+    "skills",
+    "claude-code",
+    "cursor",
+    "copilot",
+    "codex",
+    "cli",
+    "package-manager"
+  ]
 }
