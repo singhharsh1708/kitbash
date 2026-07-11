@@ -1,6 +1,6 @@
 {
   "name": "kitbash",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "The package manager and compiler for AI agent skills — write once, run in every coding agent",
   "license": "Apache-2.0",
   "author": "Harsh Singh",
