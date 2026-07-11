@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/singhharsh1708/kitbash/stargazers"><img src="https://img.shields.io/github/stars/singhharsh1708/kitbash?style=flat&color=ffb454" alt="GitHub stars"></a>
-  <a href="https://github.com/singhharsh1708/kitbash/releases"><img src="https://img.shields.io/github/v/release/singhharsh1708/kitbash?color=ffb454" alt="release"></a>
+  <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/v/kitbash?color=ffb454" alt="npm"></a>
   <a href="https://github.com/singhharsh1708/kitbash/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/singhharsh1708/kitbash/ci.yml?branch=main" alt="CI"></a>
   <img src="https://img.shields.io/badge/agent_targets-7-ffb454" alt="7 agent targets">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/singhharsh1708/kitbash?color=8b96ab" alt="Apache-2.0"></a>
@@ -32,12 +32,15 @@ Agent skills         →  Kitbash
 
 That's a **real session**: a third-party [skills.sh](https://www.skills.sh)-convention skill, installed and compiled into three agent formats. Note the last warning — Kitbash *measured* the skill during compile and reported that it silently costs **~5,044 tokens on every request** for agents that can't lazy-load. A converter translates formats; a compiler analyzes them. No other tool shows you that number.
 
-**This works today, from source:**
+**This works today:**
 
 ```bash
-git clone https://github.com/singhharsh1708/kitbash && cd kitbash/packages/cli
-npm install && npm run build && npm link
-cd ~/your-repo && kitbash init && kitbash doctor
+npm install -g kitbash
+
+cd your-repo
+kitbash init
+kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview
+kitbash compile
 ```
 
 Working now: `init` · `install` (gh:/`owner/repo`/file:) · `compile` to **7 targets** (Claude Code, Cursor, Copilot, Cline, Windsurf, GEMINI.md, AGENTS.md floor) · declared `/commands` compiled to native slash commands · `doctor` · `list` · `remove` · budget enforcement · content-hash lockfile with drift detection · stale-output pruning · `--strict`. Evals, update diffs, and the rest land per the [roadmap](docs/roadmap.md).
