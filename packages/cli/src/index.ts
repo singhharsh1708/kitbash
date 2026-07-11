@@ -8,7 +8,7 @@
  */
 
 import { createRequire } from "node:module";
-import { cmdCompile, cmdDoctor, cmdInit, cmdInstall, cmdList, cmdRemove } from "./commands.js";
+import { cmdCompile, cmdDoctor, cmdInit, cmdInstall, cmdList, cmdRemove, cmdTest } from "./commands.js";
 
 const VERSION: string = createRequire(import.meta.url)("../package.json").version;
 
@@ -38,7 +38,7 @@ const commands: Command[] = [
   { name: "audit", summary: "Scan installed skills: permission drift, unsigned sources, injection heuristics", run: todo("audit", "v0.2") },
   { name: "preview", summary: "Playground: render each adapter's output with per-agent token counts", run: todo("preview", "v0.2") },
   { name: "explain", summary: "Why a compilation degraded on a given adapter", run: todo("explain", "v0.2") },
-  { name: "test", summary: "Run a skill's evals (static, audit, behavioral tiers)", run: todo("test", "v0.3") },
+  { name: "test", summary: "Run a skill's static evals: schema, budgets, dead refs, injection heuristics (--strict)", run: cmdTest },
   { name: "gate", summary: "Run a gate-mode skill with a deterministic exit code", run: todo("gate", "v0.3") },
   { name: "search", summary: "Search the community index", run: todo("search", "v0.4") },
   { name: "publish", summary: "Validate and publish a skill to the index", run: todo("publish", "v0.4") },

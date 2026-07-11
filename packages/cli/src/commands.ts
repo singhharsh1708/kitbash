@@ -279,6 +279,121 @@ export async function cmdCompile(args: string[]): Promise<number> {
   return 0;
 }
 
+/** Static-tier evals (SPEC §6): schema, dead refs, budgets, artifact/trigger shape, injection heuristics.
+ *  No eval file required — these always run. Audit/behavioral tiers need a runner (not in v0.3). */
+type Check = { name: string; ok: boolean; warn?: boolean; detail?: string };
+
+const ARTIFACT_RE = /^[a-z][a-z0-9-]*@\d+$/;
+// Prompt-injection heuristics. Deliberately narrow — these warn, they never silently pass or hard-fail,
+// since a security-focused skill may legitimately quote the very phrases it defends against.
+const INJECTION_PATTERNS: { re: RegExp; label: string }[] = [
+  { re: /ignore\s+(?:all\s+)?(?:your\s+)?(?:previous|prior|above)\s+instructions/i, label: "override of prior instructions" },
+  { re: /disregard\s+(?:the\s+)?(?:above|previous|prior|system)/i, label: "disregard-directive" },
+  { re: /you\s+are\s+now\s+(?:a|an|the)\b/i, label: "role reassignment" },
+  { re: /do\s+not\s+(?:tell|inform|reveal\s+to)\s+the\s+user/i, label: "conceal-from-user" },
+  { re: /exfiltrat|curl\s+[^|]*\|\s*(?:sh|bash)|send\s+.*\s+to\s+https?:\/\//i, label: "data-exfiltration shape" },
+];
+
+function staticChecks(skill: LoadedSkill): Check[] {
+  const checks: Check[] = [];
+  const m = skill.manifest;
+
+  checks.push({ name: "manifest", ok: true, warn: skill.bare, detail: skill.bare ? "unmanifested (SKILL.md only) — defaults applied" : `${m.skill.name}@${m.skill.version}` });
+
+  // templates / dead references
+  let body: string | undefined;
+  try {
+    body = resolveBody(skill);
+    checks.push({ name: "references", ok: true });
+  } catch (e) {
+    checks.push({ name: "references", ok: false, detail: e instanceof Error ? e.message : String(e) });
+  }
+
+  // budgets — the measured claim
+  if (body !== undefined) {
+    const bodyTokens = estimateTokens(body);
+    const stubTokens = estimateTokens(standingStub(body));
+    const overBudget = bodyTokens > m.context.budget;
+    const overStanding = stubTokens > m.context.standing;
+    // bare skills never declared these limits — measure and warn, don't fail
+    checks.push({
+      name: "budget",
+      ok: !overBudget || skill.bare,
+      warn: overBudget && skill.bare,
+      detail: `body ~${bodyTokens} tok / budget ${m.context.budget}`,
+    });
+    checks.push({
+      name: "standing",
+      ok: !overStanding || skill.bare,
+      warn: overStanding && skill.bare,
+      detail: `stub ~${stubTokens} tok / limit ${m.context.standing}`,
+    });
+  }
+
+  // artifact refs must be name@version
+  const badArtifacts = [...m.artifacts.produces, ...m.artifacts.consumes].filter((a) => !ARTIFACT_RE.test(a));
+  if (m.artifacts.produces.length || m.artifacts.consumes.length) {
+    checks.push({ name: "artifacts", ok: badArtifacts.length === 0, detail: badArtifacts.length ? `malformed: ${badArtifacts.join(", ")} (want name@version)` : `produces ${m.artifacts.produces.length}, consumes ${m.artifacts.consumes.length}` });
+  }
+
+  // command triggers must be slash-prefixed
+  const badCommands = m.triggers.commands.filter((c) => !c.startsWith("/"));
+  if (badCommands.length) checks.push({ name: "triggers", ok: false, detail: `commands must start with '/': ${badCommands.join(", ")}` });
+
+  // injection heuristics (warn only)
+  if (body !== undefined) {
+    const hits = INJECTION_PATTERNS.filter((p) => p.re.test(body!)).map((p) => p.label);
+    if (hits.length) checks.push({ name: "injection", ok: true, warn: true, detail: `heuristic match — review: ${hits.join(", ")}` });
+  }
+
+  return checks;
+}
+
+export async function cmdTest(args: string[]): Promise<number> {
+  const strict = args.includes("--strict");
+  const only = args.find((a) => !a.startsWith("-"));
+  const root = process.cwd();
+  let skills = loadInstalledSkills(root);
+  if (only) {
+    skills = skills.filter((s) => s.manifest.skill.name === only);
+    if (!skills.length) {
+      console.error(`${only} is not installed.`);
+      return 1;
+    }
+  }
+  if (!skills.length) {
+    console.error("no skills installed — kitbash install <source> first");
+    return 1;
+  }
+
+  let failed = 0;
+  let warned = 0;
+  for (const skill of skills) {
+    const checks = staticChecks(skill);
+    const bad = checks.filter((c) => !c.ok);
+    const warns = checks.filter((c) => c.ok && c.warn);
+    failed += bad.length;
+    warned += warns.length;
+    const mark = bad.length ? "✗" : warns.length ? "⚠" : "✓";
+    console.log(`${mark} ${skill.manifest.skill.name}`);
+    for (const c of checks) {
+      const sym = !c.ok ? "✗" : c.warn ? "⚠" : "·";
+      console.log(`    ${sym} ${c.name}${c.detail ? ` — ${c.detail}` : ""}`);
+    }
+  }
+
+  console.log(`\ntested ${skills.length} skill(s) · ${failed} failure(s) · ${warned} warning(s) (static tier)`);
+  if (skills.some((s) => existsSync(join(root, SKILLS_DIR, s.manifest.skill.name, "evals")))) {
+    console.log("note: evals/ present — audit & behavioral tiers need a runner (not in this build); static tier ran");
+  }
+  if (failed) return 1;
+  if (strict && warned) {
+    console.error(`--strict: failing on ${warned} warning(s)`);
+    return 1;
+  }
+  return 0;
+}
+
 function budgetViolations(skill: LoadedSkill, body: string): string[] {
   const { name } = skill.manifest.skill;
   const { budget, standing } = skill.manifest.context;
