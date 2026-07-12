@@ -37,7 +37,7 @@ const commands: Command[] = [
   { name: "lint", summary: "Schema, context budgets, dead references, injection heuristics (--strict; accepts a skill name or path)", run: cmdLint },
   { name: "audit", summary: "Scan installed skills: permission drift, unsigned sources, injection heuristics", run: todo("audit", "v0.2") },
   { name: "preview", summary: "Render each adapter's output with per-agent token counts, before installing", run: cmdPreview },
-  { name: "explain", summary: "Why a compilation degraded on a given adapter", run: cmdExplain },
+  { name: "explain", summary: "Why a compilation degraded on a given adapter (accepts a skill name or path)", run: cmdExplain },
   { name: "test", summary: "Run a skill's static evals: schema, budgets, dead refs, injection heuristics (--strict)", run: cmdTest },
   { name: "gate", summary: "Run a gate-mode skill with a deterministic exit code", run: todo("gate", "v0.3") },
   { name: "search", summary: "Search the community index", run: todo("search", "v0.4") },

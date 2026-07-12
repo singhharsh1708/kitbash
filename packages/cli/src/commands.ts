@@ -508,21 +508,34 @@ export async function cmdLint(args: string[]): Promise<number> {
 }
 
 export async function cmdExplain(args: string[]): Promise<number> {
-  const skillName = args[0];
+  const target = args[0];
   const adapterName = args[1];
-  if (!skillName || !adapterName) {
-    console.error("usage: kitbash explain <skill> <adapter>");
+  if (!target || !adapterName) {
+    console.error("usage: kitbash explain <skill-name-or-path> <adapter>");
     console.error(`  adapters: ${ADAPTERS.map((a) => a.id).join(", ")}`);
     return 1;
   }
   const root = process.cwd();
-  const skills = loadInstalledSkills(root);
-  const skill = skills.find((s) => s.manifest.skill.name === skillName);
-  if (!skill) {
-    console.error(`${skillName}: not installed.`);
-    if (skills.length) console.error(`  installed: ${skills.map((s) => s.manifest.skill.name).join(", ")}`);
-    else console.error("  no skills installed yet.");
-    return 1;
+
+  let skill: LoadedSkill;
+  const asPath = resolve(root, target);
+  if (existsSync(asPath)) {
+    try {
+      skill = loadSkill(asPath);
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      return 1;
+    }
+  } else {
+    const installed = loadInstalledSkills(root);
+    const found = installed.find((s) => s.manifest.skill.name === target);
+    if (!found) {
+      console.error(`${target}: not found as a path or installed skill name`);
+      if (installed.length) console.error(`  installed: ${installed.map((s) => s.manifest.skill.name).join(", ")}`);
+      else console.error("  no skills installed yet.");
+      return 1;
+    }
+    skill = found;
   }
   const adapter = ADAPTERS.find((a) => a.id === adapterName);
   if (!adapter) {
@@ -530,6 +543,7 @@ export async function cmdExplain(args: string[]): Promise<number> {
     return 1;
   }
 
+  const skillName = skill.manifest.skill.name;
   const missing = skill.manifest.targets.requires.filter((r) => !adapter.capabilities.includes(r));
   if (!missing.length) {
     console.log(`${skillName} → ${adapterName}: no capability degradation`);
