@@ -449,6 +449,165 @@ export async function cmdTest(args: string[]): Promise<number> {
   return 0;
 }
 
+export async function cmdLint(args: string[]): Promise<number> {
+  const strict = args.includes("--strict");
+  const target = args.find((a) => !a.startsWith("-"));
+  const root = process.cwd();
+
+  let skills: LoadedSkill[];
+  if (target) {
+    const asPath = resolve(root, target);
+    if (existsSync(asPath)) {
+      try {
+        skills = [loadSkill(asPath)];
+      } catch (e) {
+        console.error(e instanceof Error ? e.message : String(e));
+        return 1;
+      }
+    } else {
+      const installed = loadInstalledSkills(root);
+      const found = installed.find((s) => s.manifest.skill.name === target);
+      if (!found) {
+        console.error(`${target}: not found as a path or installed skill name`);
+        if (installed.length) console.error(`  installed: ${installed.map((s) => s.manifest.skill.name).join(", ")}`);
+        return 1;
+      }
+      skills = [found];
+    }
+  } else {
+    skills = loadInstalledSkills(root);
+    if (!skills.length) {
+      console.error("no skills installed — kitbash install <source> or pass a path: kitbash lint <path/to/skill>");
+      return 1;
+    }
+  }
+
+  let failed = 0;
+  let warned = 0;
+  for (const skill of skills) {
+    const checks = staticChecks(skill);
+    const bad = checks.filter((c) => !c.ok);
+    const warns = checks.filter((c) => c.ok && c.warn);
+    failed += bad.length;
+    warned += warns.length;
+    const mark = bad.length ? "✗" : warns.length ? "⚠" : "✓";
+    console.log(`${mark} ${skill.manifest.skill.name}`);
+    for (const c of checks) {
+      const sym = !c.ok ? "✗" : c.warn ? "⚠" : "·";
+      console.log(`    ${sym} ${c.name}${c.detail ? ` — ${c.detail}` : ""}`);
+    }
+  }
+
+  console.log(`\nlinted ${skills.length} skill(s) · ${failed} failure(s) · ${warned} warning(s)`);
+  if (failed) return 1;
+  if (strict && warned) {
+    console.error(`--strict: failing on ${warned} warning(s)`);
+    return 1;
+  }
+  return 0;
+}
+
+export async function cmdExplain(args: string[]): Promise<number> {
+  const skillName = args[0];
+  const adapterName = args[1];
+  if (!skillName || !adapterName) {
+    console.error("usage: kitbash explain <skill> <adapter>");
+    console.error(`  adapters: ${ADAPTERS.map((a) => a.id).join(", ")}`);
+    return 1;
+  }
+  const root = process.cwd();
+  const skills = loadInstalledSkills(root);
+  const skill = skills.find((s) => s.manifest.skill.name === skillName);
+  if (!skill) {
+    console.error(`${skillName}: not installed.`);
+    if (skills.length) console.error(`  installed: ${skills.map((s) => s.manifest.skill.name).join(", ")}`);
+    else console.error("  no skills installed yet.");
+    return 1;
+  }
+  const adapter = ADAPTERS.find((a) => a.id === adapterName);
+  if (!adapter) {
+    console.error(`unknown adapter "${adapterName}". known: ${ADAPTERS.map((a) => a.id).join(", ")}`);
+    return 1;
+  }
+
+  const missing = skill.manifest.targets.requires.filter((r) => !adapter.capabilities.includes(r));
+  if (!missing.length) {
+    console.log(`${skillName} → ${adapterName}: no capability degradation`);
+  } else {
+    console.log(`${skillName} → ${adapterName}: degraded`);
+    for (const cap of missing) {
+      console.log(`  ✗ requires "${cap}" — not supported by ${adapterName}; compiled instruction-only`);
+    }
+  }
+  if (adapter.loading === "eager" && skill.manifest.context.disclosure === "lazy") {
+    let body: string;
+    try {
+      body = resolveBody(skill);
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      return 1;
+    }
+    console.log(`  ⚠ loading: ${adapterName} is eager — skill costs ~${estimateTokens(body)} tokens standing every session (declared limit: ${skill.manifest.context.standing})`);
+  }
+  return 0;
+}
+
+export async function cmdPreview(args: string[]): Promise<number> {
+  const target = args.find((a) => !a.startsWith("-"));
+  if (!target) {
+    console.error("usage: kitbash preview <skill-name-or-path>");
+    return 1;
+  }
+  const root = process.cwd();
+
+  let skill: LoadedSkill;
+  const asPath = resolve(root, target);
+  if (existsSync(asPath)) {
+    try {
+      skill = loadSkill(asPath);
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      return 1;
+    }
+  } else {
+    const installed = loadInstalledSkills(root);
+    const found = installed.find((s) => s.manifest.skill.name === target);
+    if (!found) {
+      console.error(`${target}: not found as a path or installed skill name`);
+      if (installed.length) console.error(`  installed: ${installed.map((s) => s.manifest.skill.name).join(", ")}`);
+      return 1;
+    }
+    skill = found;
+  }
+
+  let body: string;
+  try {
+    body = resolveBody(skill);
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : String(e));
+    return 1;
+  }
+
+  const { name, version } = skill.manifest.skill;
+  console.log(`preview: ${name}@${version}\n`);
+
+  const adaptersOrError = configuredAdapters(root);
+  const adapters = typeof adaptersOrError === "string" ? ADAPTERS : adaptersOrError;
+
+  for (const adapter of adapters) {
+    const out = adapter.emit(skill, body, root);
+    const bodyTokens = out.files.reduce((sum, f) => sum + estimateTokens(f.content), 0);
+    const standingLabel = adapter.loading === "eager" ? `~${bodyTokens} tok standing` : `lazy (0 tok standing)`;
+    console.log(`─── ${adapter.id} [${adapter.loading}] ${standingLabel} ───`);
+    for (const w of out.warnings) console.log(`⚠ ${w}`);
+    for (const f of out.files) {
+      console.log(`\n  → ${f.path}\n`);
+      console.log(f.content);
+    }
+  }
+  return 0;
+}
+
 function budgetViolations(skill: LoadedSkill, body: string): string[] {
   const { name } = skill.manifest.skill;
   const { budget, standing } = skill.manifest.context;
