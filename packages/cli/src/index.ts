@@ -8,7 +8,7 @@
  */
 
 import { createRequire } from "node:module";
-import { cmdCompile, cmdDoctor, cmdInit, cmdInstall, cmdList, cmdRemove, cmdTest } from "./commands.js";
+import { cmdCompile, cmdDoctor, cmdInit, cmdInstall, cmdList, cmdRemove, cmdTest, cmdLint, cmdExplain, cmdPreview } from "./commands.js";
 
 const VERSION: string = createRequire(import.meta.url)("../package.json").version;
 
@@ -34,10 +34,10 @@ const commands: Command[] = [
   { name: "doctor", summary: "Detect assistants, report total standing context cost", run: cmdDoctor },
   { name: "update", summary: "Update skills, showing instruction diffs before applying", run: todo("update", "v0.2") },
   { name: "diff", summary: "Instruction/permission/budget diff between two skill versions", run: todo("diff", "v0.2") },
-  { name: "lint", summary: "Schema, context budgets, dead references, injection heuristics", run: todo("lint", "v0.2") },
+  { name: "lint", summary: "Schema, context budgets, dead references, injection heuristics (--strict; accepts a skill name or path)", run: cmdLint },
   { name: "audit", summary: "Scan installed skills: permission drift, unsigned sources, injection heuristics", run: todo("audit", "v0.2") },
-  { name: "preview", summary: "Playground: render each adapter's output with per-agent token counts", run: todo("preview", "v0.2") },
-  { name: "explain", summary: "Why a compilation degraded on a given adapter", run: todo("explain", "v0.2") },
+  { name: "preview", summary: "Render each adapter's output with per-agent token counts, before installing", run: cmdPreview },
+  { name: "explain", summary: "Why a compilation degraded on a given adapter", run: cmdExplain },
   { name: "test", summary: "Run a skill's static evals: schema, budgets, dead refs, injection heuristics (--strict)", run: cmdTest },
   { name: "gate", summary: "Run a gate-mode skill with a deterministic exit code", run: todo("gate", "v0.3") },
   { name: "search", summary: "Search the community index", run: todo("search", "v0.4") },

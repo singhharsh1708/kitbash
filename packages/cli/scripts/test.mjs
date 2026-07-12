@@ -161,6 +161,68 @@ try {
   check("test --strict fails on the warning", testWarnStrict.status === 1, testWarnStrict.out);
   run(["remove", "warnonly"], tmp);
 
+  // kitbash lint
+  const lintInstalled = run(["lint", "prereview"], tmp);
+  check("lint exits 0 on a clean installed skill", lintInstalled.status === 0, lintInstalled.out);
+  check("lint reports linted count", lintInstalled.out.includes("linted 1 skill(s)"), lintInstalled.out);
+
+  // lint by path (pre-install — no kitbash install needed)
+  const lintPath = run(["lint", fixture], tmp);
+  check("lint works on a skill directory path", lintPath.status === 0, lintPath.out);
+  check("lint path reports linted count", lintPath.out.includes("linted 1 skill(s)"), lintPath.out);
+
+  // lint --strict on a skill with injection warning (by path, no install required)
+  const lintStrictPath = run(["lint", "--strict", warnSkillDir], tmp);
+  check("lint --strict fails on injection warning via path", lintStrictPath.status === 1 && lintStrictPath.out.includes("injection"), lintStrictPath.out);
+
+  // lint all installed (no target arg)
+  const lintAll = run(["lint"], tmp);
+  check("lint with no args lints all installed skills", lintAll.status === 0 && lintAll.out.includes("prereview"), lintAll.out);
+
+  // kitbash explain
+  // prereview requires=[], disclosure=lazy; agentsmd is eager — loading mismatch but no capability degradation
+  const explainNoDegrade = run(["explain", "prereview", "agentsmd"], tmp);
+  check("explain exits 0 when no capability degradation", explainNoDegrade.status === 0, explainNoDegrade.out);
+  check("explain reports no capability degradation", explainNoDegrade.out.includes("no capability degradation"), explainNoDegrade.out);
+  check("explain surfaces loading mismatch for eager target", explainNoDegrade.out.includes("is eager"), explainNoDegrade.out);
+
+  // cursor is lazy — no loading mismatch and no capability degradation for prereview
+  const explainClean = run(["explain", "prereview", "cursor"], tmp);
+  check("explain is silent on a fully compatible target", explainClean.status === 0 && explainClean.out.includes("no capability degradation") && !explainClean.out.includes("is eager"), explainClean.out);
+
+  // skill with targets.requires to test capability degradation
+  const reqSkillDir = join(tmp, "req-fixture");
+  mkdirSync(reqSkillDir);
+  writeFileSync(
+    join(reqSkillDir, "skill.toml"),
+    '[skill]\nname = "req-skill"\nversion = "0.1.0"\ndescription = "Skill that requires scripts capability"\n[context]\nbudget = 500\nstanding = 80\n[targets]\nrequires = ["scripts"]\n',
+  );
+  writeFileSync(join(reqSkillDir, "SKILL.md"), "Body of req-skill.\n\nMore body.\n");
+  run(["install", `file:${reqSkillDir}`], tmp);
+  const explainDegrade = run(["explain", "req-skill", "cursor"], tmp);
+  check("explain shows degradation when capability is missing", explainDegrade.status === 0 && explainDegrade.out.includes("degraded") && explainDegrade.out.includes('"scripts"'), explainDegrade.out);
+  run(["remove", "req-skill"], tmp);
+
+  const explainBadSkill = run(["explain", "not-installed", "agentsmd"], tmp);
+  check("explain exits 1 for unknown skill", explainBadSkill.status === 1 && explainBadSkill.out.includes("not installed"), explainBadSkill.out);
+
+  const explainBadAdapter = run(["explain", "prereview", "not-a-real-adapter"], tmp);
+  check("explain exits 1 for unknown adapter", explainBadAdapter.status === 1 && explainBadAdapter.out.includes("unknown adapter"), explainBadAdapter.out);
+
+  // kitbash preview
+  const previewInstalled = run(["preview", "prereview"], tmp);
+  check("preview exits 0 on an installed skill", previewInstalled.status === 0, previewInstalled.out);
+  check("preview shows skill name and version", previewInstalled.out.includes("preview: prereview@0.1.0"), previewInstalled.out);
+  check("preview shows adapter sections", previewInstalled.out.includes("claude-code") && previewInstalled.out.includes("agentsmd"), previewInstalled.out);
+  check("preview shows token standing label", previewInstalled.out.includes("tok standing"), previewInstalled.out);
+
+  // preview by path (pre-install)
+  const previewPath = run(["preview", fixture], tmp);
+  check("preview works on a skill directory path", previewPath.status === 0 && previewPath.out.includes("preview: prereview@"), previewPath.out);
+
+  const previewNoArg = run(["preview"], tmp);
+  check("preview with no arg exits 1 with usage", previewNoArg.status === 1 && previewNoArg.out.includes("usage: kitbash preview"), previewNoArg.out);
+
   // remove + prune
   const remove = run(["remove", "prereview"], tmp);
   check("remove exits 0", remove.status === 0, remove.out);
@@ -221,6 +283,15 @@ try {
 
   const testMissing = run(["test", "ghost"], neg);
   check("test on a non-installed skill exits 1", testMissing.status === 1 && testMissing.out.includes("ghost is not installed"), testMissing.out);
+
+  const lintEmpty = run(["lint"], neg);
+  check("lint with no skills exits 1", lintEmpty.status === 1 && lintEmpty.out.includes("no skills installed"), lintEmpty.out);
+
+  const lintMissing = run(["lint", "ghost"], neg);
+  check("lint on a non-installed skill exits 1", lintMissing.status === 1 && lintMissing.out.includes("not found"), lintMissing.out);
+
+  const explainNoArg = run(["explain"], neg);
+  check("explain with no args exits 1 with usage", explainNoArg.status === 1 && explainNoArg.out.includes("usage: kitbash explain"), explainNoArg.out);
 
   // manifest validation surfaces at install with an actionable message
   const badManifest = join(neg, "bad-manifest");
