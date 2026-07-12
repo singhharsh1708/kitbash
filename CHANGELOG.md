@@ -2,10 +2,13 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
-## [Unreleased]
+## [0.5.0] — 2026-07-12
 
 ### Added
+- Three v0.2-roadmap commands: `kitbash lint [skill-or-path] [--strict]` (full static check suite, works pre-install), `kitbash explain <skill-or-path> <adapter>` (why a compilation degraded, with the token cost of eager targets), and `kitbash preview <skill-or-path>` (each adapter's compiled output with per-target token counts, before installing).
 - `aider` adapter — marker-merged `CONVENTIONS.md` (detected via an existing `CONVENTIONS.md` or `.aider.conf.yml`) — **8 targets total**.
+- CI runs on Windows and macOS alongside Linux; fixed the platform-dependent subpath test so the suite is green on all three.
+- Site: live terminal replay in the hero and an interactive per-target compile preview.
 
 ## [0.3.0] — 2026-07-11
 
