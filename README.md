@@ -39,7 +39,7 @@ kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview
 kitbash compile
 ```
 
-What's working right now: `init`, `install` (via `gh:`, `owner/repo`, or `file:`), and `compile` to seven targets — Claude Code, Cursor, Copilot, Cline, Windsurf, GEMINI.md, and the AGENTS.md floor. Declared `/commands` compile down to native slash commands. You also get `doctor`, `list`, `remove`, budget enforcement, a content-hash lockfile with drift detection, stale-output pruning, and `--strict`. Evals, update diffs, and everything else are on the [roadmap](docs/roadmap.md).
+What's working right now: `init`, `install` (via `gh:`, `owner/repo`, or `file:`), and `compile` to eight targets — Claude Code, Cursor, Copilot, Cline, Windsurf, GEMINI.md, Aider's CONVENTIONS.md, and the AGENTS.md floor. Declared `/commands` compile down to native slash commands. You also get `doctor`, `list`, `remove`, budget enforcement, a content-hash lockfile with drift detection, stale-output pruning, and `--strict`. Evals, update diffs, and everything else are on the [roadmap](docs/roadmap.md).
 
 Already have skills? A plain SKILL.md folder — the [skills.sh](https://www.skills.sh) / Claude Skills convention — installs directly with `kitbash install owner/repo`. It's basically KSF without the manifest, so Kitbash fills in defaults and marks it `unmanifested` since nobody declared a budget or permissions for it. skills.sh is good at distributing skills; Kitbash is about treating them like real engineering artifacts.
 
@@ -153,7 +153,7 @@ v0.1 is intentionally a thin slice: KSF, `compile`, three adapters, and one skil
 No. It's a compiler, a package manager, and a format spec. Prompt collections are the thing that gets compiled.
 
 **I already use skills.sh / Claude skills.**
-Keep them. They install directly with `kitbash install owner/repo`. You pick up seven targets, a lockfile, and a token-cost report, and you don't give anything up.
+Keep them. They install directly with `kitbash install owner/repo`. You pick up eight targets, a lockfile, and a token-cost report, and you don't give anything up.
 
 **What if I stop using Kitbash?**
 Nothing breaks. The compiled output is plain files in your repo. Delete `kitbash.toml` and everything keeps working the way it does now.

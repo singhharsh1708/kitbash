@@ -2,6 +2,11 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [Unreleased]
+
+### Added
+- `aider` adapter — marker-merged `CONVENTIONS.md` (detected via an existing `CONVENTIONS.md` or `.aider.conf.yml`) — **8 targets total**.
+
 ## [0.3.0] — 2026-07-11
 
 ### Added

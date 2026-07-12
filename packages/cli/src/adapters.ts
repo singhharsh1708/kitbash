@@ -187,10 +187,17 @@ const gemini = mergedFileAdapter(
   (root) => existsSync(join(root, "GEMINI.md")) || existsSync(join(root, ".gemini")),
 );
 
+// Aider reads CONVENTIONS.md (wired via .aider.conf.yml or --read); always in context — eager.
+const aider = mergedFileAdapter(
+  "aider",
+  "CONVENTIONS.md",
+  (root) => existsSync(join(root, "CONVENTIONS.md")) || existsSync(join(root, ".aider.conf.yml")),
+);
+
 /** The floor: everything that reads AGENTS.md (Codex and many others). */
 const agentsmd = mergedFileAdapter("agentsmd", "AGENTS.md", () => true);
 
-export const ADAPTERS: Adapter[] = [claudeCode, cursor, copilot, cline, windsurf, gemini, agentsmd];
+export const ADAPTERS: Adapter[] = [claudeCode, cursor, copilot, cline, windsurf, gemini, aider, agentsmd];
 
 /** Replace or append a skill's marker-delimited section in shared-file content. */
 export function mergeSection(existing: string, name: string, section: string): string {
