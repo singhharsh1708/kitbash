@@ -6,8 +6,12 @@ on:
   pull_request:
 
 jobs:
-  cli:
-    runs-on: ubuntu-latest
+  cli-os:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
@@ -22,7 +26,16 @@ jobs:
       - run: node dist/index.js --version
         working-directory: packages/cli
       - name: Benchmark is deterministic and its committed output is fresh
+        # Linux-only: CRLF working trees would skew the measured token counts.
+        if: runner.os == 'Linux'
         run: npm run bench --prefix packages/cli && git diff --exit-code docs/benchmarks/README.md
+
+  # Aggregator keeping the required status-check name "cli" stable across the OS matrix.
+  cli:
+    needs: cli-os
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "cli passed on all platforms"
 
   schema:
     runs-on: ubuntu-latest
