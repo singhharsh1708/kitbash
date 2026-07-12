@@ -344,10 +344,11 @@ try {
 }
 check("toml: invalid escape throws TomlError, not raw SyntaxError", escThrew && escName === "TomlError");
 
-// subpath traversal guard (the gh: installer security fix)
-check("subpath: normal nested path allowed", resolveSubpath("/tmp/repo", "skills/a") === "/tmp/repo/skills/a");
-check("subpath: parent traversal blocked", resolveSubpath("/tmp/repo", "../../etc/passwd") === null);
-check("subpath: nested sneaky traversal blocked", resolveSubpath("/tmp/repo", "a/../../b") === null);
+// subpath traversal guard (the gh: installer security fix) — platform-agnostic paths
+const spBase = resolve(tmpdir(), "kitbash-subpath-repo");
+check("subpath: normal nested path allowed", resolveSubpath(spBase, "skills/a") === join(spBase, "skills", "a"));
+check("subpath: parent traversal blocked", resolveSubpath(spBase, "../../../../etc/passwd") === null);
+check("subpath: nested sneaky traversal blocked", resolveSubpath(spBase, "a/../../b") === null);
 
 // two skills writing the same output path warn instead of silently overwriting
 const conflict = mkdtempSync(join(tmpdir(), "kitbash-conflict-"));
