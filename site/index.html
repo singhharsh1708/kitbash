@@ -65,7 +65,7 @@
 
   html { background: var(--bg); color: var(--text); scroll-behavior: smooth; scroll-padding-top: 5.5rem; }
   body {
-    margin: 0; min-width: 320px; line-height: 1.6;
+    margin: 0; min-width: 320px; line-height: 1.6; overflow-x: hidden;
     background:
       linear-gradient(180deg, color-mix(in srgb, var(--accent) 11%, transparent), transparent 26rem),
       var(--bg);
@@ -266,8 +266,10 @@
     filter: blur(34px);
   }
   .demo-wrap .hero-demo { margin-top: 0; max-width: 100%; }
+  .terminal-chrome { position: relative; }
   .term-replay {
-    margin-left: auto; padding: .14rem .62rem; border: 1px solid rgba(255,255,255,.14); border-radius: 999px;
+    position: absolute; right: .8rem; top: 50%; transform: translateY(-50%);
+    padding: .14rem .62rem; border: 1px solid rgba(255,255,255,.14); border-radius: 999px;
     background: transparent; color: rgba(255,255,255,.45); font-family: "SFMono-Regular", Consolas, ui-monospace, monospace;
     font-size: .7rem; cursor: pointer;
   }
@@ -294,7 +296,7 @@
   .target-pane { margin-top: 1rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-card); overflow: hidden; }
   .target-pane[hidden] { display: none; }
   .pane-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem .9rem; padding: .8rem 1.05rem; border-bottom: 1px solid var(--line); }
-  .pane-meta .paths { color: var(--muted); font-size: .82rem; }
+  .pane-meta .paths { color: var(--muted); font-size: .82rem; overflow-wrap: anywhere; }
   .pane-meta .paths code { color: var(--text); font-size: .8rem; }
   .badge {
     padding: .13rem .6rem; border-radius: 999px; font-family: "SFMono-Regular", ui-monospace, monospace;
@@ -838,6 +840,16 @@ kitbash init &amp;&amp; kitbash compile</pre></div>
       if (t.ch === '\n') { lineStart = true; if (cmdLine) delays[i] += 420; }
       else lineStart = false;
     }
+
+    // Lock in the final rendered height before any playback clears the
+    // content, so the page below the terminal never shifts during the replay.
+    const reserve = () => { pre.style.minHeight = ''; pre.style.minHeight = pre.offsetHeight + 'px'; };
+    reserve();
+    let resizeT = 0;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(() => { if (!playing) reserve(); }, 150);
+    });
 
     let timer = 0, playing = false;
     const finish = () => {
