@@ -40,6 +40,7 @@ try {
   mkdirSync(join(tmp, ".windsurf"));
   mkdirSync(join(tmp, ".github"));
   writeFileSync(join(tmp, "GEMINI.md"), "# Project notes\n");
+  writeFileSync(join(tmp, "CONVENTIONS.md"), "# House rules\n");
 
   const init = run(["init"], tmp);
   check("init exits 0", init.status === 0, init.out);
@@ -57,7 +58,7 @@ try {
 
   const compile = run(["compile"], tmp);
   check("compile exits 0", compile.status === 0, compile.out);
-  check("compile summary", compile.out.includes("compiled 1 skill(s) for 7 agent target(s)"), compile.out);
+  check("compile summary", compile.out.includes("compiled 1 skill(s) for 8 agent target(s)"), compile.out);
 
   const claude = join(tmp, ".claude/skills/prereview/SKILL.md");
   const cursor = join(tmp, ".cursor/rules/prereview.mdc");
@@ -70,6 +71,8 @@ try {
   check("windsurf output exists", existsSync(join(tmp, ".windsurf/rules/prereview.md")));
   const gemini = readFileSync(join(tmp, "GEMINI.md"), "utf8");
   check("gemini markers merged, user content kept", gemini.includes("kitbash:begin prereview") && gemini.startsWith("# Project notes"), gemini.slice(0, 120));
+  const aiderOut = readFileSync(join(tmp, "CONVENTIONS.md"), "utf8");
+  check("aider markers merged, user content kept", aiderOut.includes("kitbash:begin prereview") && aiderOut.startsWith("# House rules"), aiderOut.slice(0, 120));
   const shim = join(tmp, ".claude/commands/prereview.md");
   check("slash-command shim compiled", existsSync(shim) && readFileSync(shim, "utf8").includes(".claude/skills/prereview/SKILL.md"));
 
@@ -82,7 +85,7 @@ try {
   check("agentsmd markers present", agentsContent.includes("<!-- kitbash:begin prereview -->") && agentsContent.includes("<!-- kitbash:end prereview -->"));
   check("eager-load warning surfaced", compile.out.includes("cannot lazy-load"), compile.out);
   // every eager target must report the standing cost; lazy targets must not
-  const eagerWarned = ["copilot", "cline", "windsurf", "gemini", "agentsmd"].every((t) => compile.out.includes(`→ ${t}: ${t} is eager and cannot lazy-load`));
+  const eagerWarned = ["copilot", "cline", "windsurf", "gemini", "aider", "agentsmd"].every((t) => compile.out.includes(`→ ${t}: ${t} is eager and cannot lazy-load`));
   check("all eager targets report standing cost", eagerWarned, compile.out);
   const lazyQuiet = !compile.out.includes("→ claude-code: claude-code is eager") && !compile.out.includes("→ cursor: cursor is eager");
   check("lazy targets (claude-code, cursor) do not warn", lazyQuiet, compile.out);
