@@ -206,8 +206,14 @@ try {
   check("explain shows degradation when capability is missing", explainDegrade.status === 0 && explainDegrade.out.includes("degraded") && explainDegrade.out.includes('"scripts"'), explainDegrade.out);
   run(["remove", "req-skill"], tmp);
 
-  const explainBadSkill = run(["explain", "not-installed", "agentsmd"], tmp);
-  check("explain exits 1 for unknown skill", explainBadSkill.status === 1 && explainBadSkill.out.includes("not installed"), explainBadSkill.out);
+  const explainBadSkill = run(["explain", "no-such-skill", "agentsmd"], tmp);
+  check("explain exits 1 for unknown skill", explainBadSkill.status === 1 && explainBadSkill.out.includes("not found as a path or installed skill name"), explainBadSkill.out);
+
+  // explain by path (pre-install — mirrors lint/preview)
+  const explainPath = run(["explain", fixture, "agentsmd"], tmp);
+  check("explain works on a skill directory path", explainPath.status === 0 && explainPath.out.includes("prereview → agentsmd"), explainPath.out);
+  const explainPathDegrade = run(["explain", reqSkillDir, "cursor"], tmp);
+  check("explain by path shows degradation", explainPathDegrade.status === 0 && explainPathDegrade.out.includes("degraded") && explainPathDegrade.out.includes('"scripts"'), explainPathDegrade.out);
 
   const explainBadAdapter = run(["explain", "prereview", "not-a-real-adapter"], tmp);
   check("explain exits 1 for unknown adapter", explainBadAdapter.status === 1 && explainBadAdapter.out.includes("unknown adapter"), explainBadAdapter.out);
