@@ -136,6 +136,14 @@ events = [<span class="s">"pre-push"</span>]          <span class="c"># hook poi
     <a href="../index.html">← kitbash home</a>
   </div>
   </main>
+  <aside class="docs-toc" aria-label="On this page">
+    <h2>On this page</h2>
+    <ul>
+      <li><a href="#manifest">The manifest</a></li>
+      <li><a href="#fields">What the key fields buy you</a></li>
+      <li><a href="#bare">Already have plain SKILL.md skills?</a></li>
+    </ul>
+  </aside>
 </div>
 
 <script>
@@ -190,6 +198,27 @@ events = [<span class="s">"pre-push"</span>]          <span class="c"># hook poi
   // collapse the docs sidebar into a tap-to-open panel on phones
   (() => {
     if (window.matchMedia('(max-width: 860px)').matches) document.querySelector('.docs-nav')?.removeAttribute('open');
+  })();
+
+  // scroll-spy: highlight the current section in the On-this-page rail
+  (() => {
+    const links = [...document.querySelectorAll('.docs-toc a')];
+    if (!links.length || !('IntersectionObserver' in window)) return;
+    const byId = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+    const heads = [...document.querySelectorAll('.docs-content h2[id]')].filter((h) => byId.has(h.id));
+    let active = null;
+    const setActive = (id) => {
+      if (id === active) return;
+      byId.get(active)?.classList.remove('active');
+      byId.get(id)?.classList.add('active');
+      active = id;
+    };
+    const io = new IntersectionObserver((entries) => {
+      const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (vis.length) setActive(vis[0].target.id);
+    }, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
+    heads.forEach((h) => io.observe(h));
+    setActive(heads[0]?.id);
   })();
 </script>
 </body>
