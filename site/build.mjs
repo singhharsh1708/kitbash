@@ -20,12 +20,19 @@ const version = JSON.parse(readFileSync(join(repoRoot, "packages/cli/package.jso
 
 // ---- inline markdown (escape first, then transform) ----
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+// Code spans are carved out first so *, **, and [] inside backticks stay literal.
 const inline = (s) =>
   esc(s)
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>")
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    .split(/(`[^`]+`)/)
+    .map((seg) =>
+      seg.startsWith("`") && seg.endsWith("`")
+        ? `<code>${seg.slice(1, -1)}</code>`
+        : seg
+            .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+            .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>")
+            .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>'),
+    )
+    .join("");
 
 // ---- parse CHANGELOG.md ----
 const changelog = readFileSync(join(repoRoot, "CHANGELOG.md"), "utf8");
