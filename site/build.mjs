@@ -20,19 +20,20 @@ const version = JSON.parse(readFileSync(join(repoRoot, "packages/cli/package.jso
 
 // ---- inline markdown (escape first, then transform) ----
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-// Code spans are carved out first so *, **, and [] inside backticks stay literal.
-const inline = (s) =>
-  esc(s)
-    .split(/(`[^`]+`)/)
-    .map((seg) =>
-      seg.startsWith("`") && seg.endsWith("`")
-        ? `<code>${seg.slice(1, -1)}</code>`
-        : seg
-            .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-            .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>")
-            .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>'),
-    )
-    .join("");
+// Code spans are swapped for placeholders first so markers inside backticks stay
+// literal — while bold/em can still wrap whole code spans (**`x` and `y`**).
+const inline = (s) => {
+  const codes = [];
+  return esc(s)
+    .replace(/`([^`]+)`/g, (_, c) => {
+      codes.push(c);
+      return `\x00${codes.length - 1}\x00`;
+    })
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>")
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/\x00(\d+)\x00/g, (_, i) => `<code>${codes[+i]}</code>`);
+};
 
 // ---- parse CHANGELOG.md ----
 const changelog = readFileSync(join(repoRoot, "CHANGELOG.md"), "utf8");
@@ -86,9 +87,11 @@ const re = /(<!-- changelog:begin -->)[\s\S]*?(<!-- changelog:end -->)/;
 if (!re.test(page)) throw new Error("changelog.html is missing the changelog:begin/end markers");
 writeFileSync(clPath, page.replace(re, `$1\n${html}\n$2`));
 
-// ---- stamp version into every page ----
-for (const f of readdirSync(site).filter((f) => f.endsWith(".html"))) {
-  const p = join(site, f);
+// ---- stamp version into every page (site/ and subdirectories) ----
+for (const e of readdirSync(site, { recursive: true, withFileTypes: false })) {
+  const rel = String(e);
+  if (!rel.endsWith(".html")) continue;
+  const p = join(site, rel);
   const src = readFileSync(p, "utf8");
   const out = src.replace(/(<span data-version>)[^<]*(<\/span>)/g, `$1v${version}$2`);
   if (out !== src) writeFileSync(p, out);

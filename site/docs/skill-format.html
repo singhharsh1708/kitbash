@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill format — kitbash docs</title>
+<meta name="description" content="The KSF skill layout: skill.toml manifest fields and SKILL.md instructions.">
+<link rel="canonical" href="https://singhharsh1708.github.io/kitbash/docs/skill-format.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="kitbash">
+<meta property="og:title" content="Skill format — kitbash docs">
+<meta property="og:description" content="The KSF skill layout: skill.toml manifest fields and SKILL.md instructions.">
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%A9%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="../index.html" aria-label="kitbash home">
+    <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+    </svg>
+    <span><span class="kit">kit</span>bash</span>
+  </a>
+  <nav class="top-nav" aria-label="Main navigation">
+    <a href="index.html" aria-current="page">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">GitHub</a>
+    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
+      <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-14.7a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 16.8a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1Zm9.5-8.3a1 1 0 1 1 0 2h-1.2a1 1 0 1 1 0-2h1.2ZM4.7 11a1 1 0 1 1 0 2H3.5a1 1 0 1 1 0-2h1.2Zm13.74-6.44a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0ZM7.83 16.17a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0Zm9.76 0 .85.85a1 1 0 1 1-1.42 1.42l-.85-.85a1 1 0 0 1 1.42-1.42ZM6.98 4.56l.85.85a1 1 0 0 1-1.42 1.42l-.85-.85a1 1 0 1 1 1.42-1.42Z"></path></svg>
+      <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 14.58A8.2 8.2 0 0 1 9.42 3a9.25 9.25 0 1 0 11.59 11.59Z"></path></svg>
+    </button>
+  </nav>
+</header>
+
+<div class="docs-shell">
+<aside class="docs-sidebar" aria-label="Documentation navigation">
+  <details class="docs-nav" open>
+    <summary>Docs navigation</summary>
+    <a class="docs-home" href="index.html">Documentation</a>
+    <section>
+      <h2>Get started</h2>
+      <ul>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="install.html">Install</a></li>
+      </ul>
+    </section>
+    <section>
+      <h2>Use</h2>
+      <ul>
+        <li><a href="commands.html">Commands</a></li>
+        <li><a href="skill-format.html" class="active">Skill format</a></li>
+        <li><a href="policy.html">Trust & policy</a></li>
+      </ul>
+    </section>
+    <section>
+      <h2>Reference</h2>
+      <ul>
+        <li><a href="targets.html">Compile targets</a></li>
+        <li><a href="../changelog.html">Changelog</a></li>
+        <li><a href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">Spec (KSF)</a></li>
+        <li><a href="https://github.com/singhharsh1708/kitbash/blob/main/docs/roadmap.md" target="_blank" rel="noopener">Roadmap</a></li>
+      </ul>
+    </section>
+  </details>
+</aside>
+  <main class="docs-content">
+<h1>Skill format</h1>
+<p class="lead">A skill is a directory: a <code>skill.toml</code> manifest plus a <code>SKILL.md</code> instruction body. The manifest declares things no other agent format has a field for — an enforced token budget and tool permissions. Full authority: <a href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">the spec (KSF)</a>.</p>
+
+<h2 id="manifest">The manifest</h2>
+<pre><code><span class="c"># skill.toml — [skill] and [context] are required; everything else defaults restrictive</span>
+[skill]
+name = <span class="s">"prereview"</span>
+version = <span class="s">"0.3.1"</span>              <span class="c"># semver — breaking prompt changes are breaking changes</span>
+description = <span class="s">"Review a diff against this team's real standards"</span>
+
+[triggers]
+commands = [<span class="s">"/prereview"</span>]      <span class="c"># compiled to native slash commands where supported</span>
+events = [<span class="s">"pre-push"</span>]          <span class="c"># hook points, for gate-mode skills</span>
+
+[context]
+<span class="k">budget</span> = 1500                  <span class="c"># REQUIRED. max tokens injected when active — enforced at compile</span>
+<span class="k">standing</span> = 80                  <span class="c"># max tokens present when NOT invoked</span>
+<span class="k">disclosure</span> = <span class="s">"lazy"</span>            <span class="c"># lazy | eager</span>
+
+[permissions]
+<span class="k">tools</span> = [<span class="s">"read"</span>, <span class="s">"grep"</span>, <span class="s">"bash:git *"</span>]
+<span class="k">network</span> = false
+<span class="k">write</span> = false
+
+[artifacts]
+<span class="k">produces</span> = [<span class="s">"findings@1"</span>]
+<span class="k">consumes</span> = [<span class="s">"plan@1"</span>]          <span class="c"># optional inputs; the skill must work without them</span>
+
+[targets]
+<span class="k">requires</span> = []                  <span class="c"># capabilities: scripts | hooks | subagents | network</span>
+<span class="k">mode</span> = <span class="s">"skill"</span>                 <span class="c"># skill | gate</span></code></pre>
+
+<h2 id="fields">What the key fields buy you</h2>
+<ul>
+  <li><code>context.budget</code> / <code>standing</code> — <code>compile</code> measures the emitted output against these and warns or fails (<code>--strict</code>). The hidden token tax becomes a number.</li>
+  <li><code>permissions</code> — surfaced in the <a href="policy.html">install review</a> and compiled to native permission rules where the target supports them; advisory elsewhere, honestly labeled.</li>
+  <li><code>targets.requires</code> — crossed with each adapter's capabilities to derive the compatibility matrix. An agent that can't run scripts gets an instruction-only build with a visible warning — never a quiet downgrade. <code>kitbash explain</code> shows exactly why.</li>
+  <li><code>artifacts</code> — typed inputs/outputs so skills pipe into each other through data instead of prompt-chaining hope.</li>
+</ul>
+
+<h2 id="bare">Already have plain SKILL.md skills?</h2>
+<div class="callout"><p>A bare <code>SKILL.md</code> folder — the skills.sh / Claude Skills convention — installs directly with <code>kitbash install owner/repo</code>. A manifest is synthesized with conservative defaults and the skill is flagged <code>unmanifested</code> at install, list, and compile. You keep your skills; you gain a lockfile and a token-cost report.</p></div>
+  <div class="docs-footer">
+    <span>Improve this page: <a href="https://github.com/singhharsh1708/kitbash/tree/main/site/docs" target="_blank" rel="noopener">edit on GitHub</a></span>
+    <a href="../index.html">← kitbash home</a>
+  </div>
+  </main>
+</div>
+
+<script>
+  (() => {
+    const key = 'kitbash-theme';
+    const root = document.documentElement;
+    const stored = localStorage.getItem(key);
+    const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const apply = (t) => {
+      root.dataset.theme = t;
+      document.querySelector('[data-theme-toggle]')?.setAttribute('aria-pressed', String(t === 'dark'));
+    };
+    apply(stored || preferred);
+    document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem(key, next);
+      apply(next);
+    });
+    if (window.matchMedia('(max-width: 860px)').matches) document.querySelector('.docs-nav')?.removeAttribute('open');
+  })();
+</script>
+</body>
+</html>
