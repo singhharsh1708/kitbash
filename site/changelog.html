@@ -13,74 +13,12 @@
 <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="docs.css">
 <style>
-  :root {
-    color-scheme: light;
-    --bg: #fbfaf7;
-    --surface: #ffffff;
-    --surface-card: rgba(255, 255, 255, 0.72);
-    --text: #1b1a17;
-    --muted: #6b6459;
-    --line: #e7e2d8;
-    --accent: #b4740f;
-    --accent-strong: #8a5709;
-    --header-bg: rgba(251, 250, 247, 0.88);
-    --code-bg: #f5f2ec;
-    --logo-accent: #d4820f;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  }
-  :root[data-theme="dark"] {
-    color-scheme: dark;
-    --bg: #12161f;
-    --surface: #1a2130;
-    --surface-card: rgba(26, 33, 48, 0.78);
-    --text: #dbe2ee;
-    --muted: #8b96ab;
-    --line: #2c3444;
-    --accent: #ffb454;
-    --accent-strong: #ffc576;
-    --header-bg: rgba(18, 22, 31, 0.88);
-    --code-bg: #0d1119;
-    --logo-accent: #ffb454;
-  }
-  * { box-sizing: border-box; }
-  html { background: var(--bg); color: var(--text); scroll-behavior: smooth; scroll-padding-top: 5.5rem; overflow-x: hidden; }
-  body {
-    margin: 0; min-width: 320px; line-height: 1.6; overflow-x: hidden;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 11%, transparent), transparent 26rem), var(--bg);
-  }
-  a { color: inherit; }
-  code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", ui-monospace, monospace; font-size: .9em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 5px; padding: .08em .35em; }
-
-  .site-header {
-    position: sticky; top: 0; z-index: 10;
-    display: flex; align-items: center; justify-content: space-between; gap: .9rem;
-    padding: 1rem max(1.25rem, calc((100vw - 1120px) / 2));
-    background: var(--header-bg); backdrop-filter: blur(18px);
-  }
-  .brand { display: inline-flex; align-items: center; gap: .6rem; font-weight: 760; font-size: 1.08rem; text-decoration: none; }
-  .brand .kit { color: var(--accent-strong); }
-  .logo-mark { width: 1.7rem; height: 1.7rem; flex: 0 0 auto; }
-  .top-nav { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; font-size: .94rem; color: var(--muted); }
-  .top-nav a { text-decoration: none; }
-  .top-nav a:hover, .top-nav a[aria-current] { color: var(--accent-strong); }
-  .theme-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 2rem; width: 2rem; padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
-  .theme-toggle svg { width: 1.4rem; height: 1.4rem; fill: currentColor; }
-  .moon-icon, .theme-toggle[aria-pressed="true"] .sun-icon { display: none; }
-  .theme-toggle[aria-pressed="true"] .moon-icon { display: block; }
-
-  .page { max-width: 760px; margin: 0 auto; padding: 3.5rem 1.25rem 4rem; }
-  .page-header h1 { margin: 0; font-size: clamp(2.2rem, 5vw, 3.4rem); letter-spacing: -0.01em; }
-  .page-header h1 .hash { color: var(--accent-strong); font-family: "SFMono-Regular", ui-monospace, monospace; margin-right: .4rem; }
-  .page-header p { margin: .8rem 0 0; color: var(--muted); line-height: 1.7; }
-  .page-header code { color: var(--text); }
-  .page-header .cli-version { margin-top: 1rem; font-family: "SFMono-Regular", ui-monospace, monospace; font-size: .85rem; color: var(--muted); }
-  .page-header .cli-version b { color: var(--accent-strong); }
-
-  .release { margin-top: 2.6rem; padding: 1.5rem 1.6rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-card); }
+  .release { margin-top: 2rem; padding: 1.5rem 1.6rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-card); }
   .release-head { display: flex; align-items: baseline; gap: .8rem; flex-wrap: wrap; }
   .release-head h2 { margin: 0; font-size: 1.45rem; letter-spacing: -0.01em; }
-  .release-head h2 a { text-decoration: none; }
+  .release-head h2 a { color: inherit; text-decoration: none; }
   .release-head h2 a:hover { color: var(--accent-strong); }
   .release-date { color: var(--muted); font-family: "SFMono-Regular", ui-monospace, monospace; font-size: .8rem; }
   .release-tag {
@@ -89,20 +27,11 @@
     text-transform: uppercase; letter-spacing: .05em;
   }
   .release-tag.soon { color: var(--muted); border-color: var(--line); }
-  .release-intro { margin: .9rem 0 0; color: var(--muted); line-height: 1.7; }
+  .release-intro { margin: .9rem 0 0; color: var(--muted); }
   .release h3.group { margin: 1.3rem 0 .4rem; color: var(--accent-strong); font-size: .78rem; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; }
-  .release ul { margin: .3rem 0 0; padding-left: 1.2rem; }
-  .release li { margin: .45rem 0; line-height: 1.65; }
-  .release li::marker { color: var(--accent); }
-
-  .page-footer { margin-top: 3rem; padding-top: 1.6rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; text-align: center; }
-  .page-footer a { color: var(--accent-strong); text-decoration: none; }
-  .page-footer a:hover { text-decoration: underline; }
-
-  @media (max-width: 720px) {
-    .top-nav { gap: .75rem; font-size: .88rem; }
-    .release { padding: 1.15rem 1.2rem; }
-  }
+  .release ul { margin: .3rem 0 0; }
+  .cli-version { margin-top: .4rem; font-family: "SFMono-Regular", ui-monospace, monospace; font-size: .85rem; color: var(--muted); }
+  .cli-version b { color: var(--accent-strong); }
 </style>
 </head>
 <body>
@@ -116,8 +45,7 @@
     <span><span class="kit">kit</span>bash</span>
   </a>
   <nav class="top-nav" aria-label="Main navigation">
-    <a href="index.html#why">Why</a>
-    <a href="index.html#how">How</a>
+    <a href="docs/index.html">Docs</a>
     <a href="changelog.html" aria-current="page">Changelog</a>
     <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">GitHub</a>
     <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
@@ -127,12 +55,41 @@
   </nav>
 </header>
 
-<main class="page">
-  <div class="page-header">
-    <h1><span class="hash">#</span>Changelog</h1>
-    <p>Every release, rendered from <code>CHANGELOG.md</code> on each deploy — this page can't go stale. Also on <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener" style="color:var(--accent-strong)">GitHub Releases</a> and <a href="https://www.npmjs.com/package/kitbash?activeTab=versions" target="_blank" rel="noopener" style="color:var(--accent-strong)">npm</a>.</p>
-    <p class="cli-version">current: <b><span data-version>v0.6.0</span></b> · npm install -g kitbash</p>
-  </div>
+<div class="docs-shell">
+<aside class="docs-sidebar" aria-label="Documentation navigation">
+  <details class="docs-nav" open>
+    <summary>Docs navigation</summary>
+    <a class="docs-home" href="docs/index.html">Documentation</a>
+    <section>
+      <h2>Get started</h2>
+      <ul>
+        <li><a href="docs/index.html">Overview</a></li>
+        <li><a href="docs/install.html">Install</a></li>
+      </ul>
+    </section>
+    <section>
+      <h2>Use</h2>
+      <ul>
+        <li><a href="docs/commands.html">Commands</a></li>
+        <li><a href="docs/skill-format.html">Skill format</a></li>
+        <li><a href="docs/policy.html">Trust &amp; policy</a></li>
+      </ul>
+    </section>
+    <section>
+      <h2>Reference</h2>
+      <ul>
+        <li><a href="docs/targets.html">Compile targets</a></li>
+        <li><a href="changelog.html" class="active">Changelog</a></li>
+        <li><a href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">Spec (KSF)</a></li>
+        <li><a href="https://github.com/singhharsh1708/kitbash/blob/main/docs/roadmap.md" target="_blank" rel="noopener">Roadmap</a></li>
+      </ul>
+    </section>
+  </details>
+</aside>
+<main class="docs-content">
+  <h1>Changelog</h1>
+  <p class="lead">Every release, rendered from <code>CHANGELOG.md</code> on each deploy — this page can't go stale. Also on <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub Releases</a> and <a href="https://www.npmjs.com/package/kitbash?activeTab=versions" target="_blank" rel="noopener">npm</a>.</p>
+  <p class="cli-version">current: <b><span data-version>v0.6.0</span></b> · npm install -g kitbash</p>
 
   <!-- changelog:begin -->
 <article class="release" id="v0.6.0">
@@ -142,7 +99,7 @@
   </div>
 <p class="release-intro">Trust &amp; review release: installing a skill means letting someone else's instructions run with your agent's permissions — this release makes that reviewable and governable.</p>
 <h3 class="group">Added</h3>
-<ul><li><strong>Pre-install review gate</strong>: <code>kitbash install</code> prints a review block (permissions incl. network/write, budget, standing, capability requirements, lint warnings incl. injection heuristics) <em>before</em> writing anything, and prompts <code>install? [y/N]</code> on a TTY. <code>--yes</code>/<code>-y</code> skips the prompt; non-interactive runs (CI) proceed as before.</li><li>**<code>[policy]</code> in <code>kitbash.toml</code>** — org-level allowlists: <code>allow_sources</code> (globs matched against <code>gh:owner/repo[/path][@ref]</code> / <code>file:</code> sources), <code>deny_network</code>, <code>deny_write</code>, <code>max_budget</code>. Policy is a hard gate at install (<code>--yes</code> does not bypass it) and <code>doctor</code> rechecks it against already-installed skills.</li><li>**Remote sources for <code>preview</code>, <code>lint</code>, and <code>explain</code>**: <code>kitbash preview gh:owner/repo/path</code> fetches to a temp dir and renders the exact compiled output per agent — skills are fully readable before install, no side effects.</li></ul>
+<ul><li><strong>Pre-install review gate</strong>: <code>kitbash install</code> prints a review block (permissions incl. network/write, budget, standing, capability requirements, lint warnings incl. injection heuristics) <em>before</em> writing anything, and prompts <code>install? [y/N]</code> on a TTY. <code>--yes</code>/<code>-y</code> skips the prompt; non-interactive runs (CI) proceed as before.</li><li><strong><code>[policy]</code> in <code>kitbash.toml</code></strong> — org-level allowlists: <code>allow_sources</code> (globs matched against <code>gh:owner/repo[/path][@ref]</code> / <code>file:</code> sources), <code>deny_network</code>, <code>deny_write</code>, <code>max_budget</code>. Policy is a hard gate at install (<code>--yes</code> does not bypass it) and <code>doctor</code> rechecks it against already-installed skills.</li><li><strong>Remote sources for <code>preview</code>, <code>lint</code>, and <code>explain</code></strong>: <code>kitbash preview gh:owner/repo/path</code> fetches to a temp dir and renders the exact compiled output per agent — skills are fully readable before install, no side effects.</li></ul>
 <h3 class="group">Changed</h3>
 <ul><li><code>install</code> output: the summary (budget/standing/permissions) moved from after the copy to the review block before it; the post-install lines now just confirm the pin.</li><li><code>explain</code>/<code>lint</code>/<code>preview</code> "not found" errors now mention that a source (<code>gh:owner/repo</code>, <code>file:path</code>) is accepted.</li></ul>
 </article>
@@ -206,8 +163,12 @@
 </article>
 <!-- changelog:end -->
 
-  <p class="page-footer">Semver, for skills and for the CLI — breaking prompt changes are breaking changes. <a href="index.html">← back to kitbash</a></p>
+  <div class="docs-footer">
+    <span>Semver, for skills and for the CLI — breaking prompt changes are breaking changes.</span>
+    <a href="index.html">← kitbash home</a>
+  </div>
 </main>
+</div>
 
 <script>
   (() => {
@@ -225,6 +186,7 @@
       localStorage.setItem(key, next);
       apply(next);
     });
+    if (window.matchMedia('(max-width: 860px)').matches) document.querySelector('.docs-nav')?.removeAttribute('open');
   })();
 </script>
 </body>

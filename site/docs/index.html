@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overview — kitbash docs</title>
+<meta name="description" content="What kitbash is and the three-command loop: init, install, compile.">
+<link rel="canonical" href="https://singhharsh1708.github.io/kitbash/docs/index.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="kitbash">
+<meta property="og:title" content="Overview — kitbash docs">
+<meta property="og:description" content="What kitbash is and the three-command loop: init, install, compile.">
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%A9%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="../index.html" aria-label="kitbash home">
+    <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+    </svg>
+    <span><span class="kit">kit</span>bash</span>
+  </a>
+  <nav class="top-nav" aria-label="Main navigation">
+    <a href="index.html" aria-current="page">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">GitHub</a>
+    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
+      <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-14.7a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 16.8a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1Zm9.5-8.3a1 1 0 1 1 0 2h-1.2a1 1 0 1 1 0-2h1.2ZM4.7 11a1 1 0 1 1 0 2H3.5a1 1 0 1 1 0-2h1.2Zm13.74-6.44a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0ZM7.83 16.17a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0Zm9.76 0 .85.85a1 1 0 1 1-1.42 1.42l-.85-.85a1 1 0 0 1 1.42-1.42ZM6.98 4.56l.85.85a1 1 0 0 1-1.42 1.42l-.85-.85a1 1 0 1 1 1.42-1.42Z"></path></svg>
+      <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 14.58A8.2 8.2 0 0 1 9.42 3a9.25 9.25 0 1 0 11.59 11.59Z"></path></svg>
+    </button>
+  </nav>
+</header>
+
+<div class="docs-shell">
+<aside class="docs-sidebar" aria-label="Documentation navigation">
+  <details class="docs-nav" open>
+    <summary>Docs navigation</summary>
+    <a class="docs-home" href="index.html">Documentation</a>
+    <section>
+      <h2>Get started</h2>
+      <ul>
+        <li><a href="index.html" class="active">Overview</a></li>
+        <li><a href="install.html">Install</a></li>
+      </ul>
+    </section>
+    <section>
+      <h2>Use</h2>
+      <ul>
+        <li><a href="commands.html">Commands</a></li>
+        <li><a href="skill-format.html">Skill format</a></li>
+        <li><a href="policy.html">Trust & policy</a></li>
+      </ul>
+    </section>
+    <section>
+      <h2>Reference</h2>
+      <ul>
+        <li><a href="targets.html">Compile targets</a></li>
+        <li><a href="../changelog.html">Changelog</a></li>
+        <li><a href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">Spec (KSF)</a></li>
+        <li><a href="https://github.com/singhharsh1708/kitbash/blob/main/docs/roadmap.md" target="_blank" rel="noopener">Roadmap</a></li>
+      </ul>
+    </section>
+  </details>
+</aside>
+  <main class="docs-content">
+<h1>Documentation</h1>
+<p class="lead">Kitbash is an open format for AI agent skills (KSF) and a compiler that turns one source folder into whatever each coding agent actually reads — <span data-version>v0.6.0</span>, zero runtime dependencies, Apache-2.0.</p>
+
+<h2 id="quickstart">Quickstart</h2>
+<pre><code><span class="c"># in your repo</span>
+npm install -g kitbash
+kitbash init
+kitbash install gh:owner/repo/path/to/skill
+kitbash compile</code></pre>
+<p>That's the whole loop. <code>init</code> writes <code>kitbash.toml</code>, <code>install</code> reviews and pins a skill, <code>compile</code> emits each detected agent's native format — <code>.claude/skills/</code>, <code>.cursor/rules/</code>, <code>AGENTS.md</code> sections, and <a href="targets.html">five more</a>. Compiled output is plain files in your repo: no runtime, no lock-in.</p>
+
+<h2 id="why">Why it exists</h2>
+<p>Every agent invented its own instruction format, so teams hand-maintain divergent copies that quietly drift. Kitbash treats a skill as an engineering artifact: written once, compiled per agent, with three properties no hand-maintained copy has:</p>
+<ul>
+  <li><strong>Measured token budgets</strong> — every skill declares its context cost; <code>compile</code> measures the real output and warns (or fails with <code>--strict</code>) when it goes over.</li>
+  <li><strong>Pinned integrity</strong> — installs pin a content hash in <code>kitbash.lock</code>; <code>doctor</code> detects drift.</li>
+  <li><strong>Reviewable trust</strong> — permissions, budget, and lint findings are shown <em>before</em> anything is written, and org <a href="policy.html"><code>[policy]</code></a> rules gate installs.</li>
+</ul>
+
+<h2 id="next">Where next</h2>
+<ul>
+  <li><a href="install.html">Install</a> — npm or Homebrew, update, uninstall.</li>
+  <li><a href="commands.html">Commands</a> — everything the CLI does today, and what's planned.</li>
+  <li><a href="skill-format.html">Skill format</a> — the <code>skill.toml</code> manifest and SKILL.md.</li>
+  <li><a href="policy.html">Trust &amp; policy</a> — the review gate, allowlists, and the lockfile.</li>
+  <li><a href="targets.html">Compile targets</a> — all 8 agents and what each costs.</li>
+</ul>
+  <div class="docs-footer">
+    <span>Improve this page: <a href="https://github.com/singhharsh1708/kitbash/tree/main/site/docs" target="_blank" rel="noopener">edit on GitHub</a></span>
+    <a href="../index.html">← kitbash home</a>
+  </div>
+  </main>
+</div>
+
+<script>
+  (() => {
+    const key = 'kitbash-theme';
+    const root = document.documentElement;
+    const stored = localStorage.getItem(key);
+    const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const apply = (t) => {
+      root.dataset.theme = t;
+      document.querySelector('[data-theme-toggle]')?.setAttribute('aria-pressed', String(t === 'dark'));
+    };
+    apply(stored || preferred);
+    document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem(key, next);
+      apply(next);
+    });
+    if (window.matchMedia('(max-width: 860px)').matches) document.querySelector('.docs-nav')?.removeAttribute('open');
+  })();
+</script>
+</body>
+</html>
