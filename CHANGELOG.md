@@ -2,6 +2,19 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.6.0] — 2026-07-14
+
+Trust & review release: installing a skill means letting someone else's instructions run with your agent's permissions — this release makes that reviewable and governable.
+
+### Added
+- **Pre-install review gate**: `kitbash install` prints a review block (permissions incl. network/write, budget, standing, capability requirements, lint warnings incl. injection heuristics) *before* writing anything, and prompts `install? [y/N]` on a TTY. `--yes`/`-y` skips the prompt; non-interactive runs (CI) proceed as before.
+- **`[policy]` in `kitbash.toml`** — org-level allowlists: `allow_sources` (globs matched against `gh:owner/repo[/path][@ref]` / `file:` sources), `deny_network`, `deny_write`, `max_budget`. Policy is a hard gate at install (`--yes` does not bypass it) and `doctor` rechecks it against already-installed skills.
+- **Remote sources for `preview`, `lint`, and `explain`**: `kitbash preview gh:owner/repo/path` fetches to a temp dir and renders the exact compiled output per agent — skills are fully readable before install, no side effects.
+
+### Changed
+- `install` output: the summary (budget/standing/permissions) moved from after the copy to the review block before it; the post-install lines now just confirm the pin.
+- `explain`/`lint`/`preview` "not found" errors now mention that a source (`gh:owner/repo`, `file:path`) is accepted.
+
 ## [0.5.0] — 2026-07-12
 
 ### Added
