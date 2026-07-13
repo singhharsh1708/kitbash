@@ -102,10 +102,18 @@ code, pre, kbd { font-family: "SFMono-Regular", Consolas, "Liberation Mono", ui-
 
 /* docs shell */
 .docs-shell {
-  display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 2.5rem;
-  max-width: 1120px; margin: 0 auto; padding: 2.6rem 1.25rem 4rem;
+  display: grid; grid-template-columns: 210px minmax(0, 1fr) 190px; gap: 2.2rem;
+  max-width: 1200px; margin: 0 auto; padding: 2.6rem 1.25rem 4rem;
 }
 .docs-sidebar { position: sticky; top: 5rem; align-self: start; max-height: calc(100vh - 6rem); overflow: auto; padding-right: .4rem; }
+
+/* on-this-page rail */
+.docs-toc { position: sticky; top: 5rem; align-self: start; max-height: calc(100vh - 6rem); overflow: auto; }
+.docs-toc h2 { margin: 0 0 .55rem; color: var(--muted); font-size: .72rem; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; }
+.docs-toc ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .05rem; border-left: 1px solid var(--line); }
+.docs-toc a { display: block; padding: .28rem .8rem; margin-left: -1px; border-left: 2px solid transparent; color: var(--muted); font-size: .85rem; line-height: 1.4; text-decoration: none; }
+.docs-toc a:hover { color: var(--text); }
+.docs-toc a.active { color: var(--accent-strong); border-left-color: var(--accent); }
 .docs-sidebar .docs-home { display: block; margin-bottom: 1.1rem; color: var(--muted); font-size: .76rem; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; text-decoration: none; }
 .docs-sidebar .docs-home:hover { color: var(--accent-strong); }
 .docs-sidebar section + section { margin-top: 1.2rem; }
@@ -150,6 +158,10 @@ code, pre, kbd { font-family: "SFMono-Regular", Consolas, "Liberation Mono", ui-
 .docs-footer a { color: var(--accent-strong); text-decoration: none; }
 .docs-footer a:hover { text-decoration: underline; }
 
+@media (max-width: 1080px) {
+  .docs-shell { grid-template-columns: 210px minmax(0, 1fr); }
+  .docs-toc { display: none; }
+}
 @media (max-width: 860px) {
   .docs-shell { grid-template-columns: 1fr; gap: 1.2rem; padding-top: 1.4rem; }
   .docs-sidebar { position: static; max-height: none; padding-right: 0; }
