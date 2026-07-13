@@ -2,6 +2,7 @@
 
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { createInterface } from "node:readline";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { ADAPTERS, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, type CompiledFile } from "./adapters.js";
@@ -15,6 +16,13 @@ const INIT_CONFIG = `# kitbash project configuration — https://github.com/sing
 [project]
 # Adapters to compile for. Omit to autodetect (.claude/, .cursor/, AGENTS.md floor).
 # targets = ["claude-code", "cursor", "agentsmd"]
+
+# Install policy (org allowlist). Enforced at install and rechecked by doctor.
+# [policy]
+# allow_sources = ["gh:your-org/*"]  # globs; matched against gh:owner/repo[/path][@ref] or file:/abs/path
+# deny_network = true                # refuse skills declaring network permission
+# deny_write = true                  # refuse skills declaring write permission
+# max_budget = 6000                  # refuse skills with a larger context budget
 `;
 
 export async function cmdInit(): Promise<number> {
@@ -58,92 +66,148 @@ function normalizeSource(source: string, root: string): { kind: "gh" | "local"; 
   return { kind: "local", value: local }; // will fail with a clear "missing SKILL.md" error
 }
 
+/**
+ * Fetch a source to a readable directory without installing it. Prints its own
+ * errors and returns null on failure. When `cleanup` is set the caller must
+ * rmSync it after use (it is a temp clone).
+ */
+function fetchSource(source: string, root: string): { dir: string; cleanup?: string } | null {
+  const normalized = normalizeSource(source, root);
+  if (normalized.kind === "local") {
+    if (!existsSync(normalized.value)) {
+      console.error(`local path not found: ${normalized.value}`);
+      return null;
+    }
+    return { dir: normalized.value };
+  }
+
+  const m = normalized.value.match(/^([^/@]+)\/([^/@]+)(?:\/([^@]+))?(?:@(.+))?$/);
+  if (!m) {
+    console.error(`invalid source "${source}".`);
+    console.error("  expected: gh:owner/repo, owner/repo, owner/repo/path/to/skill, or owner/repo@ref");
+    return null;
+  }
+  if (!hasGit()) {
+    console.error("git is required to fetch from GitHub but was not found on PATH.");
+    console.error("  install git, or use a local source: file:./path/to/skill");
+    return null;
+  }
+  const [, owner, repo, subpath, ref] = m;
+  const cleanup = mkdtempSync(join(tmpdir(), "kitbash-"));
+  const fail = (lines: string[]): null => {
+    rmSync(cleanup, { recursive: true, force: true });
+    for (const l of lines) console.error(l);
+    return null;
+  };
+  const url = `https://github.com/${owner}/${repo}.git`;
+  const cloneArgs = ref ? ["clone", "--quiet", url, cleanup] : ["clone", "--quiet", "--depth", "1", url, cleanup];
+  try {
+    execFileSync("git", cloneArgs, { stdio: ["ignore", "ignore", "pipe"] });
+  } catch {
+    return fail([
+      `could not clone https://github.com/${owner}/${repo}.`,
+      "  check the repo exists and is public, the name is spelled right, and you're online.",
+    ]);
+  }
+  if (ref) {
+    try {
+      execFileSync("git", ["-C", cleanup, "checkout", "--quiet", ref], { stdio: ["ignore", "ignore", "pipe"] });
+    } catch {
+      return fail([`ref "${ref}" not found in ${owner}/${repo} (not a branch, tag, or commit).`]);
+    }
+  }
+  let dir = cleanup;
+  if (subpath) {
+    const resolved = resolveSubpath(cleanup, subpath);
+    if (!resolved) {
+      return fail([
+        `invalid subpath "${subpath}": it escapes the repository.`,
+        "  use a path inside the repo, e.g. owner/repo/skills/my-skill.",
+      ]);
+    }
+    if (!existsSync(resolved)) {
+      return fail([
+        `path "${subpath}" not found in ${owner}/${repo}.`,
+        "  point at the folder that contains skill.toml (or SKILL.md).",
+      ]);
+    }
+    dir = resolved;
+  }
+  return { dir, cleanup };
+}
+
+function confirm(question: string): Promise<boolean> {
+  return new Promise((res) => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(question, (answer) => {
+      rl.close();
+      res(/^y(es)?$/i.test(answer.trim()));
+    });
+  });
+}
+
 export async function cmdInstall(args: string[]): Promise<number> {
-  const source = args[0];
+  const source = args.find((a) => !a.startsWith("-"));
+  const yes = args.includes("--yes") || args.includes("-y");
   if (!source) {
-    console.error("usage: kitbash install <gh:owner/repo[/path][@ref] | owner/repo | file:path>");
+    console.error("usage: kitbash install <gh:owner/repo[/path][@ref] | owner/repo | file:path> [--yes]");
     return 1;
   }
   const root = process.cwd();
-  const normalized = normalizeSource(source, root);
-  let cleanup: string | undefined;
+  const fetched = fetchSource(source, root);
+  if (!fetched) return 1;
   try {
-    let dir: string;
-    if (normalized.kind === "gh") {
-      const m = normalized.value.match(/^([^/@]+)\/([^/@]+)(?:\/([^@]+))?(?:@(.+))?$/);
-      if (!m) {
-        console.error(`invalid source "${source}".`);
-        console.error("  expected: gh:owner/repo, owner/repo, owner/repo/path/to/skill, or owner/repo@ref");
-        return 1;
-      }
-      if (!hasGit()) {
-        console.error("git is required to install from GitHub but was not found on PATH.");
-        console.error("  install git, or use a local source: kitbash install file:./path/to/skill");
-        return 1;
-      }
-      const [, owner, repo, subpath, ref] = m;
-      cleanup = mkdtempSync(join(tmpdir(), "kitbash-"));
-      const url = `https://github.com/${owner}/${repo}.git`;
-      const cloneArgs = ref ? ["clone", "--quiet", url, cleanup] : ["clone", "--quiet", "--depth", "1", url, cleanup];
-      try {
-        execFileSync("git", cloneArgs, { stdio: ["ignore", "ignore", "pipe"] });
-      } catch {
-        console.error(`could not clone https://github.com/${owner}/${repo}.`);
-        console.error("  check the repo exists and is public, the name is spelled right, and you're online.");
-        return 1;
-      }
-      if (ref) {
-        try {
-          execFileSync("git", ["-C", cleanup, "checkout", "--quiet", ref], { stdio: ["ignore", "ignore", "pipe"] });
-        } catch {
-          console.error(`ref "${ref}" not found in ${owner}/${repo} (not a branch, tag, or commit).`);
-          return 1;
-        }
-      }
-      if (subpath) {
-        const resolved = resolveSubpath(cleanup, subpath);
-        if (!resolved) {
-          console.error(`invalid subpath "${subpath}": it escapes the repository.`);
-          console.error("  use a path inside the repo, e.g. owner/repo/skills/my-skill.");
-          return 1;
-        }
-        dir = resolved;
-      } else {
-        dir = cleanup;
-      }
-      if (subpath && !existsSync(dir)) {
-        console.error(`path "${subpath}" not found in ${owner}/${repo}.`);
-        console.error("  point at the folder that contains skill.toml (or SKILL.md).");
-        return 1;
-      }
-    } else {
-      dir = normalized.value;
-      if (!existsSync(dir)) {
-        console.error(`local path not found: ${dir}`);
-        return 1;
-      }
-    }
-
-    const skill = loadSkill(dir);
+    const skill = loadSkill(fetched.dir);
     const { name, version, description } = skill.manifest.skill;
     const dest = join(root, SKILLS_DIR, name);
     if (existsSync(dest)) {
       console.error(`${name} is already installed. To reinstall: kitbash remove ${name} && kitbash install ${source}`);
       return 1;
     }
+
+    // Review before install (spec §2: permissions are surfaced at install review).
+    const m = skill.manifest;
+    console.log(`review: ${name}@${version} — ${description}`);
+    console.log(`  budget ${m.context.budget} tokens · standing ${m.context.standing} · ${m.context.disclosure} disclosure · mode ${m.targets.mode}`);
+    console.log(`  permissions: tools [${m.permissions.tools.join(", ") || "none"}] · network ${m.permissions.network ? "YES" : "no"} · write ${m.permissions.write ? "YES" : "no"}`);
+    if (m.targets.requires.length) console.log(`  requires: ${m.targets.requires.join(", ")}`);
+    if (skill.bare) console.log(`  ⚠ unmanifested (SKILL.md only) — defaults applied, no permissions or budget declared by the author`);
+    for (const c of staticChecks(skill).filter((c) => !c.ok || c.warn)) {
+      console.log(`  ⚠ lint: ${c.name}${c.detail ? ` — ${c.detail}` : ""}`);
+    }
+
+    // Policy is a hard gate: --yes does not bypass it.
+    const policy = loadPolicy(root);
+    if (policy) {
+      const violations = [
+        ...sourceViolations(policy, source, root),
+        ...manifestViolations(policy, skill),
+      ];
+      if (violations.length) {
+        for (const v of violations) console.error(`  ✗ policy: ${v}`);
+        console.error(`blocked by [policy] in ${CONFIG}.`);
+        return 1;
+      }
+    }
+
+    if (!yes && process.stdin.isTTY && process.stdout.isTTY) {
+      const ok = await confirm(`install ${name}@${version}? [y/N] `);
+      if (!ok) {
+        console.error("aborted — nothing installed.");
+        return 1;
+      }
+    }
+
     mkdirSync(dirname(dest), { recursive: true });
-    cpSync(dir, dest, { recursive: true });
+    cpSync(fetched.dir, dest, { recursive: true });
     upsertLock(root, { name, version, source, integrity: integrityOf(dest) });
 
-    console.log(`installed ${name}@${version} — ${description}`);
-    console.log(`  budget ${skill.manifest.context.budget} tokens · standing ${skill.manifest.context.standing} · mode ${skill.manifest.targets.mode}`);
-    if (skill.manifest.permissions.tools.length) console.log(`  permissions: ${skill.manifest.permissions.tools.join(", ")}`);
-    if (skill.bare) console.log(`  ⚠ unmanifested (SKILL.md only) — defaults applied, no permissions or budget declared by the author`);
+    console.log(`installed ${name}@${version}`);
     console.log(`  pinned in ${LOCK_FILE}`);
     console.log("next: kitbash compile");
     return 0;
   } finally {
-    if (cleanup) rmSync(cleanup, { recursive: true, force: true });
+    if (fetched.cleanup) rmSync(fetched.cleanup, { recursive: true, force: true });
   }
 }
 
@@ -224,12 +288,129 @@ export async function cmdDoctor(): Promise<number> {
       problems++;
     }
   }
-  if (problems) {
-    console.error(`${problems} integrity problem(s) — reinstall or investigate`);
+  // Recheck [policy] against what is already installed — catches skills that
+  // predate the policy or were copied in outside `kitbash install`.
+  const policy = loadPolicy(root);
+  let policyProblems = 0;
+  if (policy) {
+    const sources = new Map(lock.map((e) => [e.name, e.source]));
+    for (const s of skills) {
+      const src = sources.get(s.manifest.skill.name);
+      const violations = [
+        ...(src ? sourceViolations(policy, src, root) : []),
+        ...manifestViolations(policy, s),
+      ];
+      for (const v of violations) {
+        console.error(`  ✗ policy: ${v}`);
+        policyProblems++;
+      }
+    }
+  }
+
+  if (problems || policyProblems) {
+    if (problems) console.error(`${problems} integrity problem(s) — reinstall or investigate`);
+    if (policyProblems) console.error(`${policyProblems} policy violation(s) — see [policy] in ${CONFIG}`);
     return 1;
   }
   console.log("lock integrity: ok");
+  if (policy) console.log("policy: ok");
   return 0;
+}
+
+/**
+ * Project-level install policy from kitbash.toml `[policy]` — the org-allowlist
+ * layer: which sources may be installed and what installed skills may declare.
+ * Enforced at install (hard error, not bypassable) and rechecked by doctor.
+ */
+interface Policy {
+  allowSources: string[];
+  denyNetwork: boolean;
+  denyWrite: boolean;
+  maxBudget?: number | undefined;
+}
+
+function loadPolicy(root: string): Policy | null {
+  const p = join(root, CONFIG);
+  if (!existsSync(p)) return null;
+  const raw = parseToml(readFileSync(p, "utf8"));
+  const t = raw["policy"];
+  if (!t || typeof t !== "object" || Array.isArray(t)) return null;
+  const tbl = t as Record<string, unknown>;
+  const allowSources = Array.isArray(tbl["allow_sources"])
+    ? (tbl["allow_sources"] as unknown[]).filter((x): x is string => typeof x === "string")
+    : [];
+  return {
+    allowSources,
+    denyNetwork: tbl["deny_network"] === true,
+    denyWrite: tbl["deny_write"] === true,
+    maxBudget: typeof tbl["max_budget"] === "number" ? (tbl["max_budget"] as number) : undefined,
+  };
+}
+
+/** Glob match where `*` spans any run of characters, including `/`. */
+function sourceMatches(pattern: string, value: string): boolean {
+  const re = new RegExp(
+    "^" + pattern.split("*").map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$",
+  );
+  return re.test(value);
+}
+
+/** Patterns are matched against both the raw source and its canonical form (gh:owner/repo..., file:/abs/path). */
+function sourceViolations(policy: Policy, rawSource: string, root: string): string[] {
+  if (!policy.allowSources.length) return [];
+  const n = normalizeSource(rawSource, root);
+  const canonical = n.kind === "gh" ? `gh:${n.value}` : `file:${n.value}`;
+  const allowed = policy.allowSources.some((p) => sourceMatches(p, canonical) || sourceMatches(p, rawSource));
+  return allowed ? [] : [`source "${rawSource}" is not in allow_sources (${policy.allowSources.join(", ")})`];
+}
+
+function manifestViolations(policy: Policy, skill: LoadedSkill): string[] {
+  const out: string[] = [];
+  const m = skill.manifest;
+  const name = m.skill.name;
+  if (policy.denyNetwork && m.permissions.network) out.push(`${name} declares network permission and deny_network = true`);
+  if (policy.denyWrite && m.permissions.write) out.push(`${name} declares write permission and deny_write = true`);
+  if (policy.maxBudget !== undefined && m.context.budget > policy.maxBudget) {
+    out.push(`${name} budget ${m.context.budget} exceeds max_budget ${policy.maxBudget}`);
+  }
+  return out;
+}
+
+/**
+ * Resolve a lint/explain/preview target: an existing local path, an installed
+ * skill name, or an uninstalled source (gh:owner/repo[/path][@ref], owner/repo,
+ * file:path) — fetched to a temp dir so skills are reviewable before install.
+ * Caller must rmSync `cleanup` when set.
+ */
+function loadSkillTarget(target: string, root: string): { skill: LoadedSkill; cleanup?: string | undefined } | null {
+  const asPath = resolve(root, target);
+  if (existsSync(asPath)) {
+    try {
+      return { skill: loadSkill(asPath) };
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      return null;
+    }
+  }
+  const installed = loadInstalledSkills(root);
+  const found = installed.find((s) => s.manifest.skill.name === target);
+  if (found) return { skill: found };
+
+  if (target.startsWith("gh:") || target.startsWith("file:") || /^[\w.-]+\/[\w.-]+/.test(target)) {
+    const fetched = fetchSource(target, root);
+    if (!fetched) return null;
+    try {
+      return { skill: loadSkill(fetched.dir), cleanup: fetched.cleanup };
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      if (fetched.cleanup) rmSync(fetched.cleanup, { recursive: true, force: true });
+      return null;
+    }
+  }
+
+  console.error(`${target}: not found as a path or installed skill name (or pass a source: gh:owner/repo, file:path)`);
+  if (installed.length) console.error(`  installed: ${installed.map((s) => s.manifest.skill.name).join(", ")}`);
+  return null;
 }
 
 function configuredAdapters(root: string): typeof ADAPTERS | string {
@@ -421,21 +602,7 @@ export async function cmdTest(args: string[]): Promise<number> {
     return 1;
   }
 
-  let failed = 0;
-  let warned = 0;
-  for (const skill of skills) {
-    const checks = staticChecks(skill);
-    const bad = checks.filter((c) => !c.ok);
-    const warns = checks.filter((c) => c.ok && c.warn);
-    failed += bad.length;
-    warned += warns.length;
-    const mark = bad.length ? "✗" : warns.length ? "⚠" : "✓";
-    console.log(`${mark} ${skill.manifest.skill.name}`);
-    for (const c of checks) {
-      const sym = !c.ok ? "✗" : c.warn ? "⚠" : "·";
-      console.log(`    ${sym} ${c.name}${c.detail ? ` — ${c.detail}` : ""}`);
-    }
-  }
+  const { failed, warned } = reportChecks(skills);
 
   console.log(`\ntested ${skills.length} skill(s) · ${failed} failure(s) · ${warned} warning(s) (static tier)`);
   if (skills.some((s) => existsSync(join(root, SKILLS_DIR, s.manifest.skill.name, "evals")))) {
@@ -455,25 +622,12 @@ export async function cmdLint(args: string[]): Promise<number> {
   const root = process.cwd();
 
   let skills: LoadedSkill[];
+  let cleanup: string | undefined;
   if (target) {
-    const asPath = resolve(root, target);
-    if (existsSync(asPath)) {
-      try {
-        skills = [loadSkill(asPath)];
-      } catch (e) {
-        console.error(e instanceof Error ? e.message : String(e));
-        return 1;
-      }
-    } else {
-      const installed = loadInstalledSkills(root);
-      const found = installed.find((s) => s.manifest.skill.name === target);
-      if (!found) {
-        console.error(`${target}: not found as a path or installed skill name`);
-        if (installed.length) console.error(`  installed: ${installed.map((s) => s.manifest.skill.name).join(", ")}`);
-        return 1;
-      }
-      skills = [found];
-    }
+    const loaded = loadSkillTarget(target, root);
+    if (!loaded) return 1;
+    skills = [loaded.skill];
+    cleanup = loaded.cleanup;
   } else {
     skills = loadInstalledSkills(root);
     if (!skills.length) {
@@ -482,6 +636,22 @@ export async function cmdLint(args: string[]): Promise<number> {
     }
   }
 
+  try {
+    const { failed, warned } = reportChecks(skills);
+    console.log(`\nlinted ${skills.length} skill(s) · ${failed} failure(s) · ${warned} warning(s)`);
+    if (failed) return 1;
+    if (strict && warned) {
+      console.error(`--strict: failing on ${warned} warning(s)`);
+      return 1;
+    }
+    return 0;
+  } finally {
+    if (cleanup) rmSync(cleanup, { recursive: true, force: true });
+  }
+}
+
+/** Run staticChecks over each skill, print the per-check report, return totals. */
+function reportChecks(skills: LoadedSkill[]): { failed: number; warned: number } {
   let failed = 0;
   let warned = 0;
   for (const skill of skills) {
@@ -497,63 +667,67 @@ export async function cmdLint(args: string[]): Promise<number> {
       console.log(`    ${sym} ${c.name}${c.detail ? ` — ${c.detail}` : ""}`);
     }
   }
-
-  console.log(`\nlinted ${skills.length} skill(s) · ${failed} failure(s) · ${warned} warning(s)`);
-  if (failed) return 1;
-  if (strict && warned) {
-    console.error(`--strict: failing on ${warned} warning(s)`);
-    return 1;
-  }
-  return 0;
+  return { failed, warned };
 }
 
 export async function cmdExplain(args: string[]): Promise<number> {
   const target = args[0];
   const adapterName = args[1];
   if (!target || !adapterName) {
-    console.error("usage: kitbash explain <skill-name-or-path> <adapter>");
+    console.error("usage: kitbash explain <skill-name-or-path-or-source> <adapter>");
     console.error(`  adapters: ${ADAPTERS.map((a) => a.id).join(", ")}`);
     return 1;
   }
   const root = process.cwd();
 
-  let skill: LoadedSkill;
-  const asPath = resolve(root, target);
-  if (existsSync(asPath)) {
-    try {
-      skill = loadSkill(asPath);
-    } catch (e) {
-      console.error(e instanceof Error ? e.message : String(e));
+  const loaded = loadSkillTarget(target, root);
+  if (!loaded) return 1;
+  const { skill, cleanup } = loaded;
+  try {
+    const adapter = ADAPTERS.find((a) => a.id === adapterName);
+    if (!adapter) {
+      console.error(`unknown adapter "${adapterName}". known: ${ADAPTERS.map((a) => a.id).join(", ")}`);
       return 1;
     }
-  } else {
-    const installed = loadInstalledSkills(root);
-    const found = installed.find((s) => s.manifest.skill.name === target);
-    if (!found) {
-      console.error(`${target}: not found as a path or installed skill name`);
-      if (installed.length) console.error(`  installed: ${installed.map((s) => s.manifest.skill.name).join(", ")}`);
-      else console.error("  no skills installed yet.");
-      return 1;
+
+    const skillName = skill.manifest.skill.name;
+    const missing = skill.manifest.targets.requires.filter((r) => !adapter.capabilities.includes(r));
+    if (!missing.length) {
+      console.log(`${skillName} → ${adapterName}: no capability degradation`);
+    } else {
+      console.log(`${skillName} → ${adapterName}: degraded`);
+      for (const cap of missing) {
+        console.log(`  ✗ requires "${cap}" — not supported by ${adapterName}; compiled instruction-only`);
+      }
     }
-    skill = found;
+    if (adapter.loading === "eager" && skill.manifest.context.disclosure === "lazy") {
+      let body: string;
+      try {
+        body = resolveBody(skill);
+      } catch (e) {
+        console.error(e instanceof Error ? e.message : String(e));
+        return 1;
+      }
+      console.log(`  ⚠ loading: ${adapterName} is eager — skill costs ~${estimateTokens(body)} tokens standing every session (declared limit: ${skill.manifest.context.standing})`);
+    }
+    return 0;
+  } finally {
+    if (cleanup) rmSync(cleanup, { recursive: true, force: true });
   }
-  const adapter = ADAPTERS.find((a) => a.id === adapterName);
-  if (!adapter) {
-    console.error(`unknown adapter "${adapterName}". known: ${ADAPTERS.map((a) => a.id).join(", ")}`);
+}
+
+export async function cmdPreview(args: string[]): Promise<number> {
+  const target = args.find((a) => !a.startsWith("-"));
+  if (!target) {
+    console.error("usage: kitbash preview <skill-name-or-path-or-source>");
     return 1;
   }
+  const root = process.cwd();
 
-  const skillName = skill.manifest.skill.name;
-  const missing = skill.manifest.targets.requires.filter((r) => !adapter.capabilities.includes(r));
-  if (!missing.length) {
-    console.log(`${skillName} → ${adapterName}: no capability degradation`);
-  } else {
-    console.log(`${skillName} → ${adapterName}: degraded`);
-    for (const cap of missing) {
-      console.log(`  ✗ requires "${cap}" — not supported by ${adapterName}; compiled instruction-only`);
-    }
-  }
-  if (adapter.loading === "eager" && skill.manifest.context.disclosure === "lazy") {
+  const loaded = loadSkillTarget(target, root);
+  if (!loaded) return 1;
+  const { skill, cleanup } = loaded;
+  try {
     let body: string;
     try {
       body = resolveBody(skill);
@@ -561,65 +735,28 @@ export async function cmdExplain(args: string[]): Promise<number> {
       console.error(e instanceof Error ? e.message : String(e));
       return 1;
     }
-    console.log(`  ⚠ loading: ${adapterName} is eager — skill costs ~${estimateTokens(body)} tokens standing every session (declared limit: ${skill.manifest.context.standing})`);
-  }
-  return 0;
-}
 
-export async function cmdPreview(args: string[]): Promise<number> {
-  const target = args.find((a) => !a.startsWith("-"));
-  if (!target) {
-    console.error("usage: kitbash preview <skill-name-or-path>");
-    return 1;
-  }
-  const root = process.cwd();
+    const { name, version } = skill.manifest.skill;
+    console.log(`preview: ${name}@${version}\n`);
 
-  let skill: LoadedSkill;
-  const asPath = resolve(root, target);
-  if (existsSync(asPath)) {
-    try {
-      skill = loadSkill(asPath);
-    } catch (e) {
-      console.error(e instanceof Error ? e.message : String(e));
-      return 1;
+    const adaptersOrError = configuredAdapters(root);
+    const adapters = typeof adaptersOrError === "string" ? ADAPTERS : adaptersOrError;
+
+    for (const adapter of adapters) {
+      const out = adapter.emit(skill, body, root);
+      const bodyTokens = out.files.reduce((sum, f) => sum + estimateTokens(f.content), 0);
+      const standingLabel = adapter.loading === "eager" ? `~${bodyTokens} tok standing` : `lazy (0 tok standing)`;
+      console.log(`─── ${adapter.id} [${adapter.loading}] ${standingLabel} ───`);
+      for (const w of out.warnings) console.log(`⚠ ${w}`);
+      for (const f of out.files) {
+        console.log(`\n  → ${f.path}\n`);
+        console.log(f.content);
+      }
     }
-  } else {
-    const installed = loadInstalledSkills(root);
-    const found = installed.find((s) => s.manifest.skill.name === target);
-    if (!found) {
-      console.error(`${target}: not found as a path or installed skill name`);
-      if (installed.length) console.error(`  installed: ${installed.map((s) => s.manifest.skill.name).join(", ")}`);
-      return 1;
-    }
-    skill = found;
+    return 0;
+  } finally {
+    if (cleanup) rmSync(cleanup, { recursive: true, force: true });
   }
-
-  let body: string;
-  try {
-    body = resolveBody(skill);
-  } catch (e) {
-    console.error(e instanceof Error ? e.message : String(e));
-    return 1;
-  }
-
-  const { name, version } = skill.manifest.skill;
-  console.log(`preview: ${name}@${version}\n`);
-
-  const adaptersOrError = configuredAdapters(root);
-  const adapters = typeof adaptersOrError === "string" ? ADAPTERS : adaptersOrError;
-
-  for (const adapter of adapters) {
-    const out = adapter.emit(skill, body, root);
-    const bodyTokens = out.files.reduce((sum, f) => sum + estimateTokens(f.content), 0);
-    const standingLabel = adapter.loading === "eager" ? `~${bodyTokens} tok standing` : `lazy (0 tok standing)`;
-    console.log(`─── ${adapter.id} [${adapter.loading}] ${standingLabel} ───`);
-    for (const w of out.warnings) console.log(`⚠ ${w}`);
-    for (const f of out.files) {
-      console.log(`\n  → ${f.path}\n`);
-      console.log(f.content);
-    }
-  }
-  return 0;
 }
 
 function budgetViolations(skill: LoadedSkill, body: string): string[] {
