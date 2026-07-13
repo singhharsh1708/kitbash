@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kitbash — one skill, every coding agent</title>
 <meta name="description" content="An open format for AI agent skills, plus a compiler that turns one skill into whatever each coding agent reads — Claude Code, Cursor, Copilot, Codex, Gemini, and more.">
 <link rel="canonical" href="https://singhharsh1708.github.io/kitbash/">
@@ -63,7 +63,7 @@
   *::-webkit-scrollbar-thumb { border: .15rem solid transparent; border-radius: 999px; background: color-mix(in srgb, var(--muted) 35%, transparent); background-clip: content-box; }
   *::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--muted) 58%, transparent); background-clip: content-box; }
 
-  html { background: var(--bg); color: var(--text); scroll-behavior: smooth; scroll-padding-top: 5.5rem; }
+  html { background: var(--bg); color: var(--text); scroll-behavior: smooth; scroll-padding-top: 5.5rem; overflow-x: hidden; }
   body {
     margin: 0; min-width: 320px; line-height: 1.6; overflow-x: hidden;
     background:
@@ -239,6 +239,12 @@
     .theme-toggle { margin-left: auto; }
     .mobile-menu-toggle { display: inline-flex; }
     .hero h1 { font-size: 2.5rem; }
+    /* keep the hero glow inside the viewport — its horizontal overhang is what
+       made iOS lay the page out wider than the screen and zoom out to fit */
+    .demo-wrap::before { inset: -10% 0; }
+    /* narrow screens: wrap terminal/code lines instead of clipping them */
+    .term-body, .code-sample, .install-strip pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .term-body { font-size: .72rem; }
   }
 
   /* mascot */
