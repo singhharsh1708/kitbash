@@ -23,6 +23,25 @@ Trust & review release: installing a skill means letting someone else's instruct
 - CI runs on Windows and macOS alongside Linux; fixed the platform-dependent subpath test so the suite is green on all three.
 - Site: live terminal replay in the hero and an interactive per-target compile preview.
 
+## [0.4.1] — 2026-07-11
+
+### Fixed
+- TOML parser hardening: quoted strings and keys, signed numbers, spaced table headers, invalid-escape guard (`TomlError` instead of raw exceptions), plus edge cases around inline values.
+- `gh:` installer: directory-traversal guard on subpaths; two skills writing the same output path now warn instead of silently overwriting.
+- Schema bounds enforced (budget ≤ 20000, standing ≤ 500, description ≤ 200 chars); YAML frontmatter values escaped so descriptions with quotes/colons stay valid.
+- Cross-platform deterministic integrity hashing — `kitbash.lock` hashes are CRLF/LF-insensitive and path-order stable.
+- `doctor` flags a missing lockfile and installed-but-unpinned skills.
+- Standing stub skips markdown headers; unresolved `{{template}}` variables error at compile instead of leaking.
+- UTF-8 BOM stripped from manifests; stray subdirectories under the skills dir no longer crash `list`/`doctor`.
+
+## [0.4.0] — 2026-07-11
+
+### Added
+- Homebrew install: `brew install singhharsh1708/tap/kitbash`; README install/update/uninstall guide.
+
+### Fixed
+- Every eager target now reports the standing token cost of a lazy-authored skill, not just the shared-file ones.
+
 ## [0.3.0] — 2026-07-11
 
 ### Added

@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Changelog — kitbash</title>
+<meta name="description" content="Every kitbash release — new commands, adapters, and fixes. Generated from CHANGELOG.md on every deploy.">
+<link rel="canonical" href="https://singhharsh1708.github.io/kitbash/changelog.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="kitbash">
+<meta property="og:title" content="Changelog — kitbash">
+<meta property="og:description" content="Every kitbash release — new commands, adapters, and fixes.">
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #fbfaf7;
+    --surface: #ffffff;
+    --surface-card: rgba(255, 255, 255, 0.72);
+    --text: #1b1a17;
+    --muted: #6b6459;
+    --line: #e7e2d8;
+    --accent: #b4740f;
+    --accent-strong: #8a5709;
+    --header-bg: rgba(251, 250, 247, 0.88);
+    --code-bg: #f5f2ec;
+    --logo-accent: #d4820f;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #12161f;
+    --surface: #1a2130;
+    --surface-card: rgba(26, 33, 48, 0.78);
+    --text: #dbe2ee;
+    --muted: #8b96ab;
+    --line: #2c3444;
+    --accent: #ffb454;
+    --accent-strong: #ffc576;
+    --header-bg: rgba(18, 22, 31, 0.88);
+    --code-bg: #0d1119;
+    --logo-accent: #ffb454;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); color: var(--text); scroll-behavior: smooth; scroll-padding-top: 5.5rem; overflow-x: hidden; }
+  body {
+    margin: 0; min-width: 320px; line-height: 1.6; overflow-x: hidden;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 11%, transparent), transparent 26rem), var(--bg);
+  }
+  a { color: inherit; }
+  code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", ui-monospace, monospace; font-size: .9em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 5px; padding: .08em .35em; }
+
+  .site-header {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between; gap: .9rem;
+    padding: 1rem max(1.25rem, calc((100vw - 1120px) / 2));
+    background: var(--header-bg); backdrop-filter: blur(18px);
+  }
+  .brand { display: inline-flex; align-items: center; gap: .6rem; font-weight: 760; font-size: 1.08rem; text-decoration: none; }
+  .brand .kit { color: var(--accent-strong); }
+  .logo-mark { width: 1.7rem; height: 1.7rem; flex: 0 0 auto; }
+  .top-nav { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; font-size: .94rem; color: var(--muted); }
+  .top-nav a { text-decoration: none; }
+  .top-nav a:hover, .top-nav a[aria-current] { color: var(--accent-strong); }
+  .theme-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 2rem; width: 2rem; padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+  .theme-toggle svg { width: 1.4rem; height: 1.4rem; fill: currentColor; }
+  .moon-icon, .theme-toggle[aria-pressed="true"] .sun-icon { display: none; }
+  .theme-toggle[aria-pressed="true"] .moon-icon { display: block; }
+
+  .page { max-width: 760px; margin: 0 auto; padding: 3.5rem 1.25rem 4rem; }
+  .page-header h1 { margin: 0; font-size: clamp(2.2rem, 5vw, 3.4rem); letter-spacing: -0.01em; }
+  .page-header h1 .hash { color: var(--accent-strong); font-family: "SFMono-Regular", ui-monospace, monospace; margin-right: .4rem; }
+  .page-header p { margin: .8rem 0 0; color: var(--muted); line-height: 1.7; }
+  .page-header code { color: var(--text); }
+  .page-header .cli-version { margin-top: 1rem; font-family: "SFMono-Regular", ui-monospace, monospace; font-size: .85rem; color: var(--muted); }
+  .page-header .cli-version b { color: var(--accent-strong); }
+
+  .release { margin-top: 2.6rem; padding: 1.5rem 1.6rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-card); }
+  .release-head { display: flex; align-items: baseline; gap: .8rem; flex-wrap: wrap; }
+  .release-head h2 { margin: 0; font-size: 1.45rem; letter-spacing: -0.01em; }
+  .release-head h2 a { text-decoration: none; }
+  .release-head h2 a:hover { color: var(--accent-strong); }
+  .release-date { color: var(--muted); font-family: "SFMono-Regular", ui-monospace, monospace; font-size: .8rem; }
+  .release-tag {
+    padding: .1rem .6rem; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 999px;
+    color: var(--accent-strong); font-family: "SFMono-Regular", ui-monospace, monospace; font-size: .68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .release-tag.soon { color: var(--muted); border-color: var(--line); }
+  .release-intro { margin: .9rem 0 0; color: var(--muted); line-height: 1.7; }
+  .release h3.group { margin: 1.3rem 0 .4rem; color: var(--accent-strong); font-size: .78rem; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; }
+  .release ul { margin: .3rem 0 0; padding-left: 1.2rem; }
+  .release li { margin: .45rem 0; line-height: 1.65; }
+  .release li::marker { color: var(--accent); }
+
+  .page-footer { margin-top: 3rem; padding-top: 1.6rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; text-align: center; }
+  .page-footer a { color: var(--accent-strong); text-decoration: none; }
+  .page-footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 720px) {
+    .top-nav { gap: .75rem; font-size: .88rem; }
+    .release { padding: 1.15rem 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="index.html" aria-label="kitbash home">
+    <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+    </svg>
+    <span><span class="kit">kit</span>bash</span>
+  </a>
+  <nav class="top-nav" aria-label="Main navigation">
+    <a href="index.html#why">Why</a>
+    <a href="index.html#how">How</a>
+    <a href="changelog.html" aria-current="page">Changelog</a>
+    <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">GitHub</a>
+    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
+      <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-14.7a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 16.8a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1Zm9.5-8.3a1 1 0 1 1 0 2h-1.2a1 1 0 1 1 0-2h1.2ZM4.7 11a1 1 0 1 1 0 2H3.5a1 1 0 1 1 0-2h1.2Zm13.74-6.44a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0ZM7.83 16.17a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0Zm9.76 0 .85.85a1 1 0 1 1-1.42 1.42l-.85-.85a1 1 0 0 1 1.42-1.42ZM6.98 4.56l.85.85a1 1 0 0 1-1.42 1.42l-.85-.85a1 1 0 1 1 1.42-1.42Z"></path></svg>
+      <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 14.58A8.2 8.2 0 0 1 9.42 3a9.25 9.25 0 1 0 11.59 11.59Z"></path></svg>
+    </button>
+  </nav>
+</header>
+
+<main class="page">
+  <div class="page-header">
+    <h1><span class="hash">#</span>Changelog</h1>
+    <p>Every release, rendered from <code>CHANGELOG.md</code> on each deploy — this page can't go stale. Also on <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener" style="color:var(--accent-strong)">GitHub Releases</a> and <a href="https://www.npmjs.com/package/kitbash?activeTab=versions" target="_blank" rel="noopener" style="color:var(--accent-strong)">npm</a>.</p>
+    <p class="cli-version">current: <b><span data-version>v0.6.0</span></b> · npm install -g kitbash</p>
+  </div>
+
+  <!-- changelog:begin -->
+<article class="release" id="v0.6.0">
+  <div class="release-head">
+    <h2><a href="#v0.6.0">v0.6.0</a></h2>
+    <span class="release-date">2026-07-14</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">Trust &amp; review release: installing a skill means letting someone else's instructions run with your agent's permissions — this release makes that reviewable and governable.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong>Pre-install review gate</strong>: <code>kitbash install</code> prints a review block (permissions incl. network/write, budget, standing, capability requirements, lint warnings incl. injection heuristics) <em>before</em> writing anything, and prompts <code>install? [y/N]</code> on a TTY. <code>--yes</code>/<code>-y</code> skips the prompt; non-interactive runs (CI) proceed as before.</li><li>**<code>[policy]</code> in <code>kitbash.toml</code>** — org-level allowlists: <code>allow_sources</code> (globs matched against <code>gh:owner/repo[/path][@ref]</code> / <code>file:</code> sources), <code>deny_network</code>, <code>deny_write</code>, <code>max_budget</code>. Policy is a hard gate at install (<code>--yes</code> does not bypass it) and <code>doctor</code> rechecks it against already-installed skills.</li><li>**Remote sources for <code>preview</code>, <code>lint</code>, and <code>explain</code>**: <code>kitbash preview gh:owner/repo/path</code> fetches to a temp dir and renders the exact compiled output per agent — skills are fully readable before install, no side effects.</li></ul>
+<h3 class="group">Changed</h3>
+<ul><li><code>install</code> output: the summary (budget/standing/permissions) moved from after the copy to the review block before it; the post-install lines now just confirm the pin.</li><li><code>explain</code>/<code>lint</code>/<code>preview</code> "not found" errors now mention that a source (<code>gh:owner/repo</code>, <code>file:path</code>) is accepted.</li></ul>
+</article>
+
+<article class="release" id="v0.5.0">
+  <div class="release-head">
+    <h2><a href="#v0.5.0">v0.5.0</a></h2>
+    <span class="release-date">2026-07-12</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li>Three v0.2-roadmap commands: <code>kitbash lint [skill-or-path] [--strict]</code> (full static check suite, works pre-install), <code>kitbash explain &lt;skill-or-path&gt; &lt;adapter&gt;</code> (why a compilation degraded, with the token cost of eager targets), and <code>kitbash preview &lt;skill-or-path&gt;</code> (each adapter's compiled output with per-target token counts, before installing).</li><li><code>aider</code> adapter — marker-merged <code>CONVENTIONS.md</code> (detected via an existing <code>CONVENTIONS.md</code> or <code>.aider.conf.yml</code>) — <strong>8 targets total</strong>.</li><li>CI runs on Windows and macOS alongside Linux; fixed the platform-dependent subpath test so the suite is green on all three.</li><li>Site: live terminal replay in the hero and an interactive per-target compile preview.</li></ul>
+</article>
+
+<article class="release" id="v0.4.1">
+  <div class="release-head">
+    <h2><a href="#v0.4.1">v0.4.1</a></h2>
+    <span class="release-date">2026-07-11</span>
+  </div>
+<h3 class="group">Fixed</h3>
+<ul><li>TOML parser hardening: quoted strings and keys, signed numbers, spaced table headers, invalid-escape guard (<code>TomlError</code> instead of raw exceptions), plus edge cases around inline values.</li><li><code>gh:</code> installer: directory-traversal guard on subpaths; two skills writing the same output path now warn instead of silently overwriting.</li><li>Schema bounds enforced (budget ≤ 20000, standing ≤ 500, description ≤ 200 chars); YAML frontmatter values escaped so descriptions with quotes/colons stay valid.</li><li>Cross-platform deterministic integrity hashing — <code>kitbash.lock</code> hashes are CRLF/LF-insensitive and path-order stable.</li><li><code>doctor</code> flags a missing lockfile and installed-but-unpinned skills.</li><li>Standing stub skips markdown headers; unresolved <code>{{template}}</code> variables error at compile instead of leaking.</li><li>UTF-8 BOM stripped from manifests; stray subdirectories under the skills dir no longer crash <code>list</code>/<code>doctor</code>.</li></ul>
+</article>
+
+<article class="release" id="v0.4.0">
+  <div class="release-head">
+    <h2><a href="#v0.4.0">v0.4.0</a></h2>
+    <span class="release-date">2026-07-11</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li>Homebrew install: <code>brew install singhharsh1708/tap/kitbash</code>; README install/update/uninstall guide.</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li>Every eager target now reports the standing token cost of a lazy-authored skill, not just the shared-file ones.</li></ul>
+</article>
+
+<article class="release" id="v0.3.0">
+  <div class="release-head">
+    <h2><a href="#v0.3.0">v0.3.0</a></h2>
+    <span class="release-date">2026-07-11</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li>Four new adapters — <code>copilot</code> (<code>.github/instructions/*.instructions.md</code>), <code>cline</code> (<code>.clinerules/</code>), <code>windsurf</code> (<code>.windsurf/rules/</code>), <code>gemini</code> (GEMINI.md marker merge) — <strong>7 targets total</strong>.</li><li>Commands compilation: <code>triggers.commands</code> now emit native slash commands (Claude Code <code>.claude/commands/*.md</code> shims).</li><li>Generalized marker-merge for shared files (AGENTS.md, GEMINI.md): user content preserved, sections idempotent, stale sections pruned.</li><li>Pruning generalized to written-set semantics across all managed output locations — covers removed skills and renamed commands.</li><li>README: badges, status-quo-vs-kitbash comparison, FAQ; social preview asset; demo regenerated from a real 7-target session.</li></ul>
+</article>
+
+<article class="release" id="v0.2.0">
+  <div class="release-head">
+    <h2><a href="#v0.2.0">v0.2.0</a></h2>
+    <span class="release-date">2026-07-11</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li><code>kitbash.lock</code>: content-hash pins (sha256 over the skill directory) written on install, dropped on remove.</li><li>Integrity drift detection in <code>kitbash doctor</code> — exits 1 when installed files differ from the lock.</li><li>SKILL.md-only interop (skills.sh / Claude Skills convention): installs directly, manifest synthesized with conservative defaults, flagged <code>unmanifested</code> at install/list/compile. Verified against real third-party repos.</li><li><code>owner/repo</code> shorthand sources (resolve as <code>gh:</code>).</li><li>Stale-output pruning on <code>compile</code>: generated outputs of removed skills are deleted — only files bearing the generated header are ever touched.</li><li><code>kitbash.toml</code> <code>[project].targets</code> honored; unknown targets error.</li><li>Animated real-session demo in the README; launch plan in <code>docs/launch.md</code>.</li></ul>
+<h3 class="group">Changed</h3>
+<ul><li>Bare (unmanifested) skills report budget violations as warnings instead of build failures — their authors never declared those limits.</li><li><code>--version</code> reads package.json.</li></ul>
+</article>
+
+<article class="release" id="v0.1.0">
+  <div class="release-head">
+    <h2><a href="#v0.1.0">v0.1.0</a></h2>
+    <span class="release-date">2026-07-10</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li>KSF spec draft v0.1 (<code>spec/SPEC.md</code>) with JSON schema; RFC process (<code>rfcs/</code>); RFC-0001.</li><li>Working thin slice, zero runtime dependencies: <code>init</code>, <code>install</code> (gh:/file:), <code>remove</code>, <code>list</code>, <code>compile</code>, <code>doctor</code>.</li><li>Adapters: <code>claude-code</code>, <code>cursor</code>, <code>agentsmd</code> floor (idempotent marker merge).</li><li>Context budget and standing-stub enforcement at compile; visible degradation warnings; <code>--strict</code>.</li><li>Template resolution: <code>{{artifact.*}}</code>/<code>{{lore.*}}</code> compile to path references, <code>{{prompt.*}}</code> inlines.</li><li>End-to-end test suite in CI.</li><li>Reference skill <code>prereview</code>; manifesto; landing page; docs.</li></ul>
+</article>
+<!-- changelog:end -->
+
+  <p class="page-footer">Semver, for skills and for the CLI — breaking prompt changes are breaking changes. <a href="index.html">← back to kitbash</a></p>
+</main>
+
+<script>
+  (() => {
+    const key = 'kitbash-theme';
+    const root = document.documentElement;
+    const stored = localStorage.getItem(key);
+    const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const apply = (t) => {
+      root.dataset.theme = t;
+      document.querySelector('[data-theme-toggle]')?.setAttribute('aria-pressed', String(t === 'dark'));
+    };
+    apply(stored || preferred);
+    document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem(key, next);
+      apply(next);
+    });
+  })();
+</script>
+</body>
+</html>
