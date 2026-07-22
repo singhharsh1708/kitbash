@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width">
 <title>Adapters &amp; targets — Kitbash docs</title>
-<meta name="description" content="Reference for all eight Kitbash compile targets: output paths, detection, lazy vs eager loading, capabilities, and how degradation is surfaced.">
+<meta name="description" content="Reference for all nine Kitbash compile targets: output paths, detection, lazy vs eager loading, capabilities, and how degradation is surfaced.">
 <link rel="canonical" href="https://kitbash.vercel.app/docs/adapters">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="kitbash">
 <meta property="og:title" content="Adapters &amp; targets — Kitbash docs">
-<meta property="og:description" content="All eight compile targets: output paths, detection, lazy vs eager loading, capabilities, and degradation.">
+<meta property="og:description" content="All nine compile targets: output paths, detection, lazy vs eager loading, capabilities, and degradation.">
 <meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Adapters &amp; targets — Kitbash docs">
-<meta name="twitter:description" content="All eight compile targets: output paths, detection, lazy vs eager loading, capabilities, and degradation.">
+<meta name="twitter:description" content="All nine compile targets: output paths, detection, lazy vs eager loading, capabilities, and degradation.">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
 <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
@@ -105,20 +105,20 @@
     <p class="crumb"><a href="../">kitbash</a> / <a href="./">docs</a> / adapters</p>
     <div class="page-head">
       <h1>Adapters &amp; targets</h1>
-      <p>Eight compile targets, each with its own output path, detection rule, loading mode, and capability set. This page is the reference for what every one of them actually writes.</p>
+      <p>Nine compile targets, each with its own output path, detection rule, loading mode, and capability set. This page is the reference for what every one of them actually writes.</p>
     </div>
 
     <div class="prose">
 
-      <p>An adapter turns one installed skill into the native format of one coding agent. <code>kitbash compile</code> runs every detected adapter over every installed skill and writes the result. Two emission styles exist: <strong>per-skill files</strong> (Claude Code, Cursor, Copilot, Cline, Windsurf) and <strong>marker-merged sections in a shared file</strong> (AGENTS.md, GEMINI.md, CONVENTIONS.md).</p>
+      <p>An adapter turns one installed skill into the native format of one coding agent. <code>kitbash compile</code> runs every detected adapter over every installed skill and writes the result. Two emission styles exist: <strong>per-skill files</strong> (Claude Code, Cursor, the vendor-neutral <code>.agents/skills/</code> path, Copilot, Cline, Devin) and <strong>marker-merged sections in a shared file</strong> (AGENTS.md, GEMINI.md, CONVENTIONS.md).</p>
 
       <h2 id="lazy-vs-eager">Lazy vs eager</h2>
       <p>The single most important property of a target is how it loads a compiled skill.</p>
       <ul>
-        <li><span class="badge lazy">lazy</span> The target keeps the skill out of the context window until it is invoked. Only a standing stub — a name and description the agent can match against — is resident. Claude Code SKILL.md files and Cursor agent-requested rules work this way.</li>
-        <li><span class="badge eager">eager</span> The target has no mechanism for deferred loading, so the entire compiled body sits in context every session. AGENTS.md, GEMINI.md, CONVENTIONS.md, Copilot <code>applyTo</code> instructions, and Cline and Windsurf rule files all work this way.</li>
+        <li><span class="badge lazy">lazy</span> The target keeps the skill out of the context window until it is invoked. Only a standing stub — a name and description the agent can match against — is resident. Claude Code SKILL.md files, Cursor agent-requested rules, the vendor-neutral <code>.agents/skills/</code> path, and Devin rules with a <code>model_decision</code> trigger all work this way.</li>
+        <li><span class="badge eager">eager</span> The target has no mechanism for deferred loading, so the entire compiled body sits in context every session. AGENTS.md, GEMINI.md, CONVENTIONS.md, Copilot <code>applyTo</code> instructions, and Cline rule files all work this way.</li>
       </ul>
-      <p>That difference is the standing token tax. A skill authored with <code>disclosure = "lazy"</code> cannot lazy-load on an eager target — the target simply has nowhere to put a stub. Kitbash refuses to let that happen quietly: on every eager target, a lazy-authored skill produces a warning that names the real cost and the limit the author declared.</p>
+      <p>Kitbash compiles to the cheapest loading mode each target actually supports, so four of the nine carry only a stub. The standing token tax is what a skill costs on the targets whose only mode is eager: a skill authored with <code>disclosure = "lazy"</code> cannot lazy-load there — the target simply has nowhere to put a stub. Kitbash refuses to let that happen quietly: on every eager target, a lazy-authored skill produces a warning that names the real cost and the limit the author declared.</p>
       <pre><code><span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load;
   this skill costs ~464 tokens standing every session (declared limit: 60)</code></pre>
       <p>Multiply that by the number of installed skills and it is the whole context budget problem. The <a href="../benchmark">benchmark page</a> quantifies the gap between lazy and eager delivery of the same skill.</p>
@@ -144,6 +144,13 @@
               <td>none</td>
             </tr>
             <tr>
+              <td><code>agents</code></td>
+              <td><code>.agents/skills/&lt;name&gt;/SKILL.md</code></td>
+              <td><code>.agents/</code> or <code>.codex/</code> exists</td>
+              <td><span class="badge lazy">lazy</span></td>
+              <td><code>scripts</code></td>
+            </tr>
+            <tr>
               <td><code>copilot</code></td>
               <td><code>.github/instructions/&lt;name&gt;.instructions.md</code></td>
               <td><code>.github/</code> exists</td>
@@ -159,9 +166,9 @@
             </tr>
             <tr>
               <td><code>windsurf</code></td>
-              <td><code>.windsurf/rules/&lt;name&gt;.md</code></td>
-              <td><code>.windsurf/</code> exists</td>
-              <td><span class="badge eager">eager</span></td>
+              <td><code>.devin/rules/&lt;name&gt;.md</code><br>fallback <code>.windsurf/rules/&lt;name&gt;.md</code></td>
+              <td><code>.devin/</code> or <code>.windsurf/</code> exists</td>
+              <td><span class="badge lazy">lazy</span></td>
               <td>none</td>
             </tr>
             <tr>
@@ -188,10 +195,10 @@
           </tbody>
         </table>
       </div>
-      <p>Only <code>claude-code</code> declares capabilities today. Every other adapter carries instructions and nothing else, so any non-empty <code>targets.requires</code> degrades on all seven. The <code>network</code> capability from the spec is declared by no adapter at all — a skill that requires it degrades everywhere, including on Claude Code.</p>
+      <p>Only <code>claude-code</code> and <code>agents</code> declare capabilities today, and <code>agents</code> declares just <code>scripts</code>. Every other adapter carries instructions and nothing else, so any non-empty <code>targets.requires</code> degrades on all seven of them. The <code>network</code> capability from the spec is declared by no adapter at all — a skill that requires it degrades everywhere, including on Claude Code.</p>
       <p>Detection can be overridden. Set <code>targets</code> under <code>[project]</code> in <code>kitbash.toml</code> and Kitbash compiles exactly that list instead of probing the filesystem; an unknown id there is a hard error. See <a href="config">project config</a>.</p>
 
-      <h2 id="the-adapters">The eight adapters</h2>
+      <h2 id="the-adapters">The nine adapters</h2>
       <p>Every emitted file carries a generated-file header naming the source skill and version, which is what makes stale output safe to delete on the next compile:</p>
       <pre><code>&lt;!-- generated by kitbash — do not edit; source: .kitbash/skills/prereview @ 0.1.0 --&gt;</code></pre>
 
@@ -203,6 +210,10 @@
       <h3 id="cursor">cursor</h3>
       <p>Writes <code>.cursor/rules/&lt;name&gt;.mdc</code> with frontmatter <code>alwaysApply: false</code> plus the skill description. That combination makes the rule agent-requested rather than always-on, which is why Cursor counts as lazy despite having no capabilities.</p>
 
+      <h3 id="agents">agents</h3>
+      <p>Writes <code>.agents/skills/&lt;name&gt;/SKILL.md</code> with the same <code>name</code> and quoted <code>description</code> frontmatter as Claude Code. This is the vendor-neutral Agent Skills path: Codex reads it as its only repo path, and Cursor, Copilot, Gemini CLI, Roo, Amp, OpenCode, Zed and Antigravity read it too — one target instead of nine adapters. Only the metadata is preloaded, so it is lazy.</p>
+      <p>Detection is deliberately narrow: <code>.agents/</code> or <code>.codex/</code>. Agents that also have a native path already get their own adapter, and emitting both would duplicate the skill for no benefit. It declares the <code>scripts</code> capability.</p>
+
       <h3 id="copilot">copilot</h3>
       <p>Writes <code>.github/instructions/&lt;name&gt;.instructions.md</code> with frontmatter <code>applyTo: "**"</code>. That glob matches every request, so the body is eager. Detection is the presence of <code>.github/</code>, which most repositories have — expect this target to fire more often than the others.</p>
 
@@ -210,7 +221,8 @@
       <p>Writes <code>.clinerules/&lt;name&gt;.md</code> with no frontmatter at all — header and body only. Cline rule files are always loaded, so this is eager.</p>
 
       <h3 id="windsurf">windsurf</h3>
-      <p>Writes <code>.windsurf/rules/&lt;name&gt;.md</code>, also with no frontmatter. Same story as Cline: rule files are always in context.</p>
+      <p>Windsurf became Devin Desktop on 2026-06-02. <code>.devin/rules/</code> is the preferred path and <code>.windsurf/rules/</code> remains a supported fallback, so the adapter emits to whichever the repo actually has: <code>.devin/rules/&lt;name&gt;.md</code> when <code>.devin/</code> exists, <code>.windsurf/rules/&lt;name&gt;.md</code> otherwise.</p>
+      <p>Directory rules carry an activation trigger in their frontmatter. Kitbash emits <code>trigger: model_decision</code> alongside the description, which means the description is what sits in context and the body loads only when the model judges it relevant — lazy, not eager.</p>
 
       <h3 id="gemini">gemini</h3>
       <p>Merges into <code>GEMINI.md</code> rather than writing a per-skill file. Detected from either an existing <code>GEMINI.md</code> or a <code>.gemini/</code> directory.</p>

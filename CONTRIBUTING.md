@@ -1,6 +1,6 @@
 # Contributing to Kitbash
 
-Pre-alpha. The most valuable contributions right now are **spec review** and **adapter knowledge** — if you know the extension format of an assistant we haven't covered deeply (Windsurf, Cline, Continue, OpenHands, …), open an issue describing its capabilities against the matrix in [docs/design.md](docs/design.md).
+Pre-alpha. The most valuable contributions right now are **spec review** and **adapter knowledge** — if you know the extension format of an assistant we haven't covered deeply (Continue, OpenHands, …), open an issue describing its capabilities against the matrix in [docs/design.md](docs/design.md).
 
 ## Ground rules
 

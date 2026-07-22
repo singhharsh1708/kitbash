@@ -138,16 +138,17 @@ next: kitbash install &lt;gh:owner/repo | owner/repo | file:path&gt;, then kitba
       <p>An array of adapter ids. Omit the key and Kitbash autodetects — every adapter whose detection probe finds evidence of that agent in the repo. Set it and detection is bypassed entirely: the listed targets are compiled whether or not the agent's directory exists.</p>
       <pre><code><span class="k">[project]</span>
 targets = [<span class="s">"claude-code"</span>, <span class="s">"cursor"</span>, <span class="s">"agentsmd"</span>]</code></pre>
-      <p>The eight valid ids, and what autodetection looks for:</p>
+      <p>The nine valid ids, and what autodetection looks for:</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>id</th><th>Detected when the repo contains</th></tr></thead>
           <tbody>
             <tr><td><code>claude-code</code></td><td><code>.claude/</code></td></tr>
             <tr><td><code>cursor</code></td><td><code>.cursor/</code></td></tr>
+            <tr><td><code>agents</code></td><td><code>.agents/</code> or <code>.codex/</code></td></tr>
             <tr><td><code>copilot</code></td><td><code>.github/</code></td></tr>
             <tr><td><code>cline</code></td><td><code>.clinerules/</code></td></tr>
-            <tr><td><code>windsurf</code></td><td><code>.windsurf/</code></td></tr>
+            <tr><td><code>windsurf</code></td><td><code>.devin/</code> or <code>.windsurf/</code></td></tr>
             <tr><td><code>gemini</code></td><td><code>GEMINI.md</code> or <code>.gemini/</code></td></tr>
             <tr><td><code>aider</code></td><td><code>CONVENTIONS.md</code> or <code>.aider.conf.yml</code></td></tr>
             <tr><td><code>agentsmd</code></td><td>always — it is the floor</td></tr>
@@ -156,7 +157,7 @@ targets = [<span class="s">"claude-code"</span>, <span class="s">"cursor"</span>
       </div>
       <p>An unrecognised id is a hard error, not a warning. <code>kitbash compile</code> writes nothing and exits <code>1</code>:</p>
       <pre><code>unknown target(s) in kitbash.toml: claude (known: claude-code, cursor,
-copilot, cline, windsurf, gemini, aider, agentsmd)</code></pre>
+agents, copilot, cline, windsurf, gemini, aider, agentsmd)</code></pre>
       <p>That is deliberate. A typo'd target silently dropping an agent from every compile is worse than a failed build.</p>
       <p>Note that <code>kitbash doctor</code> reports <em>detection</em>, not configuration — its "detected targets" list runs the probes regardless of what <code>targets</code> says. If the two disagree, <code>targets</code> is what <code>compile</code> obeys.</p>
       <p>What each adapter emits, which capabilities it supports, and whether it loads lazily or eagerly is covered in <a href="adapters">adapters &amp; targets</a>.</p>
@@ -278,9 +279,10 @@ integrity = <span class="s">"sha256-…"</span></code></pre>
           <tbody>
             <tr><td><code>claude-code</code></td><td><code>.claude/skills/&lt;name&gt;/SKILL.md</code>, plus <code>.claude/commands/&lt;cmd&gt;.md</code> per declared trigger command</td></tr>
             <tr><td><code>cursor</code></td><td><code>.cursor/rules/&lt;name&gt;.mdc</code></td></tr>
+            <tr><td><code>agents</code></td><td><code>.agents/skills/&lt;name&gt;/SKILL.md</code></td></tr>
             <tr><td><code>copilot</code></td><td><code>.github/instructions/&lt;name&gt;.instructions.md</code></td></tr>
             <tr><td><code>cline</code></td><td><code>.clinerules/&lt;name&gt;.md</code></td></tr>
-            <tr><td><code>windsurf</code></td><td><code>.windsurf/rules/&lt;name&gt;.md</code></td></tr>
+            <tr><td><code>windsurf</code></td><td><code>.devin/rules/&lt;name&gt;.md</code>, or <code>.windsurf/rules/&lt;name&gt;.md</code> when there is no <code>.devin/</code></td></tr>
             <tr><td><code>gemini</code></td><td><code>GEMINI.md</code> (merged section)</td></tr>
             <tr><td><code>aider</code></td><td><code>CONVENTIONS.md</code> (merged section)</td></tr>
             <tr><td><code>agentsmd</code></td><td><code>AGENTS.md</code> (merged section)</td></tr>
@@ -319,7 +321,7 @@ Reviews a diff against the team's actual standards.
             <tr><td><code>.kitbash/skills/</code></td><td>Commit</td><td>The reviewed skill body. Vendored on purpose.</td></tr>
             <tr><td><code>kitbash.lock</code></td><td>Commit</td><td>Without it nothing is pinned and <code>doctor</code> fails. It is what makes drift detectable.</td></tr>
             <tr><td><code>AGENTS.md</code>, <code>GEMINI.md</code>, <code>CONVENTIONS.md</code></td><td>Commit</td><td>Mostly your own content; the generated sections are a subset.</td></tr>
-            <tr><td><code>.claude/</code>, <code>.cursor/</code>, <code>.github/instructions/</code>, <code>.clinerules/</code>, <code>.windsurf/</code></td><td>Either</td><td>Fully derived from the two above. Commit them and a fresh clone works with no build step; gitignore them and run <code>kitbash compile</code> in CI or a post-checkout hook. Pick one and be consistent — half-committed generated output produces confusing diffs.</td></tr>
+            <tr><td><code>.claude/</code>, <code>.cursor/</code>, <code>.agents/</code>, <code>.github/instructions/</code>, <code>.clinerules/</code>, <code>.devin/</code>, <code>.windsurf/</code></td><td>Either</td><td>Fully derived from the two above. Commit them and a fresh clone works with no build step; gitignore them and run <code>kitbash compile</code> in CI or a post-checkout hook. Pick one and be consistent — half-committed generated output produces confusing diffs.</td></tr>
           </tbody>
         </table>
       </div>
@@ -327,7 +329,7 @@ Reviews a diff against the team's actual standards.
 
       <h2 id="next">Where to go next</h2>
       <ul>
-        <li><a href="adapters">Adapters &amp; targets</a> — what each of the eight ids actually emits, and what degrades.</li>
+        <li><a href="adapters">Adapters &amp; targets</a> — what each of the nine ids actually emits, and what degrades.</li>
         <li><a href="trust">Trust &amp; review</a> — designing a <code>[policy]</code> your team can live with.</li>
         <li><a href="cli">CLI reference</a> — every command, flag, and exit code.</li>
         <li><a href="format">Skill format (KSF)</a> — the manifest keys <code>[policy]</code> gates on.</li>

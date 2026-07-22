@@ -35,7 +35,7 @@ Deferred out of v0.1 on purpose: more adapters, more skills, index, evals tier 2
 
 ## v0.3 — proof (weeks 10–16)
 
-- ✅ Eval tier 1 (static) in `kitbash test`: schema, measured budgets, dead references, artifact/trigger shape, injection heuristics. Runs with no eval file; `--strict` fails on warnings.
+- ✅ Eval tier 1 (static) in `kitbash test`: schema, measured budgets, dead references, artifact/trigger shape, injection heuristics, plus two hard failures — `visible-text` (hidden characters) and `dynamic-context` (command substitution in the body). Runs with no eval file; `--strict` fails on warnings.
 - Eval tier 2 (audit) in `kitbash test`; behavioral evals (tier 3) on `claude -p` first, other headless CLIs as available.
 - `kitbash score <skill>`: the measurement badge, locally — token efficiency, permission risk, derived compatibility matrix, eval-based quality. Skills become measurable artifacts.
 - Gates: `kitbash gate run <skill>` with deterministic exit codes; pre-push + GitHub Actions recipes.
@@ -48,7 +48,7 @@ Deferred out of v0.1 on purpose: more adapters, more skills, index, evals tier 2
 - Community index (registry repo, Homebrew-tap model): `kitbash install prereview` short names, `kitbash search`.
 - `kitbash publish` (validates, tags, points the index).
 - Loadouts: `kitbash install loadout:oss-maintainer`.
-- Remaining adapters: `gemini-cli`, `windsurf`, `opencode`, `cline`, `aider`.
+- ✅ Remaining adapters, landed early: `windsurf` (now Devin Desktop), `cline`, `aider`, and `agents` — the vendor-neutral `.agents/skills/` path that Codex, Cursor, Copilot, Gemini CLI, Roo, Amp, OpenCode, Zed and Antigravity all read — 9 targets total.
 - Docs site with the skill catalog + measured eval results per skill.
 - Skill badges, measurement-only: eval pass rate, compiled token cost, auto-derived compatibility matrix, signed status. No star ratings — measurement over popularity, by design.
 - **Launch moment.** The demo is one command turning a bare repo into a four-assistant, team-standard setup. Ponytail proved a single good skill can pull 75k stars; ours ride on infrastructure others can build on, which is the durable version of that story.

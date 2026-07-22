@@ -14,6 +14,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const site = dirname(fileURLToPath(import.meta.url));
+/** --check verifies the committed output is current instead of rewriting it (CI gate). */
+const checkOnly = process.argv.includes("--check");
+const stale = [];
 const repoRoot = resolve(site, "..");
 
 const version = JSON.parse(readFileSync(join(repoRoot, "packages/cli/package.json"), "utf8")).version;
@@ -85,7 +88,11 @@ const clPath = join(site, "changelog.html");
 const page = readFileSync(clPath, "utf8");
 const re = /(<!-- changelog:begin -->)[\s\S]*?(<!-- changelog:end -->)/;
 if (!re.test(page)) throw new Error("changelog.html is missing the changelog:begin/end markers");
-writeFileSync(clPath, page.replace(re, `$1\n${html}\n$2`));
+const nextChangelog = page.replace(re, `$1\n${html}\n$2`);
+if (nextChangelog !== page) {
+  if (checkOnly) stale.push("site/changelog.html (CHANGELOG.md has changed)");
+  else writeFileSync(clPath, nextChangelog);
+}
 
 // ---- stamp version into every page (site/ and subdirectories) ----
 for (const e of readdirSync(site, { recursive: true, withFileTypes: false })) {
@@ -94,7 +101,19 @@ for (const e of readdirSync(site, { recursive: true, withFileTypes: false })) {
   const p = join(site, rel);
   const src = readFileSync(p, "utf8");
   const out = src.replace(/(<span data-version>)[^<]*(<\/span>)/g, `$1v${version}$2`);
-  if (out !== src) writeFileSync(p, out);
+  if (out === src) continue;
+  if (checkOnly) stale.push(`site/${rel} (version is not v${version})`);
+  else writeFileSync(p, out);
 }
 
-console.log(`site built: v${version}, ${releases.length} changelog section(s)`);
+if (checkOnly && stale.length) {
+  console.error("site is stale — run `node site/build.mjs` and commit the result:");
+  for (const s of stale) console.error(`  ${s}`);
+  process.exit(1);
+}
+
+console.log(
+  checkOnly
+    ? `site is current: v${version}, ${releases.length} changelog section(s)`
+    : `site built: v${version}, ${releases.length} changelog section(s)`,
+);

@@ -97,7 +97,7 @@ function fileAdapter(
   capabilities: string[],
   loading: "eager" | "lazy",
   detect: (root: string) => boolean,
-  pathFor: (name: string) => string,
+  pathFor: (name: string, root: string) => string,
   frontmatter: (skill: LoadedSkill) => string,
 ): Adapter {
   return {
@@ -105,11 +105,11 @@ function fileAdapter(
     capabilities,
     loading,
     detect,
-    emit(skill, body) {
+    emit(skill, body, root) {
       const { name } = skill.manifest.skill;
       const content = `${frontmatter(skill)}${header(skill)}\n\n${body}`;
       return {
-        files: [{ path: pathFor(name), content }],
+        files: [{ path: pathFor(name, root), content }],
         warnings: [...degradationWarnings(skill, this), ...eagerStandingWarning(skill, this, body)],
       };
     },
@@ -161,6 +161,35 @@ const copilot = fileAdapter(
   () => `---\napplyTo: "**"\n---\n`,
 );
 
+/**
+ * The vendor-neutral skills path. `.agents/skills/<name>/SKILL.md` is read by
+ * Codex (its only repo path), Cursor, Copilot, Gemini CLI, Roo, Amp, OpenCode,
+ * Zed and Antigravity, all following the Agent Skills spec — one target instead
+ * of nine adapters. Metadata-only preload, so it is lazy.
+ *
+ * Detection is deliberately narrow (`.agents/` or `.codex/`): agents that also
+ * have a native path already get their own adapter, and emitting both would
+ * duplicate the skill for no benefit.
+ */
+const agents: Adapter = {
+  id: "agents",
+  capabilities: ["scripts"],
+  loading: "lazy",
+  detect: (root) => existsSync(join(root, ".agents")) || existsSync(join(root, ".codex")),
+  emit(skill, body) {
+    const { name, description } = skill.manifest.skill;
+    return {
+      files: [
+        {
+          path: `.agents/skills/${name}/SKILL.md`,
+          content: `---\nname: ${name}\ndescription: ${yamlString(description)}\n---\n${header(skill)}\n\n${body}`,
+        },
+      ],
+      warnings: degradationWarnings(skill, this),
+    };
+  },
+};
+
 // Cline rule files are always loaded — eager.
 const cline = fileAdapter(
   "cline",
@@ -171,14 +200,20 @@ const cline = fileAdapter(
   () => "",
 );
 
-// Windsurf rule files are always loaded — eager.
+/**
+ * Windsurf became Devin Desktop on 2026-06-02; `.devin/rules/` is the preferred
+ * path and `.windsurf/rules/` remains a supported fallback, so emit to whichever
+ * the repo actually has. Directory rules carry an activation trigger in their
+ * frontmatter — `model_decision` means the description is what sits in context
+ * and the body loads only when the model judges it relevant, i.e. lazy.
+ */
 const windsurf = fileAdapter(
   "windsurf",
   [],
-  "eager",
-  (root) => existsSync(join(root, ".windsurf")),
-  (name) => `.windsurf/rules/${name}.md`,
-  () => "",
+  "lazy",
+  (root) => existsSync(join(root, ".devin")) || existsSync(join(root, ".windsurf")),
+  (name, root) => (existsSync(join(root, ".devin")) ? `.devin/rules/${name}.md` : `.windsurf/rules/${name}.md`),
+  (skill) => `---\ntrigger: model_decision\ndescription: ${yamlString(skill.manifest.skill.description)}\n---\n`,
 );
 
 const gemini = mergedFileAdapter(
@@ -197,7 +232,7 @@ const aider = mergedFileAdapter(
 /** The floor: everything that reads AGENTS.md (Codex and many others). */
 const agentsmd = mergedFileAdapter("agentsmd", "AGENTS.md", () => true);
 
-export const ADAPTERS: Adapter[] = [claudeCode, cursor, copilot, cline, windsurf, gemini, aider, agentsmd];
+export const ADAPTERS: Adapter[] = [claudeCode, cursor, agents, copilot, cline, windsurf, gemini, aider, agentsmd];
 
 /** Replace or append a skill's marker-delimited section in shared-file content. */
 export function mergeSection(existing: string, name: string, section: string): string {

@@ -9,7 +9,7 @@
   <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/v/kitbash?color=ffb454" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/dm/kitbash?color=ffb454" alt="npm downloads"></a>
   <a href="https://github.com/singhharsh1708/kitbash/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/singhharsh1708/kitbash/ci.yml?branch=main" alt="CI"></a>
-  <img src="https://img.shields.io/badge/agent_targets-7-ffb454" alt="7 agent targets">
+  <img src="https://img.shields.io/badge/agent_targets-9-ffb454" alt="9 agent targets">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/singhharsh1708/kitbash?color=8b96ab" alt="Apache-2.0"></a>
 </p>
 
@@ -29,7 +29,7 @@ If you've used npm for packages, Docker for containers, or ESLint for lint rules
 
 That's an actual session. A third-party skill from the [skills.sh](https://www.skills.sh) convention gets installed and compiled into three agent formats. The thing to notice is the last warning: during compile, Kitbash measured the skill and pointed out that it quietly costs about 5,044 tokens on every request for agents that can't lazy-load. A converter would just translate the format. The compiler reads it and tells you what it's going to cost you. I haven't found another tool that surfaces that number.
 
-That gap is measured, not asserted — see the [benchmark](docs/benchmarks/README.md): the same skill costs ~40 standing tokens on a lazy target and ~490 on an eager one, a 12× per-session tax that a team running four agents pays four times over. Reproduce it with `npm run bench`.
+That gap is measured, not asserted — see the [benchmark](docs/benchmarks/README.md). Kitbash compiles to the cheapest loading mode each target actually supports, so the same skill costs ~40 standing tokens on a lazy target; the tax is what it costs on the targets whose only mode is eager — ~490 tokens, a 12× per-session gap that a team running four agents pays four times over. Reproduce it with `npm run bench`.
 
 Install it (npm or Homebrew — see [Installation](#installation)), then in a repo:
 
@@ -39,7 +39,7 @@ kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview
 kitbash compile
 ```
 
-What's working right now: `init`, `install` (via `gh:`, `owner/repo`, or `file:`), and `compile` to eight targets — Claude Code, Cursor, Copilot, Cline, Windsurf, GEMINI.md, Aider's CONVENTIONS.md, and the AGENTS.md floor. Declared `/commands` compile down to native slash commands. You also get `doctor`, `list`, `remove`, budget enforcement, a content-hash lockfile with drift detection, stale-output pruning, and `--strict`. Evals, update diffs, and everything else are on the [roadmap](docs/roadmap.md).
+What's working right now: `init`, `install` (via `gh:`, `owner/repo`, or `file:`), and `compile` to nine targets — Claude Code, Cursor, the vendor-neutral `.agents/skills/` path, Copilot, Cline, Devin (ex-Windsurf), GEMINI.md, Aider's CONVENTIONS.md, and the AGENTS.md floor. Declared `/commands` compile down to native slash commands. You also get `doctor`, `list`, `remove`, budget enforcement, a content-hash lockfile with drift detection, stale-output pruning, and `--strict`. Evals, update diffs, and everything else are on the [roadmap](docs/roadmap.md).
 
 Already have skills? A plain SKILL.md folder — the [skills.sh](https://www.skills.sh) / Claude Skills convention — installs directly with `kitbash install owner/repo`. It's basically KSF without the manifest, so Kitbash fills in defaults and marks it `unmanifested` since nobody declared a budget or permissions for it. skills.sh is good at distributing skills; Kitbash is about treating them like real engineering artifacts.
 
@@ -94,7 +94,7 @@ This isn't a made-up problem. The most-starred skill on GitHub ships its single 
   .kiro/steering/skill.md             SKILL.md
   .github/copilot-instructions.md
   .windsurf/rules/skill.md          $ kitbash compile
-  AGENTS.md, GEMINI.md, …           → 7 native outputs
+  AGENTS.md, GEMINI.md, …           → 9 native outputs
   + a sync-check script             budgets enforced,
   × every update, forever           hashes pinned
 ```
@@ -170,7 +170,7 @@ v0.1 is intentionally a thin slice: KSF, `compile`, three adapters, and one skil
 No. It's a compiler, a package manager, and a format spec. Prompt collections are the thing that gets compiled.
 
 **I already use skills.sh / Claude skills.**
-Keep them. They install directly with `kitbash install owner/repo`. You pick up eight targets, a lockfile, and a token-cost report, and you don't give anything up.
+Keep them. They install directly with `kitbash install owner/repo`. You pick up nine targets, a lockfile, and a token-cost report, and you don't give anything up.
 
 **What if I stop using Kitbash?**
 Nothing breaks. The compiled output is plain files in your repo. Delete `kitbash.toml` and everything keeps working the way it does now.

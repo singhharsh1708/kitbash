@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width">
 <title>The standing token tax, measured — Kitbash</title>
-<meta name="description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 12x to 46x, across eight targets.">
+<meta name="description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 12x to 46x, across nine targets.">
 <link rel="canonical" href="https://kitbash.vercel.app/benchmark">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="kitbash">
 <meta property="og:url" content="https://kitbash.vercel.app/benchmark">
 <meta property="og:title" content="The standing token tax, measured — Kitbash">
-<meta property="og:description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 12x to 46x, across eight targets.">
+<meta property="og:description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 12x to 46x, across nine targets.">
 <meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="The standing token tax, measured — Kitbash">
-<meta name="twitter:description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 12x to 46x, across eight targets.">
+<meta name="twitter:description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 12x to 46x, across nine targets.">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
 <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
@@ -89,7 +89,7 @@
     <div class="stat-row">
       <div class="stat"><b>12&times;</b><span>Standing cost of a manifested skill on an eager target vs a lazy one</span></div>
       <div class="stat"><b>46&times;</b><span>Same comparison for an unmanifested SKILL.md-only skill</span></div>
-      <div class="stat"><b>8</b><span>Targets measured, every one through <code>kitbash compile</code></span></div>
+      <div class="stat"><b>9</b><span>Targets measured, every one through <code>kitbash compile</code></span></div>
       <div class="stat"><b>0</b><span>Hand-entered numbers — the table is generated and CI fails if it drifts</span></div>
     </div>
   </section>
@@ -104,23 +104,25 @@
         <li><b>Loaded</b> — tokens the agent reads when the skill is actually in play. Roughly the same everywhere; this is the number people assume they are paying.</li>
         <li><b>Standing</b> — tokens sitting in the context window every session, before the skill is invoked. Lazy targets keep only a short stub. Eager targets keep the whole body. This is the number nobody measures.</li>
       </ul>
-      <p>Token counts are estimates at roughly four characters per token — the same estimator the compiler enforces <code>context.budget</code> and <code>context.standing</code> with, so the benchmark and the build agree by construction.</p>
+      <p>Token counts are estimates at roughly four characters per token — the same estimator the compiler enforces <code>context.budget</code> and <code>context.standing</code> with, so the benchmark and the build agree by construction. Loading modes are read from the adapters themselves, not restated here, so these tables cannot drift from what the compiler emits.</p>
+      <p>Kitbash compiles to the cheapest loading mode each target actually supports. Claude Code, Cursor, Devin (ex-Windsurf) and the vendor-neutral <code>.agents/skills/</code> path all load on demand, so a skill there costs only its stub. What the tables below price is the rest: the targets whose only mode is eager carry the whole body, every session, before the skill is invoked.</p>
     </div>
   </section>
 
   <section class="section">
     <div class="section-header">
       <h2><span class="hash">#</span>prereview — manifested, budget 1500, authored lazy</h2>
-      <p>The first-party example skill, compiled to all eight targets.</p>
+      <p>The first-party example skill, compiled to all nine targets.</p>
     </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Target</th><th>Loaded (tok)</th><th>Standing (tok)</th><th>Loading</th></tr></thead>
         <tbody><tr><td><code>claude-code</code></td><td>515</td><td><b>40</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>cursor</code></td><td>516</td><td><b>40</b></td><td><span class="badge lazy">lazy</span></td></tr>
+          <tr><td><code>agents</code></td><td>515</td><td><b>40</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>copilot</code></td><td>492</td><td><b>492</b></td><td><span class="badge eager">eager</span></td></tr>
           <tr><td><code>cline</code></td><td>486</td><td><b>486</b></td><td><span class="badge eager">eager</span></td></tr>
-          <tr><td><code>windsurf</code></td><td>486</td><td><b>486</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>windsurf</code></td><td>517</td><td><b>40</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>gemini</code></td><td>507</td><td><b>507</b></td><td><span class="badge eager">eager</span></td></tr>
           <tr><td><code>aider</code></td><td>507</td><td><b>507</b></td><td><span class="badge eager">eager</span></td></tr>
           <tr><td><code>agentsmd</code></td><td>507</td><td><b>507</b></td><td><span class="badge eager">eager</span></td></tr></tbody>
@@ -141,9 +143,10 @@
         <thead><tr><th>Target</th><th>Loaded (tok)</th><th>Standing (tok)</th><th>Loading</th></tr></thead>
         <tbody><tr><td><code>claude-code</code></td><td>880</td><td><b>19</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>cursor</code></td><td>879</td><td><b>19</b></td><td><span class="badge lazy">lazy</span></td></tr>
+          <tr><td><code>agents</code></td><td>880</td><td><b>19</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>copilot</code></td><td>865</td><td><b>865</b></td><td><span class="badge eager">eager</span></td></tr>
           <tr><td><code>cline</code></td><td>859</td><td><b>859</b></td><td><span class="badge eager">eager</span></td></tr>
-          <tr><td><code>windsurf</code></td><td>859</td><td><b>859</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>windsurf</code></td><td>881</td><td><b>19</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>gemini</code></td><td>885</td><td><b>885</b></td><td><span class="badge eager">eager</span></td></tr>
           <tr><td><code>aider</code></td><td>885</td><td><b>885</b></td><td><span class="badge eager">eager</span></td></tr>
           <tr><td><code>agentsmd</code></td><td>885</td><td><b>885</b></td><td><span class="badge eager">eager</span></td></tr></tbody>
@@ -210,7 +213,7 @@ npm run bench</code></pre>
     <div class="docs-grid">
       <a class="doc-link" href="docs/adapters">
         <h3>Adapters &amp; targets</h3>
-        <p>Which of the eight targets are lazy, which are eager, and what each one supports.</p>
+        <p>Which of the nine targets are lazy, which are eager, and what each one supports.</p>
       </a>
       <a class="doc-link" href="docs/format">
         <h3>Budgets in the format</h3>

@@ -2,6 +2,20 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.7.0] — 2026-07-22
+
+Ecosystem-correctness release. Two of Kitbash's assumptions about the agent landscape had gone stale, and one of them was flattering its own headline number.
+
+### Added
+- **`agents` adapter** — `.agents/skills/<name>/SKILL.md`, the vendor-neutral Agent Skills path read by Codex (its only repo path), Cursor, Copilot, Gemini CLI, Roo, Amp, OpenCode, Zed and Antigravity. Lazy-loaded; detected when `.agents/` or `.codex/` exists. **Nine targets total.**
+- **Two hard lint failures** for instructions a reviewer cannot see or that run before the model reads anything: `visible-text` rejects zero-width characters, bidi overrides and the Unicode Tags block; `dynamic-context` rejects backtick command substitution in a skill body. Both fail `lint` and `test` with exit 1, no `--strict` needed — Kitbash fans one skill out to nine files, several of them permanently in context.
+- `node site/build.mjs --check` verifies the committed site output is current; gated in CI, and Vercel now runs the build instead of serving whatever was committed.
+
+### Changed
+- **`windsurf` is lazy, not eager.** Windsurf became Devin Desktop on 2026-06-02: the adapter now writes `.devin/rules/<name>.md` when `.devin/` exists (falling back to `.windsurf/rules/`) and emits `trigger: model_decision`, so the description sits in context and the body loads on demand.
+- The benchmark reads each target's loading mode from the adapters themselves rather than a second hardcoded map — the copy is exactly how published numbers drift from what the compiler emits. Regenerated: four targets now lazy-load, five are eager-only.
+- Standing-tax framing corrected throughout: Kitbash compiles to the cheapest loading mode each target actually supports, and the tax is what it costs on targets whose only mode is eager. The 12x/46x gap still holds, measured against the corrected matrix.
+
 ## [0.6.0] — 2026-07-14
 
 Trust & review release: installing a skill means letting someone else's instructions run with your agent's permissions — this release makes that reviewable and governable.

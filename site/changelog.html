@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width">
 <title>Changelog — Kitbash</title>
-<meta name="description" content="Every release of the Kitbash CLI, newest first — the pre-install review gate, org policy, eight compile targets, lockfile pins, and the KSF spec draft.">
+<meta name="description" content="Every release of the Kitbash CLI, newest first — the pre-install review gate, org policy, nine compile targets, lockfile pins, and the KSF spec draft.">
 <link rel="canonical" href="https://kitbash.vercel.app/changelog">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="kitbash">
@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.6.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.7.0</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,22 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.7.0">
+  <div class="release-head">
+    <h2><a href="#v0.7.0">v0.7.0</a></h2>
+    <span class="release-date">2026-07-22</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">Ecosystem-correctness release. Two of Kitbash's assumptions about the agent landscape had gone stale, and one of them was flattering its own headline number.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>agents</code> adapter</strong> — <code>.agents/skills/&lt;name&gt;/SKILL.md</code>, the vendor-neutral Agent Skills path read by Codex (its only repo path), Cursor, Copilot, Gemini CLI, Roo, Amp, OpenCode, Zed and Antigravity. Lazy-loaded; detected when <code>.agents/</code> or <code>.codex/</code> exists. <strong>Nine targets total.</strong></li><li><strong>Two hard lint failures</strong> for instructions a reviewer cannot see or that run before the model reads anything: <code>visible-text</code> rejects zero-width characters, bidi overrides and the Unicode Tags block; <code>dynamic-context</code> rejects backtick command substitution in a skill body. Both fail <code>lint</code> and <code>test</code> with exit 1, no <code>--strict</code> needed — Kitbash fans one skill out to nine files, several of them permanently in context.</li><li><code>node site/build.mjs --check</code> verifies the committed site output is current; gated in CI, and Vercel now runs the build instead of serving whatever was committed.</li></ul>
+<h3 class="group">Changed</h3>
+<ul><li><strong><code>windsurf</code> is lazy, not eager.</strong> Windsurf became Devin Desktop on 2026-06-02: the adapter now writes <code>.devin/rules/&lt;name&gt;.md</code> when <code>.devin/</code> exists (falling back to <code>.windsurf/rules/</code>) and emits <code>trigger: model_decision</code>, so the description sits in context and the body loads on demand.</li><li>The benchmark reads each target's loading mode from the adapters themselves rather than a second hardcoded map — the copy is exactly how published numbers drift from what the compiler emits. Regenerated: four targets now lazy-load, five are eager-only.</li><li>Standing-tax framing corrected throughout: Kitbash compiles to the cheapest loading mode each target actually supports, and the tax is what it costs on targets whose only mode is eager. The 12x/46x gap still holds, measured against the corrected matrix.</li></ul>
+</article>
+
 <article class="release" id="v0.6.0">
   <div class="release-head">
     <h2><a href="#v0.6.0">v0.6.0</a></h2>
-    <span class="release-date">2026-07-14</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-07-14</span>
   </div>
 <p class="release-intro">Trust &amp; review release: installing a skill means letting someone else's instructions run with your agent's permissions — this release makes that reviewable and governable.</p>
 <h3 class="group">Added</h3>
