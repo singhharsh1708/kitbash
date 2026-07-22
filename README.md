@@ -39,7 +39,7 @@ kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview
 kitbash compile
 ```
 
-What's working right now: `init`, `install` (via `gh:`, `owner/repo`, or `file:`), and `compile` to nine targets — Claude Code, Cursor, the vendor-neutral `.agents/skills/` path, Copilot, Cline, Devin (ex-Windsurf), GEMINI.md, Aider's CONVENTIONS.md, and the AGENTS.md floor. Declared `/commands` compile down to native slash commands. You also get `doctor`, `list`, `remove`, budget enforcement, a content-hash lockfile with drift detection, stale-output pruning, and `--strict`. Evals, update diffs, and everything else are on the [roadmap](docs/roadmap.md).
+What's working right now: `init`, `install` (via `gh:`, `owner/repo`, or `file:`), and `compile` to nine targets — Claude Code, Cursor, the vendor-neutral `.agents/skills/` path, Copilot, Cline, Devin (ex-Windsurf), Gemini CLI, Aider's CONVENTIONS.md, and the AGENTS.md floor. Declared `/commands` compile down to native slash commands. You also get `doctor`, `list`, `remove`, budget enforcement, a content-hash lockfile with drift detection, stale-output pruning, and `--strict`. Evals, update diffs, and everything else are on the [roadmap](docs/roadmap.md).
 
 Already have skills? A plain SKILL.md folder — the [skills.sh](https://www.skills.sh) / Claude Skills convention — installs directly with `kitbash install owner/repo`. It's basically KSF without the manifest, so Kitbash fills in defaults and marks it `unmanifested` since nobody declared a budget or permissions for it. skills.sh is good at distributing skills; Kitbash is about treating them like real engineering artifacts.
 

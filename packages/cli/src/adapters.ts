@@ -151,44 +151,53 @@ const cursor = fileAdapter(
   (skill) => `---\ndescription: ${yamlString(skill.manifest.skill.description)}\nalwaysApply: false\n---\n`,
 );
 
-// Copilot applyTo:"**" applies to every request — eager.
-const copilot = fileAdapter(
-  "copilot",
-  [],
-  "eager",
-  (root) => existsSync(join(root, ".github")),
-  (name) => `.github/instructions/${name}.instructions.md`,
-  () => `---\napplyTo: "**"\n---\n`,
-);
+/**
+ * Copilot reads agentskills.io skills from `.github/skills/`, loading only the
+ * frontmatter until the skill is needed. That is strictly cheaper than the
+ * `applyTo: "**"` instructions file this used to emit, which applied to every
+ * single request.
+ */
+const copilot = skillDirAdapter("copilot", ".github/skills", (root) => existsSync(join(root, ".github")));
 
 /**
- * The vendor-neutral skills path. `.agents/skills/<name>/SKILL.md` is read by
- * Codex (its only repo path), Cursor, Copilot, Gemini CLI, Roo, Amp, OpenCode,
- * Zed and Antigravity, all following the Agent Skills spec — one target instead
- * of nine adapters. Metadata-only preload, so it is lazy.
+ * Agent Skills directories (agentskills.io): a folder per skill whose SKILL.md
+ * carries `name` and `description` in frontmatter. Hosts inject only that
+ * metadata at session start and load the body on demand, so these are lazy.
+ */
+function skillDirAdapter(id: string, dir: string, detect: (root: string) => boolean): Adapter {
+  return {
+    id,
+    capabilities: ["scripts"],
+    loading: "lazy",
+    detect,
+    emit(skill, body) {
+      const { name, description } = skill.manifest.skill;
+      return {
+        files: [
+          {
+            path: `${dir}/${name}/SKILL.md`,
+            content: `---\nname: ${name}\ndescription: ${yamlString(description)}\n---\n${header(skill)}\n\n${body}`,
+          },
+        ],
+        warnings: degradationWarnings(skill, this),
+      };
+    },
+  };
+}
+
+/**
+ * The vendor-neutral skills path, read by Codex (its only repo path), Cursor,
+ * Copilot, Gemini CLI, Roo, Amp, OpenCode, Zed and Antigravity.
  *
  * Detection is deliberately narrow (`.agents/` or `.codex/`): agents that also
  * have a native path already get their own adapter, and emitting both would
  * duplicate the skill for no benefit.
  */
-const agents: Adapter = {
-  id: "agents",
-  capabilities: ["scripts"],
-  loading: "lazy",
-  detect: (root) => existsSync(join(root, ".agents")) || existsSync(join(root, ".codex")),
-  emit(skill, body) {
-    const { name, description } = skill.manifest.skill;
-    return {
-      files: [
-        {
-          path: `.agents/skills/${name}/SKILL.md`,
-          content: `---\nname: ${name}\ndescription: ${yamlString(description)}\n---\n${header(skill)}\n\n${body}`,
-        },
-      ],
-      warnings: degradationWarnings(skill, this),
-    };
-  },
-};
+const agents = skillDirAdapter(
+  "agents",
+  ".agents/skills",
+  (root) => existsSync(join(root, ".agents")) || existsSync(join(root, ".codex")),
+);
 
 // Cline rule files are always loaded — eager.
 const cline = fileAdapter(
@@ -216,9 +225,17 @@ const windsurf = fileAdapter(
   (skill) => `---\ntrigger: model_decision\ndescription: ${yamlString(skill.manifest.skill.description)}\n---\n`,
 );
 
-const gemini = mergedFileAdapter(
+/**
+ * Gemini CLI discovers skills under `.gemini/skills/`, injecting only each
+ * skill's name and description into the system prompt and pulling the body in
+ * via its `activate_skill` tool. Previously this merged into GEMINI.md, which
+ * Google's own docs describe as persistent workspace-wide background — the
+ * whole body, every session. Old GEMINI.md sections are pruned on the next
+ * compile; user content in that file is left alone.
+ */
+const gemini = skillDirAdapter(
   "gemini",
-  "GEMINI.md",
+  ".gemini/skills",
   (root) => existsSync(join(root, "GEMINI.md")) || existsSync(join(root, ".gemini")),
 );
 

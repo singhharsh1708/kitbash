@@ -18,14 +18,14 @@ Token counts are estimates (~4 chars/token), the same estimator the compiler enf
 | claude-code | 515 | 40 | lazy |
 | cursor | 516 | 40 | lazy |
 | agents | 515 | 40 | lazy |
-| copilot | 492 | 492 | eager |
+| copilot | 515 | 40 | lazy |
 | cline | 486 | 486 | eager |
 | windsurf | 517 | 40 | lazy |
-| gemini | 507 | 507 | eager |
+| gemini | 515 | 40 | lazy |
 | aider | 507 | 507 | eager |
 | agentsmd | 507 | 507 | eager |
 
-**Standing tax:** ~40 tokens on a lazy target vs ~492 on an eager one — about **12× per session** for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.
+**Standing tax:** ~40 tokens on a lazy target vs ~486 on an eager one — about **12× per session** for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.
 
 ## `review-checklist` — bare / unmanifested (no budget)
 
@@ -34,14 +34,14 @@ Token counts are estimates (~4 chars/token), the same estimator the compiler enf
 | claude-code | 880 | 19 | lazy |
 | cursor | 879 | 19 | lazy |
 | agents | 880 | 19 | lazy |
-| copilot | 865 | 865 | eager |
+| copilot | 880 | 19 | lazy |
 | cline | 859 | 859 | eager |
 | windsurf | 881 | 19 | lazy |
-| gemini | 885 | 885 | eager |
+| gemini | 880 | 19 | lazy |
 | aider | 885 | 885 | eager |
 | agentsmd | 885 | 885 | eager |
 
-**Standing tax:** ~19 tokens on a lazy target vs ~865 on an eager one — about **46× per session** for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.
+**Standing tax:** ~19 tokens on a lazy target vs ~859 on an eager one — about **45× per session** for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.
 
 ## Why this is the pitch
 

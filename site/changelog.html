@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.7.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.8.0</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,24 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.8.0">
+  <div class="release-head">
+    <h2><a href="#v0.8.0">v0.8.0</a></h2>
+    <span class="release-date">2026-07-23</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">Every target that can lazy-load now does. Two adapters were still emitting always-on files for agents that had since grown proper skill directories.</p>
+<h3 class="group">Changed</h3>
+<ul><li><strong><code>copilot</code> compiles to <code>.github/skills/&lt;name&gt;/SKILL.md</code></strong> instead of a <code>.github/instructions/*.instructions.md</code> file with <code>applyTo: "**"</code>. Copilot reads agentskills.io skills and loads only the frontmatter until the skill is needed; the old form applied to every single request.</li><li><strong><code>gemini</code> compiles to <code>.gemini/skills/&lt;name&gt;/SKILL.md</code></strong> instead of merging into <code>GEMINI.md</code>. Gemini CLI injects only each skill's name and description at session start and pulls the body in via its <code>activate_skill</code> tool; Google's own docs describe <code>GEMINI.md</code> as persistent workspace-wide background.</li><li>Six of nine targets now lazy-load — claude-code, cursor, agents, copilot, windsurf/devin, gemini. The eager holdouts are cline, aider and the AGENTS.md floor.</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li>Stale sections in a marker-merged file are now pruned whenever nothing wrote to that file during a compile, not only when the owning skill was uninstalled. Without this, a <code>GEMINI.md</code> from an older Kitbash kept its generated section forever after the adapter moved. Upgrading cleans up the old <code>GEMINI.md</code> sections and <code>.github/instructions/</code> files on the next <code>kitbash compile</code>; your own content in those files is untouched.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li><code>.github/workflows/release.yml</code> — a pushed <code>v*</code> tag verifies the tag against the manifest, re-runs the full gate suite, publishes to npm via OIDC trusted publishing (no stored token, provenance attached automatically), and bumps the Homebrew formula.</li></ul>
+</article>
+
 <article class="release" id="v0.7.0">
   <div class="release-head">
     <h2><a href="#v0.7.0">v0.7.0</a></h2>
-    <span class="release-date">2026-07-22</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-07-22</span>
   </div>
 <p class="release-intro">Ecosystem-correctness release. Two of Kitbash's assumptions about the agent landscape had gone stale, and one of them was flattering its own headline number.</p>
 <h3 class="group">Added</h3>

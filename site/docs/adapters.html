@@ -110,15 +110,15 @@
 
     <div class="prose">
 
-      <p>An adapter turns one installed skill into the native format of one coding agent. <code>kitbash compile</code> runs every detected adapter over every installed skill and writes the result. Two emission styles exist: <strong>per-skill files</strong> (Claude Code, Cursor, the vendor-neutral <code>.agents/skills/</code> path, Copilot, Cline, Devin) and <strong>marker-merged sections in a shared file</strong> (AGENTS.md, GEMINI.md, CONVENTIONS.md).</p>
+      <p>An adapter turns one installed skill into the native format of one coding agent. <code>kitbash compile</code> runs every detected adapter over every installed skill and writes the result. Two emission styles exist: <strong>per-skill files</strong> (Claude Code, Cursor, the vendor-neutral <code>.agents/skills/</code> path, Copilot, Cline, Devin, Gemini CLI) and <strong>marker-merged sections in a shared file</strong> (AGENTS.md, CONVENTIONS.md).</p>
 
       <h2 id="lazy-vs-eager">Lazy vs eager</h2>
       <p>The single most important property of a target is how it loads a compiled skill.</p>
       <ul>
-        <li><span class="badge lazy">lazy</span> The target keeps the skill out of the context window until it is invoked. Only a standing stub — a name and description the agent can match against — is resident. Claude Code SKILL.md files, Cursor agent-requested rules, the vendor-neutral <code>.agents/skills/</code> path, and Devin rules with a <code>model_decision</code> trigger all work this way.</li>
-        <li><span class="badge eager">eager</span> The target has no mechanism for deferred loading, so the entire compiled body sits in context every session. AGENTS.md, GEMINI.md, CONVENTIONS.md, Copilot <code>applyTo</code> instructions, and Cline rule files all work this way.</li>
+        <li><span class="badge lazy">lazy</span> The target keeps the skill out of the context window until it is invoked. Only a standing stub — a name and description the agent can match against — is resident. Claude Code SKILL.md files, Cursor agent-requested rules, the vendor-neutral <code>.agents/skills/</code> path, the <code>.github/skills/</code> and <code>.gemini/skills/</code> directories Copilot and Gemini CLI read, and Devin rules with a <code>model_decision</code> trigger all work this way.</li>
+        <li><span class="badge eager">eager</span> The target has no mechanism for deferred loading, so the entire compiled body sits in context every session. AGENTS.md, CONVENTIONS.md, and Cline rule files all work this way.</li>
       </ul>
-      <p>Kitbash compiles to the cheapest loading mode each target actually supports, so four of the nine carry only a stub. The standing token tax is what a skill costs on the targets whose only mode is eager: a skill authored with <code>disclosure = "lazy"</code> cannot lazy-load there — the target simply has nowhere to put a stub. Kitbash refuses to let that happen quietly: on every eager target, a lazy-authored skill produces a warning that names the real cost and the limit the author declared.</p>
+      <p>Kitbash compiles to the cheapest loading mode each target actually supports, so six of the nine carry only a stub. The standing token tax is what a skill costs on the targets whose only mode is eager: a skill authored with <code>disclosure = "lazy"</code> cannot lazy-load there — the target simply has nowhere to put a stub. Kitbash refuses to let that happen quietly: on every eager target, a lazy-authored skill produces a warning that names the real cost and the limit the author declared.</p>
       <pre><code><span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load;
   this skill costs ~464 tokens standing every session (declared limit: 60)</code></pre>
       <p>Multiply that by the number of installed skills and it is the whole context budget problem. The <a href="../benchmark">benchmark page</a> quantifies the gap between lazy and eager delivery of the same skill.</p>
@@ -152,10 +152,10 @@
             </tr>
             <tr>
               <td><code>copilot</code></td>
-              <td><code>.github/instructions/&lt;name&gt;.instructions.md</code></td>
+              <td><code>.github/skills/&lt;name&gt;/SKILL.md</code></td>
               <td><code>.github/</code> exists</td>
-              <td><span class="badge eager">eager</span></td>
-              <td>none</td>
+              <td><span class="badge lazy">lazy</span></td>
+              <td><code>scripts</code></td>
             </tr>
             <tr>
               <td><code>cline</code></td>
@@ -173,10 +173,10 @@
             </tr>
             <tr>
               <td><code>gemini</code></td>
-              <td><code>GEMINI.md</code> (merged)</td>
+              <td><code>.gemini/skills/&lt;name&gt;/SKILL.md</code></td>
               <td><code>GEMINI.md</code> or <code>.gemini/</code> exists</td>
-              <td><span class="badge eager">eager</span></td>
-              <td>none</td>
+              <td><span class="badge lazy">lazy</span></td>
+              <td><code>scripts</code></td>
             </tr>
             <tr>
               <td><code>aider</code></td>
@@ -195,7 +195,7 @@
           </tbody>
         </table>
       </div>
-      <p>Only <code>claude-code</code> and <code>agents</code> declare capabilities today, and <code>agents</code> declares just <code>scripts</code>. Every other adapter carries instructions and nothing else, so any non-empty <code>targets.requires</code> degrades on all seven of them. The <code>network</code> capability from the spec is declared by no adapter at all — a skill that requires it degrades everywhere, including on Claude Code.</p>
+      <p>Only the four skill-directory targets declare capabilities today: <code>claude-code</code> declares <code>scripts</code>, <code>hooks</code> and <code>subagents</code>, while <code>agents</code>, <code>copilot</code> and <code>gemini</code> declare just <code>scripts</code>. Every other adapter carries instructions and nothing else, so any non-empty <code>targets.requires</code> degrades on all five of them. The <code>network</code> capability from the spec is declared by no adapter at all — a skill that requires it degrades everywhere, including on Claude Code.</p>
       <p>Detection can be overridden. Set <code>targets</code> under <code>[project]</code> in <code>kitbash.toml</code> and Kitbash compiles exactly that list instead of probing the filesystem; an unknown id there is a hard error. See <a href="config">project config</a>.</p>
 
       <h2 id="the-adapters">The nine adapters</h2>
@@ -215,7 +215,8 @@
       <p>Detection is deliberately narrow: <code>.agents/</code> or <code>.codex/</code>. Agents that also have a native path already get their own adapter, and emitting both would duplicate the skill for no benefit. It declares the <code>scripts</code> capability.</p>
 
       <h3 id="copilot">copilot</h3>
-      <p>Writes <code>.github/instructions/&lt;name&gt;.instructions.md</code> with frontmatter <code>applyTo: "**"</code>. That glob matches every request, so the body is eager. Detection is the presence of <code>.github/</code>, which most repositories have — expect this target to fire more often than the others.</p>
+      <p>Writes <code>.github/skills/&lt;name&gt;/SKILL.md</code> with <code>name</code> and a quoted <code>description</code> in frontmatter — the agentskills.io layout. Copilot loads only that frontmatter until the skill is needed, so the target is lazy. Detection is the presence of <code>.github/</code>, which most repositories have — expect this target to fire more often than the others.</p>
+      <p>Before 0.8.0 this adapter wrote <code>.github/instructions/&lt;name&gt;.instructions.md</code> with <code>applyTo: "**"</code>, a glob that matched every single request and made the target eager.</p>
 
       <h3 id="cline">cline</h3>
       <p>Writes <code>.clinerules/&lt;name&gt;.md</code> with no frontmatter at all — header and body only. Cline rule files are always loaded, so this is eager.</p>
@@ -225,7 +226,8 @@
       <p>Directory rules carry an activation trigger in their frontmatter. Kitbash emits <code>trigger: model_decision</code> alongside the description, which means the description is what sits in context and the body loads only when the model judges it relevant — lazy, not eager.</p>
 
       <h3 id="gemini">gemini</h3>
-      <p>Merges into <code>GEMINI.md</code> rather than writing a per-skill file. Detected from either an existing <code>GEMINI.md</code> or a <code>.gemini/</code> directory.</p>
+      <p>Writes <code>.gemini/skills/&lt;name&gt;/SKILL.md</code> with <code>name</code> and a quoted <code>description</code> in frontmatter. Gemini CLI injects only that name and description into the system prompt at session start and pulls the body in through its <code>activate_skill</code> tool, so the target is lazy. Detection is unchanged: either an existing <code>GEMINI.md</code> or a <code>.gemini/</code> directory.</p>
+      <p>Before 0.8.0 this adapter merged into <code>GEMINI.md</code>, which Google's own docs describe as persistent workspace-wide background — the whole body, every session.</p>
 
       <h3 id="aider">aider</h3>
       <p>Merges into <code>CONVENTIONS.md</code>, the file Aider reads when it is wired up through <code>.aider.conf.yml</code> or <code>--read</code>. Detection fires on an existing <code>CONVENTIONS.md</code> or an <code>.aider.conf.yml</code>. Always in context, so eager.</p>
@@ -234,7 +236,7 @@
       <p>Merges into <code>AGENTS.md</code>. This is the floor: its detect function returns true unconditionally, so every repo gets AGENTS.md output whether or not any agent-specific directory exists. Codex and a long tail of other tools read it.</p>
 
       <h3 id="marker-merge">How marker merging works</h3>
-      <p>The three shared-file adapters do not own their file. Each skill gets a marker-delimited section:</p>
+      <p>The two shared-file adapters — <code>agentsmd</code> and <code>aider</code> — do not own their file. Each skill gets a marker-delimited section:</p>
       <pre><code>&lt;!-- kitbash:begin prereview --&gt;
 &lt;!-- generated by kitbash — do not edit; source: .kitbash/skills/prereview @ 0.1.0 --&gt;
 
@@ -242,7 +244,11 @@
 
 ...body...
 &lt;!-- kitbash:end prereview --&gt;</code></pre>
-      <p>On compile, a section whose markers already exist is replaced in place; a new one is appended. Anything you wrote by hand outside the markers is preserved untouched — your AGENTS.md stays yours. Sections belonging to skills that are no longer installed are pruned whenever the file is rebuilt, and for <code>AGENTS.md</code> and <code>GEMINI.md</code> also on runs where no adapter rewrites the file at all.</p>
+      <p>On compile, a section whose markers already exist is replaced in place; a new one is appended. Anything you wrote by hand outside the markers is preserved untouched — your AGENTS.md stays yours. Sections belonging to skills that are no longer installed are pruned whenever the file is rebuilt. If nothing wrote to a managed shared file during a compile — <code>AGENTS.md</code>, <code>GEMINI.md</code> or <code>CONVENTIONS.md</code> — then none of its generated sections are current, and all of them are pruned.</p>
+
+      <div class="callout">
+        <p><b>Upgrading from before 0.8.0.</b> <code>copilot</code> and <code>gemini</code> used to write <code>.github/instructions/&lt;name&gt;.instructions.md</code> and a merged section in <code>GEMINI.md</code>. The next <code>kitbash compile</code> after upgrading prunes both: the stale <code>.github/instructions/</code> files carrying the generated-file header are removed, and the generated sections in <code>GEMINI.md</code> are stripped. Anything you wrote in those files yourself is preserved — only Kitbash's own marked output is touched.</p>
+      </div>
 
       <h2 id="degradation">Degradation</h2>
       <p>A skill declares what it needs from a target in its manifest:</p>

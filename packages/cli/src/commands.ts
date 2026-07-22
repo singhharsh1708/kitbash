@@ -486,12 +486,15 @@ export async function cmdCompile(args: string[]): Promise<number> {
     writeFileSync(abs, f.content.endsWith("\n") ? f.content : `${f.content}\n`);
     console.log(`→ ${f.path}`);
   }
-  // Shared marker files not rewritten this compile still need stale sections pruned —
-  // e.g. after removing the last skill that wrote to them, no adapter emits to rebuild them.
+  // Shared marker files not rewritten this compile still need stale sections pruned.
+  // Nothing wrote to this file, so none of its kitbash sections are current — whether
+  // the last skill writing there was removed, the target was dropped from kitbash.toml,
+  // or the adapter moved to a skills directory (gemini and copilot did, in 0.8.0).
+  // Only kitbash's own marked sections are touched; user content is never disturbed.
   for (const rel of MANAGED_SHARED_FILES) {
     if (files.has(rel) || !existsSync(join(root, rel))) continue;
     const before = readFileSync(join(root, rel), "utf8");
-    const after = pruneSections(before, installedNames);
+    const after = pruneSections(before, new Set());
     if (after !== before) {
       writeFileSync(join(root, rel), after.endsWith("\n") ? after : `${after}\n`);
       console.log(`✂ pruned stale section(s) from ${rel}`);
@@ -822,6 +825,8 @@ const MANAGED_DIRS: { dir: string; suffix: string; wholeDir?: boolean }[] = [
   { dir: ".claude/skills", suffix: "/SKILL.md", wholeDir: true },
   { dir: ".claude/commands", suffix: ".md" },
   { dir: ".agents/skills", suffix: "/SKILL.md", wholeDir: true },
+  { dir: ".gemini/skills", suffix: "/SKILL.md", wholeDir: true },
+  { dir: ".github/skills", suffix: "/SKILL.md", wholeDir: true },
   { dir: ".cursor/rules", suffix: ".mdc" },
   { dir: ".clinerules", suffix: ".md" },
   { dir: ".windsurf/rules", suffix: ".md" },

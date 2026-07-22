@@ -67,7 +67,8 @@ try {
   check("claude-code output exists", existsSync(claude));
   check("cursor output exists", existsSync(cursor));
   check("agentsmd output exists", existsSync(agents));
-  check("copilot output exists", existsSync(join(tmp, ".github/instructions/prereview.instructions.md")));
+  check("copilot output exists", existsSync(join(tmp, ".github/skills/prereview/SKILL.md")));
+  check("copilot uses the lazy skills dir, not always-on instructions", !existsSync(join(tmp, ".github/instructions/prereview.instructions.md")));
   check("cline output exists", existsSync(join(tmp, ".clinerules/prereview.md")));
   check("windsurf output exists", existsSync(join(tmp, ".windsurf/rules/prereview.md")));
   const windsurfOut = readFileSync(join(tmp, ".windsurf/rules/prereview.md"), "utf8");
@@ -75,8 +76,9 @@ try {
   check("agents (vendor-neutral) output exists", existsSync(join(tmp, ".agents/skills/prereview/SKILL.md")));
   const agentsSkill = readFileSync(join(tmp, ".agents/skills/prereview/SKILL.md"), "utf8");
   check("agents output carries spec frontmatter", /^---\nname: prereview\ndescription: "/.test(agentsSkill), agentsSkill.slice(0, 120));
-  const gemini = readFileSync(join(tmp, "GEMINI.md"), "utf8");
-  check("gemini markers merged, user content kept", gemini.includes("kitbash:begin prereview") && gemini.startsWith("# Project notes"), gemini.slice(0, 120));
+  check("gemini output exists in the lazy skills dir", existsSync(join(tmp, ".gemini/skills/prereview/SKILL.md")));
+  const geminiMd = readFileSync(join(tmp, "GEMINI.md"), "utf8");
+  check("gemini no longer merges into GEMINI.md, user content untouched", !geminiMd.includes("kitbash:begin") && geminiMd.startsWith("# Project notes"), geminiMd.slice(0, 120));
   const aiderOut = readFileSync(join(tmp, "CONVENTIONS.md"), "utf8");
   check("aider markers merged, user content kept", aiderOut.includes("kitbash:begin prereview") && aiderOut.startsWith("# House rules"), aiderOut.slice(0, 120));
   const shim = join(tmp, ".claude/commands/prereview.md");
@@ -91,9 +93,9 @@ try {
   check("agentsmd markers present", agentsContent.includes("<!-- kitbash:begin prereview -->") && agentsContent.includes("<!-- kitbash:end prereview -->"));
   check("eager-load warning surfaced", compile.out.includes("cannot lazy-load"), compile.out);
   // every eager target must report the standing cost; lazy targets must not
-  const eagerWarned = ["copilot", "cline", "gemini", "aider", "agentsmd"].every((t) => compile.out.includes(`→ ${t}: ${t} is eager and cannot lazy-load`));
+  const eagerWarned = ["cline", "aider", "agentsmd"].every((t) => compile.out.includes(`→ ${t}: ${t} is eager and cannot lazy-load`));
   check("all eager targets report standing cost", eagerWarned, compile.out);
-  const lazyQuiet = ["claude-code", "cursor", "windsurf", "agents"].every((t) => !compile.out.includes(`→ ${t}: ${t} is eager`));
+  const lazyQuiet = ["claude-code", "cursor", "windsurf", "agents", "copilot", "gemini"].every((t) => !compile.out.includes(`→ ${t}: ${t} is eager`));
   check("lazy targets do not warn", lazyQuiet, compile.out);
 
   const recompile = run(["compile"], tmp);
@@ -251,8 +253,7 @@ try {
   const prunedAgents = readFileSync(join(tmp, "AGENTS.md"), "utf8");
   check("compile prunes stale AGENTS.md section", !prunedAgents.includes("kitbash:begin prereview"), prunedAgents.slice(0, 200));
   check("surviving skill section intact", prunedAgents.includes("kitbash:begin tidy-commits"));
-  const prunedGemini = readFileSync(join(tmp, "GEMINI.md"), "utf8");
-  check("GEMINI.md section pruned, user content kept", !prunedGemini.includes("kitbash:begin prereview") && prunedGemini.startsWith("# Project notes"));
+  check("gemini skill dir pruned", !existsSync(join(tmp, ".gemini/skills/prereview/SKILL.md")));
 
   // remove the LAST remaining skill, then compile — must still prune, not bail early
   const removeLast = run(["remove", "tidy-commits"], tmp);
@@ -263,7 +264,7 @@ try {
   const emptyAgents = readFileSync(join(tmp, "AGENTS.md"), "utf8");
   check("last-skill AGENTS.md section pruned", !emptyAgents.includes("kitbash:begin tidy-commits"), emptyAgents.slice(0, 200));
   const emptyGemini = readFileSync(join(tmp, "GEMINI.md"), "utf8");
-  check("GEMINI.md fully pruned, user content kept", !emptyGemini.includes("kitbash:begin") && emptyGemini.startsWith("# Project notes"), emptyGemini.slice(0, 120));
+  check("GEMINI.md untouched by kitbash, user content kept", !emptyGemini.includes("kitbash:begin") && emptyGemini.startsWith("# Project notes"), emptyGemini.slice(0, 120));
 } finally {
   rmSync(tmp, { recursive: true, force: true });
 }
@@ -570,6 +571,37 @@ try {
   check("kitbash test also fails on hidden characters", poisonedCompile.status === 1, poisonedCompile.out);
 } finally {
   rmSync(hidden, { recursive: true, force: true });
+}
+
+// --- upgrade path: outputs from before gemini/copilot moved to skills dirs get cleaned up ---
+
+const upgrade = mkdtempSync(join(tmpdir(), "kitbash-upgrade-"));
+try {
+  mkdirSync(join(upgrade, ".github"));
+  // A GEMINI.md left over from when the gemini adapter merged into it, alongside
+  // the user's own notes, plus a stale Copilot instructions file.
+  writeFileSync(
+    join(upgrade, "GEMINI.md"),
+    "# My notes\n\nKeep these.\n\n<!-- kitbash:begin prereview -->\n<!-- generated by kitbash \u2014 do not edit; source: .kitbash/skills/prereview @ 0.1.0 -->\n\n## Skill: prereview\n\nold body\n<!-- kitbash:end prereview -->\n",
+  );
+  mkdirSync(join(upgrade, ".github/instructions"), { recursive: true });
+  writeFileSync(
+    join(upgrade, ".github/instructions/prereview.instructions.md"),
+    '---\napplyTo: "**"\n---\n<!-- generated by kitbash \u2014 do not edit; source: .kitbash/skills/prereview @ 0.1.0 -->\n\nold body\n',
+  );
+
+  run(["init"], upgrade);
+  run(["install", `file:${fixture}`, "--yes"], upgrade);
+  const up = run(["compile"], upgrade);
+
+  const md = readFileSync(join(upgrade, "GEMINI.md"), "utf8");
+  check("upgrade: stale GEMINI.md section pruned", !md.includes("kitbash:begin"), md.slice(0, 160));
+  check("upgrade: user content in GEMINI.md kept", md.startsWith("# My notes"), md.slice(0, 60));
+  check("upgrade: stale copilot instructions file pruned", !existsSync(join(upgrade, ".github/instructions/prereview.instructions.md")), up.out);
+  check("upgrade: copilot now in the skills dir", existsSync(join(upgrade, ".github/skills/prereview/SKILL.md")), up.out);
+  check("upgrade: gemini now in the skills dir", existsSync(join(upgrade, ".gemini/skills/prereview/SKILL.md")), up.out);
+} finally {
+  rmSync(upgrade, { recursive: true, force: true });
 }
 
 // --- Devin Desktop (ex-Windsurf): .devin/rules takes precedence over .windsurf/rules ---

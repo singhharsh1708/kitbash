@@ -320,7 +320,7 @@ next: kitbash compile</code></pre>
 <span class="warn">⚠</span> test-gaps → agentsmd: agentsmd is eager and cannot lazy-load; this skill
   costs ~364 tokens standing every session (declared limit: 60)
 compiled 1 skill(s) for 2 agent target(s)</code></pre>
-      <p>That warning is not a mistake in your manifest — it is the honest cost of an eager target. Kitbash compiles to the cheapest mode each target supports, so Claude Code, Cursor, Devin and the <code>.agents/skills/</code> path honor <code>disclosure = "lazy"</code>; the targets with no deferred mode carry the whole body every session regardless. The gap is the case for keeping bodies short. See the <a href="../benchmark">token budget benchmark</a> and <a href="adapters">adapters &amp; targets</a>.</p>
+      <p>That warning is not a mistake in your manifest — it is the honest cost of an eager target. Kitbash compiles to the cheapest mode each target supports, so Claude Code, Cursor, Copilot, Devin, Gemini CLI and the <code>.agents/skills/</code> path honor <code>disclosure = "lazy"</code>; Cline, Aider and the AGENTS.md floor have no deferred mode and carry the whole body every session regardless. The gap is the case for keeping bodies short. See the <a href="../benchmark">token budget benchmark</a> and <a href="adapters">adapters &amp; targets</a>.</p>
 
       <h3 id="loop-test">kitbash test</h3>
       <pre class="copyable"><code>kitbash test test-gaps</code></pre>
