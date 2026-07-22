@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Changelog — Kitbash</title>
+<meta name="description" content="Every release of the Kitbash CLI, newest first — the pre-install review gate, org policy, eight compile targets, lockfile pins, and the KSF spec draft.">
+<link rel="canonical" href="https://kitbash.vercel.app/changelog">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="kitbash">
+<meta property="og:title" content="Changelog — Kitbash">
+<meta property="og:description" content="Every release of the Kitbash CLI, newest first. Keep a Changelog format, semver, published to npm and Homebrew.">
+<meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Changelog — Kitbash">
+<meta name="twitter:description" content="Every release of the Kitbash CLI, newest first. Keep a Changelog format, semver, published to npm and Homebrew.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/kitbash.css">
+</head>
+<body>
+
+<header class="site-header" data-header>
+  <a class="brand" href="./" aria-label="kitbash home">
+    <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+    </svg>
+    <span><span class="kit">kit</span>bash</span>
+  </a>
+  <nav class="top-nav" aria-label="Main navigation">
+    <a href="docs/">Docs</a>
+    <a href="docs/adapters">Adapters</a>
+    <a href="docs/trust">Trust</a>
+    <a href="benchmark">Benchmark</a>
+    <a href="skills">Skills</a>
+    <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+      <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+      Support
+    </a>
+    <a class="icon-link" href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener" aria-label="GitHub repository">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+      <span>GitHub</span>
+    </a>
+  </nav>
+  <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
+    <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-14.7a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 16.8a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1Zm9.5-8.3a1 1 0 1 1 0 2h-1.2a1 1 0 1 1 0-2h1.2ZM4.7 11a1 1 0 1 1 0 2H3.5a1 1 0 1 1 0-2h1.2Zm13.74-6.44a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0ZM7.83 16.17a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0Zm9.76 0 .85.85a1 1 0 1 1-1.42 1.42l-.85-.85a1 1 0 0 1 1.42-1.42ZM6.98 4.56l.85.85a1 1 0 0 1-1.42 1.42l-.85-.85a1 1 0 1 1 1.42-1.42Z"></path></svg>
+    <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 14.58A8.2 8.2 0 0 1 9.42 3a9.25 9.25 0 1 0 11.59 11.59Z"></path></svg>
+  </button>
+  <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-label="Open menu" aria-expanded="false">
+    <svg class="mobile-menu-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+    <svg class="mobile-close-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+  </button>
+  <div class="mobile-menu" data-mobile-menu>
+    <div class="mobile-menu-card">
+      <div class="mobile-menu-head">Menu</div>
+      <a href="docs/">Docs</a>
+      <a href="docs/quickstart">Quickstart</a>
+      <a href="docs/cli">CLI reference</a>
+      <a href="docs/adapters">Adapters</a>
+      <a href="docs/trust">Trust &amp; review</a>
+      <a href="benchmark">Benchmark</a>
+      <a href="skills">Skills</a>
+      <a href="changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+    </div>
+  </div>
+</header>
+<div class="mobile-backdrop" data-mobile-backdrop></div>
+
+<main id="top">
+
+  <section class="section">
+    <p class="crumb"><a href="./">kitbash</a> / changelog</p>
+    <div class="page-head">
+      <h1>Changelog</h1>
+      <p>Every release of the Kitbash CLI, newest first. Nothing is summarised here — this is the shipped record.</p>
+    </div>
+
+    <div class="prose">
+
+      <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
+
+      <div class="stat-row">
+        <div class="stat"><b>0.6.0</b><span>Current CLI version</span></div>
+        <div class="stat"><b>8</b><span>Compile targets</span></div>
+        <div class="stat"><b>Apache-2.0</b><span>License</span></div>
+      </div>
+
+      <p>To move to the current version:</p>
+      <pre class="copyable"><code><span class="c"># npm</span>
+npm install -g kitbash@latest
+
+<span class="c"># Homebrew</span>
+brew update &amp;&amp; brew upgrade kitbash</code></pre>
+      <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
+
+      <h2 id="v0-6-0">0.6.0 — 2026-07-14</h2>
+      <p>Trust &amp; review release: installing a skill means letting someone else's instructions run with your agent's permissions — this release makes that reviewable and governable.</p>
+
+      <h3 id="v0-6-0-added">Added</h3>
+      <ul>
+        <li><strong>Pre-install review gate</strong>: <code>kitbash install</code> prints a review block (permissions incl. network/write, budget, standing, capability requirements, lint warnings incl. injection heuristics) <em>before</em> writing anything, and prompts <code>install? [y/N]</code> on a TTY. <code>--yes</code>/<code>-y</code> skips the prompt; non-interactive runs (CI) proceed as before.</li>
+        <li><strong><code>[policy]</code> in <code>kitbash.toml</code></strong> — org-level allowlists: <code>allow_sources</code> (globs matched against <code>gh:owner/repo[/path][@ref]</code> / <code>file:</code> sources), <code>deny_network</code>, <code>deny_write</code>, <code>max_budget</code>. Policy is a hard gate at install (<code>--yes</code> does not bypass it) and <code>doctor</code> rechecks it against already-installed skills.</li>
+        <li><strong>Remote sources for <code>preview</code>, <code>lint</code>, and <code>explain</code></strong>: <code>kitbash preview gh:owner/repo/path</code> fetches to a temp dir and renders the exact compiled output per agent — skills are fully readable before install, no side effects.</li>
+      </ul>
+
+      <h3 id="v0-6-0-changed">Changed</h3>
+      <ul>
+        <li><code>install</code> output: the summary (budget/standing/permissions) moved from after the copy to the review block before it; the post-install lines now just confirm the pin.</li>
+        <li><code>explain</code>/<code>lint</code>/<code>preview</code> "not found" errors now mention that a source (<code>gh:owner/repo</code>, <code>file:path</code>) is accepted.</li>
+      </ul>
+
+      <h2 id="v0-5-0">0.5.0 — 2026-07-12</h2>
+
+      <h3 id="v0-5-0-added">Added</h3>
+      <ul>
+        <li>Three v0.2-roadmap commands: <code>kitbash lint [skill-or-path] [--strict]</code> (full static check suite, works pre-install), <code>kitbash explain &lt;skill-or-path&gt; &lt;adapter&gt;</code> (why a compilation degraded, with the token cost of eager targets), and <code>kitbash preview &lt;skill-or-path&gt;</code> (each adapter's compiled output with per-target token counts, before installing).</li>
+        <li><code>aider</code> adapter — marker-merged <code>CONVENTIONS.md</code> (detected via an existing <code>CONVENTIONS.md</code> or <code>.aider.conf.yml</code>) — <strong>8 targets total</strong>.</li>
+        <li>CI runs on Windows and macOS alongside Linux; fixed the platform-dependent subpath test so the suite is green on all three.</li>
+        <li>Site: live terminal replay in the hero and an interactive per-target compile preview.</li>
+      </ul>
+
+      <h2 id="v0-3-0">0.3.0 — 2026-07-11</h2>
+
+      <h3 id="v0-3-0-added">Added</h3>
+      <ul>
+        <li>Four new adapters — <code>copilot</code> (<code>.github/instructions/*.instructions.md</code>), <code>cline</code> (<code>.clinerules/</code>), <code>windsurf</code> (<code>.windsurf/rules/</code>), <code>gemini</code> (GEMINI.md marker merge) — <strong>7 targets total</strong>.</li>
+        <li>Commands compilation: <code>triggers.commands</code> now emit native slash commands (Claude Code <code>.claude/commands/*.md</code> shims).</li>
+        <li>Generalized marker-merge for shared files (AGENTS.md, GEMINI.md): user content preserved, sections idempotent, stale sections pruned.</li>
+        <li>Pruning generalized to written-set semantics across all managed output locations — covers removed skills and renamed commands.</li>
+        <li>README: badges, status-quo-vs-kitbash comparison, FAQ; social preview asset; demo regenerated from a real 7-target session.</li>
+      </ul>
+
+      <h2 id="v0-2-0">0.2.0 — 2026-07-11</h2>
+
+      <h3 id="v0-2-0-added">Added</h3>
+      <ul>
+        <li><code>kitbash.lock</code>: content-hash pins (sha256 over the skill directory) written on install, dropped on remove.</li>
+        <li>Integrity drift detection in <code>kitbash doctor</code> — exits 1 when installed files differ from the lock.</li>
+        <li>SKILL.md-only interop (skills.sh / Claude Skills convention): installs directly, manifest synthesized with conservative defaults, flagged <code>unmanifested</code> at install/list/compile. Verified against real third-party repos.</li>
+        <li><code>owner/repo</code> shorthand sources (resolve as <code>gh:</code>).</li>
+        <li>Stale-output pruning on <code>compile</code>: generated outputs of removed skills are deleted — only files bearing the generated header are ever touched.</li>
+        <li><code>kitbash.toml</code> <code>[project].targets</code> honored; unknown targets error.</li>
+        <li>Animated real-session demo in the README; launch plan in <code>docs/launch.md</code>.</li>
+      </ul>
+
+      <h3 id="v0-2-0-changed">Changed</h3>
+      <ul>
+        <li>Bare (unmanifested) skills report budget violations as warnings instead of build failures — their authors never declared those limits.</li>
+        <li><code>--version</code> reads package.json.</li>
+      </ul>
+
+      <h2 id="v0-1-0">0.1.0 — 2026-07-10</h2>
+
+      <h3 id="v0-1-0-added">Added</h3>
+      <ul>
+        <li>KSF spec draft v0.1 (<code>spec/SPEC.md</code>) with JSON schema; RFC process (<code>rfcs/</code>); RFC-0001.</li>
+        <li>Working thin slice, zero runtime dependencies: <code>init</code>, <code>install</code> (gh:/file:), <code>remove</code>, <code>list</code>, <code>compile</code>, <code>doctor</code>.</li>
+        <li>Adapters: <code>claude-code</code>, <code>cursor</code>, <code>agentsmd</code> floor (idempotent marker merge).</li>
+        <li>Context budget and standing-stub enforcement at compile; visible degradation warnings; <code>--strict</code>.</li>
+        <li>Template resolution: <code>{{artifact.*}}</code>/<code>{{lore.*}}</code> compile to path references, <code>{{prompt.*}}</code> inlines.</li>
+        <li>End-to-end test suite in CI.</li>
+        <li>Reference skill <code>prereview</code>; manifesto; landing page; docs.</li>
+      </ul>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-divider"></div>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+        <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+      </svg>
+      <strong>kitbash</strong>
+      <span>One skill, every coding agent.</span>
+    </div>
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <a href="docs/">Docs</a>
+      <a href="docs/cli">CLI</a>
+      <a href="docs/format">Format</a>
+      <a href="docs/trust">Trust</a>
+      <a href="benchmark">Benchmark</a>
+      <a href="changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">Manifesto</a>
+    </nav>
+    <div class="footer-actions">
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+    </div>
+    <p class="footer-meta">Apache-2.0 · stable spec</p>
+  </div>
+</footer>
+
+<script src="assets/kitbash.js" defer></script>
+</body>
+</html>

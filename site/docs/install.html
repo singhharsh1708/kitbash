@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Installation — Kitbash docs</title>
+<meta name="description" content="Install the Kitbash CLI with npm or Homebrew, verify it, update it, and remove it cleanly — plus what lands in your repo and what stays global.">
+<link rel="canonical" href="https://kitbash.vercel.app/docs/install">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="kitbash">
+<meta property="og:title" content="Installation — Kitbash docs">
+<meta property="og:description" content="Install the Kitbash CLI with npm or Homebrew, verify it, update it, and remove it cleanly.">
+<meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Installation — Kitbash docs">
+<meta name="twitter:description" content="Install the Kitbash CLI with npm or Homebrew, verify it, update it, and remove it cleanly.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/kitbash.css">
+</head>
+<body>
+
+<header class="site-header" data-header>
+  <a class="brand" href="../" aria-label="kitbash home">
+    <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+    </svg>
+    <span><span class="kit">kit</span>bash</span>
+  </a>
+  <nav class="top-nav" aria-label="Main navigation">
+    <a href="./">Docs</a>
+    <a href="adapters">Adapters</a>
+    <a href="trust">Trust</a>
+    <a href="../benchmark">Benchmark</a>
+    <a href="../skills">Skills</a>
+    <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+      <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+      Support
+    </a>
+    <a class="icon-link" href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener" aria-label="GitHub repository">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+      <span>GitHub</span>
+    </a>
+  </nav>
+  <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
+    <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-14.7a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 16.8a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1Zm9.5-8.3a1 1 0 1 1 0 2h-1.2a1 1 0 1 1 0-2h1.2ZM4.7 11a1 1 0 1 1 0 2H3.5a1 1 0 1 1 0-2h1.2Zm13.74-6.44a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0ZM7.83 16.17a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0Zm9.76 0 .85.85a1 1 0 1 1-1.42 1.42l-.85-.85a1 1 0 0 1 1.42-1.42ZM6.98 4.56l.85.85a1 1 0 0 1-1.42 1.42l-.85-.85a1 1 0 1 1 1.42-1.42Z"></path></svg>
+    <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 14.58A8.2 8.2 0 0 1 9.42 3a9.25 9.25 0 1 0 11.59 11.59Z"></path></svg>
+  </button>
+  <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-label="Open menu" aria-expanded="false">
+    <svg class="mobile-menu-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+    <svg class="mobile-close-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+  </button>
+  <div class="mobile-menu" data-mobile-menu>
+    <div class="mobile-menu-card">
+      <div class="mobile-menu-head">Menu</div>
+      <a href="./">Docs</a>
+      <a href="quickstart">Quickstart</a>
+      <a href="cli">CLI reference</a>
+      <a href="adapters">Adapters</a>
+      <a href="trust">Trust &amp; review</a>
+      <a href="../benchmark">Benchmark</a>
+      <a href="../skills">Skills</a>
+      <a href="../changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+    </div>
+  </div>
+</header>
+<div class="mobile-backdrop" data-mobile-backdrop></div>
+
+<main class="docs-shell" id="top">
+
+  <button class="docs-nav-toggle" type="button" data-docs-nav-toggle>Documentation menu</button>
+  <nav class="docs-nav" aria-label="Docs navigation" data-docs-nav>
+    <h4>Getting started</h4>
+    <a href="./">Overview</a>
+    <a href="install" aria-current="page">Installation</a>
+    <a href="quickstart">Quickstart</a>
+    <a href="authoring">Write your first skill</a>
+    <h4>Reference</h4>
+    <a href="cli">CLI reference</a>
+    <a href="format">Skill format (KSF)</a>
+    <a href="config">Project config</a>
+    <a href="adapters">Adapters &amp; targets</a>
+    <h4>Guides</h4>
+    <a href="trust">Trust &amp; review</a>
+    <a href="../benchmark">Token budgets</a>
+    <a href="../skills">Skills catalog</a>
+    <h4>Project</h4>
+    <a href="../changelog">Changelog</a>
+    <a href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">Spec ↗</a>
+    <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+
+  <div class="docs-main">
+    <p class="crumb"><a href="../">kitbash</a> / <a href="./">docs</a> / install</p>
+    <div class="page-head">
+      <h1>Installation</h1>
+      <p>Two routes — npm or Homebrew. Both put a single global <code>kitbash</code> binary on your PATH. Nothing else on your machine changes.</p>
+    </div>
+
+    <div class="prose">
+
+      <h2 id="requirements">Requirements</h2>
+      <p>Kitbash is a zero-dependency CLI: the published package pulls in no runtime dependencies, only a TypeScript toolchain for building it. That means the requirements are short.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Route</th><th>Needs</th></tr></thead>
+          <tbody>
+            <tr><td>npm</td><td>Node <code>&gt;=20</code> — the package declares <code>"engines": { "node": "&gt;=20" }</code>, so older Node is refused or warned about at install time</td></tr>
+            <tr><td>Homebrew</td><td>Homebrew. The formula brings its own Node, so no system Node is required</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Your coding agents need nothing at all. There is no Kitbash runtime — agents read their own native files and never know Kitbash produced them.</p>
+
+      <h2 id="install">Install</h2>
+
+      <h3 id="install-npm">npm</h3>
+      <pre class="copyable"><code>npm install -g kitbash</code></pre>
+
+      <h3 id="install-homebrew">Homebrew</h3>
+      <p>The formula lives in a personal tap. Installing by its full name taps it and installs in one step:</p>
+      <pre class="copyable"><code>brew install singhharsh1708/tap/kitbash</code></pre>
+
+      <h2 id="verify">Verify</h2>
+      <pre class="copyable"><code>kitbash --version</code></pre>
+      <p>It prints the bare version string and exits:</p>
+      <pre><code>0.6.0</code></pre>
+      <p><code>-v</code> is accepted as a short form. Running <code>kitbash</code> with no arguments (or <code>help</code>, <code>--help</code>, <code>-h</code>) prints the command list instead.</p>
+
+      <h2 id="what-gets-installed-where">What gets installed where</h2>
+      <p>Two different things live in two different places, and the distinction matters when you uninstall.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Thing</th><th>Location</th><th>Committed?</th></tr></thead>
+          <tbody>
+            <tr><td>The CLI binary</td><td>Global — your npm prefix or Homebrew prefix</td><td>No. It is a tool, like <code>git</code></td></tr>
+            <tr><td><code>kitbash.toml</code></td><td>Repo root, written by <code>kitbash init</code></td><td>Yes</td></tr>
+            <tr><td><code>.kitbash/skills/</code></td><td>Repo root, where installed skills land</td><td>Yes</td></tr>
+            <tr><td><code>kitbash.lock</code></td><td>Repo root, one content hash per skill</td><td>Yes</td></tr>
+            <tr><td>Compiled output</td><td><code>.claude/skills/</code>, <code>.cursor/rules/</code>, <code>AGENTS.md</code>, and so on</td><td>Yes</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Everything in the repo is plain text you own. Your team gets the same skills the same way they get the same dependencies — by checking out the repo.</p>
+
+      <h2 id="updating">Updating</h2>
+      <pre class="copyable"><code><span class="c"># npm</span>
+npm install -g kitbash@latest
+
+<span class="c"># Homebrew</span>
+brew update &amp;&amp; brew upgrade kitbash</code></pre>
+      <p>Confirm with <code>kitbash --version</code>. The KSF core is frozen and evolves additive-only within a major version, so upgrading the CLI does not invalidate skills you already installed.</p>
+
+      <h2 id="uninstalling">Uninstalling</h2>
+      <pre class="copyable"><code><span class="c"># npm</span>
+npm uninstall -g kitbash
+
+<span class="c"># Homebrew</span>
+brew uninstall kitbash
+brew untap singhharsh1708/tap   <span class="c"># optional — removes the tap too</span></code></pre>
+      <div class="callout">
+        <p><b>Uninstalling never touches your repo.</b> The compiled output is plain files you own, so your agents keep reading exactly what they read yesterday. Deleting <code>kitbash.toml</code> changes nothing either.</p>
+      </div>
+      <p>If you want a skill's generated files gone before you remove the CLI, do that first while you still have it:</p>
+      <pre class="copyable"><code>kitbash remove prereview &amp;&amp; kitbash compile</code></pre>
+      <p><code>remove</code> deletes <code>.kitbash/skills/&lt;skill&gt;</code> and drops its lockfile entry; the following <code>compile</code> prunes the outputs it had written into each agent's directory. The CLI tells you this itself:</p>
+      <pre><code>removed prereview
+next: kitbash compile (prunes this skill's generated outputs)</code></pre>
+
+      <h2 id="troubleshooting">Troubleshooting</h2>
+
+      <h3 id="command-not-found">command not found after npm -g</h3>
+      <p>The package installed, but your npm global bin directory is not on your PATH. Find out where npm puts it:</p>
+      <pre class="copyable"><code>npm prefix -g</code></pre>
+      <p>The binary is at <code>&lt;prefix&gt;/bin/kitbash</code>. Add that <code>bin</code> directory to <code>PATH</code> in your shell profile, then open a new shell.</p>
+
+      <h3 id="permission-errors">Permission errors on install</h3>
+      <p>An <code>EACCES</code> during <code>npm install -g</code> means npm's global prefix is somewhere your user cannot write. Do not fix it with <code>sudo</code> — that leaves root-owned files in your npm tree and turns every later install into the same fight.</p>
+      <div class="callout warn">
+        <p><b>Use a version manager instead.</b> A Node version manager puts the global prefix inside your home directory, so <code>npm install -g</code> needs no elevation at all. Setting an npm prefix you own (<code>npm config set prefix</code>) works too. Either way, the Homebrew route sidesteps the problem entirely.</p>
+      </div>
+
+      <h3 id="which-binary">Which binary is winning</h3>
+      <p>If you have installed both ways, or upgraded and still see the old version, ask the shell which one it resolves:</p>
+      <pre class="copyable"><code>which kitbash
+kitbash --version</code></pre>
+      <p>A Homebrew path and an npm path can both be present; whichever directory comes first in <code>PATH</code> wins. Remove the one you do not want with the matching uninstall command above, and run <code>hash -r</code> if your shell has cached the old location.</p>
+
+      <h2 id="next">Next</h2>
+      <ul>
+        <li><a href="quickstart">Quickstart</a> — init a repo, install a skill, compile it, in about two minutes.</li>
+        <li><a href="cli">CLI reference</a> — every command, flag, and exit code.</li>
+        <li><a href="config">Project config</a> — what <code>kitbash init</code> writes and how to tune it.</li>
+      </ul>
+
+    </div>
+
+    <nav class="pager" aria-label="Page navigation">
+      <a href="./"><span>Previous</span> Overview</a>
+      <a class="next" href="quickstart"><span>Next</span> Quickstart</a>
+    </nav>
+  </div>
+
+  <aside class="docs-toc" data-toc aria-label="On this page"></aside>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-divider"></div>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+        <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+      </svg>
+      <strong>kitbash</strong>
+      <span>One skill, every coding agent.</span>
+    </div>
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <a href="./">Docs</a>
+      <a href="cli">CLI</a>
+      <a href="format">Format</a>
+      <a href="trust">Trust</a>
+      <a href="../benchmark">Benchmark</a>
+      <a href="../changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">Manifesto</a>
+    </nav>
+    <div class="footer-actions">
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+    </div>
+    <p class="footer-meta">Apache-2.0 · stable spec</p>
+  </div>
+</footer>
+
+<script src="../assets/kitbash.js" defer></script>
+</body>
+</html>

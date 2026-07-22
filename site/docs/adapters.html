@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Adapters &amp; targets — Kitbash docs</title>
+<meta name="description" content="Reference for all eight Kitbash compile targets: output paths, detection, lazy vs eager loading, capabilities, and how degradation is surfaced.">
+<link rel="canonical" href="https://kitbash.vercel.app/docs/adapters">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="kitbash">
+<meta property="og:title" content="Adapters &amp; targets — Kitbash docs">
+<meta property="og:description" content="All eight compile targets: output paths, detection, lazy vs eager loading, capabilities, and degradation.">
+<meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Adapters &amp; targets — Kitbash docs">
+<meta name="twitter:description" content="All eight compile targets: output paths, detection, lazy vs eager loading, capabilities, and degradation.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/kitbash.css">
+</head>
+<body>
+
+<header class="site-header" data-header>
+  <a class="brand" href="../" aria-label="kitbash home">
+    <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+    </svg>
+    <span><span class="kit">kit</span>bash</span>
+  </a>
+  <nav class="top-nav" aria-label="Main navigation">
+    <a href="./">Docs</a>
+    <a href="adapters">Adapters</a>
+    <a href="trust">Trust</a>
+    <a href="../benchmark">Benchmark</a>
+    <a href="../skills">Skills</a>
+    <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+      <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+      Support
+    </a>
+    <a class="icon-link" href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener" aria-label="GitHub repository">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+      <span>GitHub</span>
+    </a>
+  </nav>
+  <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
+    <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-14.7a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 16.8a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1Zm9.5-8.3a1 1 0 1 1 0 2h-1.2a1 1 0 1 1 0-2h1.2ZM4.7 11a1 1 0 1 1 0 2H3.5a1 1 0 1 1 0-2h1.2Zm13.74-6.44a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0ZM7.83 16.17a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0Zm9.76 0 .85.85a1 1 0 1 1-1.42 1.42l-.85-.85a1 1 0 0 1 1.42-1.42ZM6.98 4.56l.85.85a1 1 0 0 1-1.42 1.42l-.85-.85a1 1 0 1 1 1.42-1.42Z"></path></svg>
+    <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 14.58A8.2 8.2 0 0 1 9.42 3a9.25 9.25 0 1 0 11.59 11.59Z"></path></svg>
+  </button>
+  <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-label="Open menu" aria-expanded="false">
+    <svg class="mobile-menu-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+    <svg class="mobile-close-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+  </button>
+  <div class="mobile-menu" data-mobile-menu>
+    <div class="mobile-menu-card">
+      <div class="mobile-menu-head">Menu</div>
+      <a href="./">Docs</a>
+      <a href="quickstart">Quickstart</a>
+      <a href="cli">CLI reference</a>
+      <a href="adapters">Adapters</a>
+      <a href="trust">Trust &amp; review</a>
+      <a href="../benchmark">Benchmark</a>
+      <a href="../skills">Skills</a>
+      <a href="../changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+    </div>
+  </div>
+</header>
+<div class="mobile-backdrop" data-mobile-backdrop></div>
+
+<main class="docs-shell" id="top">
+
+  <button class="docs-nav-toggle" type="button" data-docs-nav-toggle>Documentation menu</button>
+  <nav class="docs-nav" aria-label="Docs navigation" data-docs-nav>
+    <h4>Getting started</h4>
+    <a href="./">Overview</a>
+    <a href="install">Installation</a>
+    <a href="quickstart">Quickstart</a>
+    <a href="authoring">Write your first skill</a>
+    <h4>Reference</h4>
+    <a href="cli">CLI reference</a>
+    <a href="format">Skill format (KSF)</a>
+    <a href="config">Project config</a>
+    <a href="adapters" aria-current="page">Adapters &amp; targets</a>
+    <h4>Guides</h4>
+    <a href="trust">Trust &amp; review</a>
+    <a href="../benchmark">Token budgets</a>
+    <a href="../skills">Skills catalog</a>
+    <h4>Project</h4>
+    <a href="../changelog">Changelog</a>
+    <a href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">Spec ↗</a>
+    <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+
+  <div class="docs-main">
+    <p class="crumb"><a href="../">kitbash</a> / <a href="./">docs</a> / adapters</p>
+    <div class="page-head">
+      <h1>Adapters &amp; targets</h1>
+      <p>Eight compile targets, each with its own output path, detection rule, loading mode, and capability set. This page is the reference for what every one of them actually writes.</p>
+    </div>
+
+    <div class="prose">
+
+      <p>An adapter turns one installed skill into the native format of one coding agent. <code>kitbash compile</code> runs every detected adapter over every installed skill and writes the result. Two emission styles exist: <strong>per-skill files</strong> (Claude Code, Cursor, Copilot, Cline, Windsurf) and <strong>marker-merged sections in a shared file</strong> (AGENTS.md, GEMINI.md, CONVENTIONS.md).</p>
+
+      <h2 id="lazy-vs-eager">Lazy vs eager</h2>
+      <p>The single most important property of a target is how it loads a compiled skill.</p>
+      <ul>
+        <li><span class="badge lazy">lazy</span> The target keeps the skill out of the context window until it is invoked. Only a standing stub — a name and description the agent can match against — is resident. Claude Code SKILL.md files and Cursor agent-requested rules work this way.</li>
+        <li><span class="badge eager">eager</span> The target has no mechanism for deferred loading, so the entire compiled body sits in context every session. AGENTS.md, GEMINI.md, CONVENTIONS.md, Copilot <code>applyTo</code> instructions, and Cline and Windsurf rule files all work this way.</li>
+      </ul>
+      <p>That difference is the standing token tax. A skill authored with <code>disclosure = "lazy"</code> cannot lazy-load on an eager target — the target simply has nowhere to put a stub. Kitbash refuses to let that happen quietly: on every eager target, a lazy-authored skill produces a warning that names the real cost and the limit the author declared.</p>
+      <pre><code><span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load;
+  this skill costs ~464 tokens standing every session (declared limit: 60)</code></pre>
+      <p>Multiply that by the number of installed skills and it is the whole context budget problem. The <a href="../benchmark">benchmark page</a> quantifies the gap between lazy and eager delivery of the same skill.</p>
+
+      <h2 id="capability-matrix">Capability matrix</h2>
+      <p>Detection is a filesystem check against the repo root — presence of the directory or file the agent already uses. Capabilities are matched against a skill's <code>targets.requires</code>; an empty set means the adapter can only carry instructions.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Adapter</th><th>Output path</th><th>Detection</th><th>Loading</th><th>Capabilities</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>claude-code</code></td>
+              <td><code>.claude/skills/&lt;name&gt;/SKILL.md</code><br><code>.claude/commands/&lt;cmd&gt;.md</code></td>
+              <td><code>.claude/</code> exists</td>
+              <td><span class="badge lazy">lazy</span></td>
+              <td><code>scripts</code>, <code>hooks</code>, <code>subagents</code></td>
+            </tr>
+            <tr>
+              <td><code>cursor</code></td>
+              <td><code>.cursor/rules/&lt;name&gt;.mdc</code></td>
+              <td><code>.cursor/</code> exists</td>
+              <td><span class="badge lazy">lazy</span></td>
+              <td>none</td>
+            </tr>
+            <tr>
+              <td><code>copilot</code></td>
+              <td><code>.github/instructions/&lt;name&gt;.instructions.md</code></td>
+              <td><code>.github/</code> exists</td>
+              <td><span class="badge eager">eager</span></td>
+              <td>none</td>
+            </tr>
+            <tr>
+              <td><code>cline</code></td>
+              <td><code>.clinerules/&lt;name&gt;.md</code></td>
+              <td><code>.clinerules/</code> exists</td>
+              <td><span class="badge eager">eager</span></td>
+              <td>none</td>
+            </tr>
+            <tr>
+              <td><code>windsurf</code></td>
+              <td><code>.windsurf/rules/&lt;name&gt;.md</code></td>
+              <td><code>.windsurf/</code> exists</td>
+              <td><span class="badge eager">eager</span></td>
+              <td>none</td>
+            </tr>
+            <tr>
+              <td><code>gemini</code></td>
+              <td><code>GEMINI.md</code> (merged)</td>
+              <td><code>GEMINI.md</code> or <code>.gemini/</code> exists</td>
+              <td><span class="badge eager">eager</span></td>
+              <td>none</td>
+            </tr>
+            <tr>
+              <td><code>aider</code></td>
+              <td><code>CONVENTIONS.md</code> (merged)</td>
+              <td><code>CONVENTIONS.md</code> or <code>.aider.conf.yml</code> exists</td>
+              <td><span class="badge eager">eager</span></td>
+              <td>none</td>
+            </tr>
+            <tr>
+              <td><code>agentsmd</code></td>
+              <td><code>AGENTS.md</code> (merged)</td>
+              <td>always</td>
+              <td><span class="badge eager">eager</span></td>
+              <td>none</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Only <code>claude-code</code> declares capabilities today. Every other adapter carries instructions and nothing else, so any non-empty <code>targets.requires</code> degrades on all seven. The <code>network</code> capability from the spec is declared by no adapter at all — a skill that requires it degrades everywhere, including on Claude Code.</p>
+      <p>Detection can be overridden. Set <code>targets</code> under <code>[project]</code> in <code>kitbash.toml</code> and Kitbash compiles exactly that list instead of probing the filesystem; an unknown id there is a hard error. See <a href="config">project config</a>.</p>
+
+      <h2 id="the-adapters">The eight adapters</h2>
+      <p>Every emitted file carries a generated-file header naming the source skill and version, which is what makes stale output safe to delete on the next compile:</p>
+      <pre><code>&lt;!-- generated by kitbash — do not edit; source: .kitbash/skills/prereview @ 0.1.0 --&gt;</code></pre>
+
+      <h3 id="claude-code">claude-code</h3>
+      <p>Writes <code>.claude/skills/&lt;name&gt;/SKILL.md</code> with YAML frontmatter carrying <code>name</code> and a quoted <code>description</code>. The description is emitted as a double-quoted YAML scalar, so descriptions containing <code>:</code>, <code>"</code>, <code>[</code>, or <code>{</code> stay valid frontmatter.</p>
+      <p>It is the only adapter that emits native slash commands. Each entry in the manifest's <code>triggers.commands</code> becomes a thin shim at <code>.claude/commands/&lt;cmd&gt;.md</code> that tells the agent to read the SKILL.md and follow it exactly, passing along <code>$ARGUMENTS</code>. The body is not duplicated; the shim only points at it.</p>
+      <p>It is also the only adapter with a non-empty capability set: <code>scripts</code>, <code>hooks</code>, and <code>subagents</code>.</p>
+
+      <h3 id="cursor">cursor</h3>
+      <p>Writes <code>.cursor/rules/&lt;name&gt;.mdc</code> with frontmatter <code>alwaysApply: false</code> plus the skill description. That combination makes the rule agent-requested rather than always-on, which is why Cursor counts as lazy despite having no capabilities.</p>
+
+      <h3 id="copilot">copilot</h3>
+      <p>Writes <code>.github/instructions/&lt;name&gt;.instructions.md</code> with frontmatter <code>applyTo: "**"</code>. That glob matches every request, so the body is eager. Detection is the presence of <code>.github/</code>, which most repositories have — expect this target to fire more often than the others.</p>
+
+      <h3 id="cline">cline</h3>
+      <p>Writes <code>.clinerules/&lt;name&gt;.md</code> with no frontmatter at all — header and body only. Cline rule files are always loaded, so this is eager.</p>
+
+      <h3 id="windsurf">windsurf</h3>
+      <p>Writes <code>.windsurf/rules/&lt;name&gt;.md</code>, also with no frontmatter. Same story as Cline: rule files are always in context.</p>
+
+      <h3 id="gemini">gemini</h3>
+      <p>Merges into <code>GEMINI.md</code> rather than writing a per-skill file. Detected from either an existing <code>GEMINI.md</code> or a <code>.gemini/</code> directory.</p>
+
+      <h3 id="aider">aider</h3>
+      <p>Merges into <code>CONVENTIONS.md</code>, the file Aider reads when it is wired up through <code>.aider.conf.yml</code> or <code>--read</code>. Detection fires on an existing <code>CONVENTIONS.md</code> or an <code>.aider.conf.yml</code>. Always in context, so eager.</p>
+
+      <h3 id="agentsmd">agentsmd</h3>
+      <p>Merges into <code>AGENTS.md</code>. This is the floor: its detect function returns true unconditionally, so every repo gets AGENTS.md output whether or not any agent-specific directory exists. Codex and a long tail of other tools read it.</p>
+
+      <h3 id="marker-merge">How marker merging works</h3>
+      <p>The three shared-file adapters do not own their file. Each skill gets a marker-delimited section:</p>
+      <pre><code>&lt;!-- kitbash:begin prereview --&gt;
+&lt;!-- generated by kitbash — do not edit; source: .kitbash/skills/prereview @ 0.1.0 --&gt;
+
+## Skill: prereview
+
+...body...
+&lt;!-- kitbash:end prereview --&gt;</code></pre>
+      <p>On compile, a section whose markers already exist is replaced in place; a new one is appended. Anything you wrote by hand outside the markers is preserved untouched — your AGENTS.md stays yours. Sections belonging to skills that are no longer installed are pruned whenever the file is rebuilt, and for <code>AGENTS.md</code> and <code>GEMINI.md</code> also on runs where no adapter rewrites the file at all.</p>
+
+      <h2 id="degradation">Degradation</h2>
+      <p>A skill declares what it needs from a target in its manifest:</p>
+      <pre><code><span class="k">[targets]</span>
+requires = [<span class="s">"scripts"</span>]   <span class="c"># "scripts" | "hooks" | "subagents" | "network"</span>
+mode = <span class="s">"skill"</span></code></pre>
+      <p>At compile time each required capability is checked against the adapter's capability list. Anything missing produces a warning naming the skill, the target, and the capability:</p>
+      <pre><code><span class="warn">⚠</span> verify → cursor: target lacks "scripts"; compiled instruction-only (degraded)</code></pre>
+      <p>Degraded means the instructions still compile and still ship — the agent gets the prose, it just does not get the deterministic helper the skill wanted to run. That is often acceptable. What is never acceptable is not being told.</p>
+      <div class="callout warn">
+        <p><b>Spec §2.</b> A compiler lacking a required capability MUST either emit a degraded variant with a visible warning, or fail under <code>--strict</code>. Silent degradation is a conformance violation.</p>
+      </div>
+
+      <h3 id="explain">kitbash explain</h3>
+      <p>To interrogate one pairing, ask directly. <code>explain</code> takes a skill — installed name, local path, or a remote source you have not installed — and an adapter id:</p>
+      <pre class="copyable"><code>kitbash explain prereview agentsmd</code></pre>
+      <pre><code>prereview → agentsmd: no capability degradation
+  <span class="warn">⚠</span> loading: agentsmd is eager — skill costs ~464 tokens standing every session (declared limit: 60)</code></pre>
+      <p>When capabilities are missing it itemizes them:</p>
+      <pre><code>verify → cursor: degraded
+  <span class="warn">✗</span> requires "scripts" — not supported by cursor; compiled instruction-only</code></pre>
+      <p>The two findings are independent. A skill can be capability-clean and still carry a loading warning, as the first example shows.</p>
+
+      <h3 id="strict">Failing the build</h3>
+      <p>Warnings are informational by default. Pass <code>--strict</code> to <code>kitbash compile</code> and any warning — degradation, eager loading, output-path conflicts — turns into a non-zero exit:</p>
+      <pre class="copyable"><code>kitbash compile --strict</code></pre>
+      <pre><code>--strict: failing on 2 warning(s)</code></pre>
+      <p>That is the flag for CI. It converts "we quietly lost the script hook on three of five agents" into a red build.</p>
+
+      <h3 id="derived-matrix">The matrix is derived</h3>
+      <p>A skill's compatibility across agents is computed, never hand-written: <code>targets.requires</code> crossed with each adapter's capability set yields full, degraded, or unsupported per assistant. <code>kitbash preview</code> walks every adapter for one skill and prints each target's loading mode, standing cost, and degradation warnings; <code>kitbash doctor</code> reports which targets your repo detects and what the installed set costs standing. Publishing a hand-claimed compatibility matrix is not a thing here — the compiler is the source of truth.</p>
+
+      <h2 id="next">Related</h2>
+      <ul>
+        <li><a href="config">Project config</a> — pinning the target list with <code>[project] targets</code>.</li>
+        <li><a href="format">Skill format (KSF)</a> — <code>targets.requires</code>, <code>context.disclosure</code>, and the rest of the manifest.</li>
+        <li><a href="cli">CLI reference</a> — <code>compile</code>, <code>preview</code>, <code>explain</code>, <code>doctor</code>.</li>
+        <li><a href="../benchmark">Token budgets</a> — what eager delivery costs, measured.</li>
+      </ul>
+
+    </div>
+
+    <nav class="pager" aria-label="Page navigation">
+      <a href="config"><span>Previous</span> Project config</a>
+      <a class="next" href="trust"><span>Next</span> Trust &amp; review</a>
+    </nav>
+  </div>
+
+  <aside class="docs-toc" data-toc aria-label="On this page"></aside>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-divider"></div>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+        <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+      </svg>
+      <strong>kitbash</strong>
+      <span>One skill, every coding agent.</span>
+    </div>
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <a href="./">Docs</a>
+      <a href="cli">CLI</a>
+      <a href="format">Format</a>
+      <a href="trust">Trust</a>
+      <a href="../benchmark">Benchmark</a>
+      <a href="../changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">Manifesto</a>
+    </nav>
+    <div class="footer-actions">
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+    </div>
+    <p class="footer-meta">Apache-2.0 · stable spec</p>
+  </div>
+</footer>
+
+<script src="../assets/kitbash.js" defer></script>
+</body>
+</html>

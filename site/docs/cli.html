@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>CLI reference — Kitbash docs</title>
+<meta name="description" content="Every Kitbash command, flag, output line, and exit code — init, install, remove, list, compile, doctor, test, lint, explain, preview.">
+<link rel="canonical" href="https://kitbash.vercel.app/docs/cli">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="kitbash">
+<meta property="og:title" content="CLI reference — Kitbash docs">
+<meta property="og:description" content="Every Kitbash command, flag, output line, and exit code.">
+<meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CLI reference — Kitbash docs">
+<meta name="twitter:description" content="Every Kitbash command, flag, output line, and exit code.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/kitbash.css">
+<style>
+  /* .prose > * + * only spaces direct children; command entries need their own rhythm */
+  .cmd-entry > * + * { margin-top: 1.05rem; }
+</style>
+</head>
+<body>
+
+<header class="site-header" data-header>
+  <a class="brand" href="../" aria-label="kitbash home">
+    <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+    </svg>
+    <span><span class="kit">kit</span>bash</span>
+  </a>
+  <nav class="top-nav" aria-label="Main navigation">
+    <a href="./">Docs</a>
+    <a href="adapters">Adapters</a>
+    <a href="trust">Trust</a>
+    <a href="../benchmark">Benchmark</a>
+    <a href="../skills">Skills</a>
+    <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+      <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+      Support
+    </a>
+    <a class="icon-link" href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener" aria-label="GitHub repository">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+      <span>GitHub</span>
+    </a>
+  </nav>
+  <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
+    <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-14.7a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 16.8a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1Zm9.5-8.3a1 1 0 1 1 0 2h-1.2a1 1 0 1 1 0-2h1.2ZM4.7 11a1 1 0 1 1 0 2H3.5a1 1 0 1 1 0-2h1.2Zm13.74-6.44a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0ZM7.83 16.17a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0Zm9.76 0 .85.85a1 1 0 1 1-1.42 1.42l-.85-.85a1 1 0 0 1 1.42-1.42ZM6.98 4.56l.85.85a1 1 0 0 1-1.42 1.42l-.85-.85a1 1 0 1 1 1.42-1.42Z"></path></svg>
+    <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 14.58A8.2 8.2 0 0 1 9.42 3a9.25 9.25 0 1 0 11.59 11.59Z"></path></svg>
+  </button>
+  <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-label="Open menu" aria-expanded="false">
+    <svg class="mobile-menu-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+    <svg class="mobile-close-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+  </button>
+  <div class="mobile-menu" data-mobile-menu>
+    <div class="mobile-menu-card">
+      <div class="mobile-menu-head">Menu</div>
+      <a href="./">Docs</a>
+      <a href="quickstart">Quickstart</a>
+      <a href="cli">CLI reference</a>
+      <a href="adapters">Adapters</a>
+      <a href="trust">Trust &amp; review</a>
+      <a href="../benchmark">Benchmark</a>
+      <a href="../skills">Skills</a>
+      <a href="../changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+    </div>
+  </div>
+</header>
+<div class="mobile-backdrop" data-mobile-backdrop></div>
+
+<main class="docs-shell" id="top">
+
+  <button class="docs-nav-toggle" type="button" data-docs-nav-toggle>Documentation menu</button>
+  <nav class="docs-nav" aria-label="Docs navigation" data-docs-nav>
+    <h4>Getting started</h4>
+    <a href="./">Overview</a>
+    <a href="install">Installation</a>
+    <a href="quickstart">Quickstart</a>
+    <a href="authoring">Write your first skill</a>
+    <h4>Reference</h4>
+    <a href="cli" aria-current="page">CLI reference</a>
+    <a href="format">Skill format (KSF)</a>
+    <a href="config">Project config</a>
+    <a href="adapters">Adapters &amp; targets</a>
+    <h4>Guides</h4>
+    <a href="trust">Trust &amp; review</a>
+    <a href="../benchmark">Token budgets</a>
+    <a href="../skills">Skills catalog</a>
+    <h4>Project</h4>
+    <a href="../changelog">Changelog</a>
+    <a href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">Spec ↗</a>
+    <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+
+  <div class="docs-main">
+    <p class="crumb"><a href="../">kitbash</a> / <a href="./">docs</a> / cli</p>
+    <div class="page-head">
+      <h1>CLI reference</h1>
+      <p>Every command the <code>kitbash</code> binary exposes, the flags it actually parses, the lines it actually prints, and the exit code it returns.</p>
+    </div>
+
+    <div class="prose">
+
+      <h2 id="synopsis">Synopsis</h2>
+      <pre class="copyable"><code>kitbash &lt;command&gt; [args]</code></pre>
+      <p>The binary is a single dispatch table. It takes the first argument as the command name, hands the rest to that command, and exits with whatever number the command returns. There is no global option parser: flags are matched literally by each command, so <code>--strict</code> and <code>--yes</code> only mean something to the commands documented as accepting them.</p>
+      <p>Three cases are handled before dispatch:</p>
+      <ul>
+        <li><code>help</code> / <code>--help</code> / <code>-h</code>, or no argument at all — print the usage listing and exit <code>0</code>.</li>
+        <li><code>--version</code> / <code>-v</code> — print the version and exit <code>0</code>.</li>
+        <li>Anything else that isn't a known command — print <code>kitbash: unknown command "…"</code> to stderr, print the usage listing, exit <code>1</code>.</li>
+      </ul>
+      <pre><code><span class="c">$ kitbash --version</span>
+0.6.0</code></pre>
+      <p>The usage listing is the command table itself:</p>
+      <pre><code><span class="c">$ kitbash help</span>
+kitbash 0.6.0 — write a skill once, run it in every coding agent
+
+Usage: kitbash &lt;command&gt; [args]
+
+  init     Set up kitbash in this repository (kitbash.toml)
+  install  Install a skill with pre-install review: gh:owner/repo[/path][@ref], owner/repo, or file:path (--yes; [policy] enforced)
+  remove   Remove an installed skill
+  list     List installed skills with versions and context cost
+  compile  Emit native formats for every detected assistant (--strict)
+  doctor   Detect assistants, report total standing context cost
+  update   Update skills, showing instruction diffs before applying
+  diff     Instruction/permission/budget diff between two skill versions
+  lint     Schema, context budgets, dead references, injection heuristics (--strict; accepts a name, path, or uninstalled source)
+  audit    Scan installed skills: permission drift, unsigned sources, injection heuristics
+  preview  Render each adapter's output with per-agent token counts — works on uninstalled sources (gh:owner/repo)
+  explain  Why a compilation degraded on a given adapter (accepts a name, path, or uninstalled source)
+  test     Run a skill's static evals: schema, budgets, dead refs, injection heuristics (--strict)
+  gate     Run a gate-mode skill with a deterministic exit code
+  search   Search the community index
+  publish  Validate and publish a skill to the index
+  lore     Build, query, and curate repo intelligence
+  run      Run a declared pipeline (e.g. kitbash run ship)
+
+Docs: https://github.com/singhharsh1708/kitbash</code></pre>
+      <p>Every command runs against the current working directory as the project root. Skills live in <code>.kitbash/skills/</code>, config in <code>kitbash.toml</code>, pins in <code>kitbash.lock</code>.</p>
+
+      <h2 id="command-summary">Command summary</h2>
+      <p>Ten commands are implemented. The other eight are wired to a placeholder that prints <code>kitbash &lt;name&gt;: not implemented yet (lands in &lt;milestone&gt; — see docs/roadmap.md)</code> on stderr and returns exit code <code>2</code>. They occupy the command surface deliberately, so docs, spec, and implementation grow against one interface.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>Summary</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><a href="#init"><code>init</code></a></td><td>Set up kitbash in this repository (<code>kitbash.toml</code>)</td><td>Available</td></tr>
+            <tr><td><a href="#install"><code>install</code></a></td><td>Install a skill with pre-install review</td><td>Available</td></tr>
+            <tr><td><a href="#remove"><code>remove</code></a></td><td>Remove an installed skill</td><td>Available</td></tr>
+            <tr><td><a href="#list"><code>list</code></a></td><td>List installed skills with versions and context cost</td><td>Available</td></tr>
+            <tr><td><a href="#compile"><code>compile</code></a></td><td>Emit native formats for every detected assistant</td><td>Available</td></tr>
+            <tr><td><a href="#doctor"><code>doctor</code></a></td><td>Detect assistants, report total standing context cost</td><td>Available</td></tr>
+            <tr><td><code>update</code></td><td>Update skills, showing instruction diffs before applying</td><td>Planned — v0.2</td></tr>
+            <tr><td><code>diff</code></td><td>Instruction/permission/budget diff between two skill versions</td><td>Planned — v0.2</td></tr>
+            <tr><td><a href="#lint"><code>lint</code></a></td><td>Schema, context budgets, dead references, injection heuristics</td><td>Available</td></tr>
+            <tr><td><code>audit</code></td><td>Scan installed skills: permission drift, unsigned sources, injection heuristics</td><td>Planned — v0.2</td></tr>
+            <tr><td><a href="#preview"><code>preview</code></a></td><td>Render each adapter's output with per-agent token counts</td><td>Available</td></tr>
+            <tr><td><a href="#explain"><code>explain</code></a></td><td>Why a compilation degraded on a given adapter</td><td>Available</td></tr>
+            <tr><td><a href="#test"><code>test</code></a></td><td>Run a skill's static evals</td><td>Available</td></tr>
+            <tr><td><code>gate</code></td><td>Run a gate-mode skill with a deterministic exit code</td><td>Planned — v0.3</td></tr>
+            <tr><td><code>search</code></td><td>Search the community index</td><td>Planned — v0.4</td></tr>
+            <tr><td><code>publish</code></td><td>Validate and publish a skill to the index</td><td>Planned — v0.4</td></tr>
+            <tr><td><code>lore</code></td><td>Build, query, and curate repo intelligence</td><td>Planned — v0.5</td></tr>
+            <tr><td><code>run</code></td><td>Run a declared pipeline (e.g. <code>kitbash run ship</code>)</td><td>Planned — v0.5</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout warn">
+        <p><b>Do not script against planned commands.</b> They exit <code>2</code>, not <code>127</code> and not <code>1</code>. If your CI treats any non-zero code as a failure, calling <code>kitbash audit</code> today will fail the build with a message pointing at the roadmap.</p>
+      </div>
+
+      <h2 id="commands">Commands</h2>
+
+      <div class="cmd-entry">
+        <h3 id="init">init</h3>
+        <p class="sig">kitbash init</p>
+        <p>Writes <code>kitbash.toml</code> at the current working directory and creates <code>.kitbash/skills/</code>. The generated config carries a <code>[project]</code> table with every setting commented out: an example <code>targets</code> line, and a commented <code>[policy]</code> block covering <code>allow_sources</code>, <code>deny_network</code>, <code>deny_write</code>, and <code>max_budget</code>. Nothing is enabled until you uncomment it.</p>
+        <p>The command is idempotent in the safest possible way — if <code>kitbash.toml</code> already exists it touches nothing, including the skills directory.</p>
+        <ul class="flag-list">
+          <li><code>(none)</code> <span>Takes no arguments and no flags.</span></li>
+        </ul>
+        <pre><code><span class="c">$ kitbash init</span>
+created kitbash.toml and .kitbash/skills/
+next: kitbash install &lt;gh:owner/repo | owner/repo | file:path&gt;, then kitbash compile</code></pre>
+        <p>On a repo that already has one:</p>
+        <pre><code><span class="c">$ kitbash init</span>
+kitbash.toml already exists — nothing to do</code></pre>
+        <p><b>Exit codes:</b> <code>0</code> always — both the created and the already-exists path succeed.</p>
+      </div>
+
+      <div class="cmd-entry">
+        <h3 id="install">install</h3>
+        <p class="sig">kitbash install &lt;gh:owner/repo[/path][@ref] | owner/repo | file:path&gt; [--yes]</p>
+        <p>Fetches a skill, shows a review block, asks for confirmation, copies it into <code>.kitbash/skills/&lt;name&gt;/</code>, and records a content hash in <code>kitbash.lock</code>.</p>
+        <p>The source argument is the first argument that does not start with <code>-</code>. Five forms resolve:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Form</th><th>Resolves to</th></tr></thead>
+            <tbody>
+              <tr><td><code>gh:owner/repo</code></td><td>Shallow <code>git clone</code> of <code>https://github.com/owner/repo.git</code></td></tr>
+              <tr><td><code>gh:owner/repo/path/to/skill</code></td><td>The same clone, then a subdirectory</td></tr>
+              <tr><td><code>gh:owner/repo@ref</code></td><td>Full clone, then <code>git checkout &lt;ref&gt;</code> — branch, tag, or commit</td></tr>
+              <tr><td><code>owner/repo</code></td><td>Same as <code>gh:</code>, but only if no local path of that name exists</td></tr>
+              <tr><td><code>file:./path</code> or <code>./path</code></td><td>A directory on disk, resolved against the project root</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Resolution order matters: a bare <code>owner/repo</code> is checked as a local path first, so a directory named <code>foo/bar</code> in your repo wins over the GitHub repo <code>foo/bar</code>. Subpaths are confined to the clone — a subpath that resolves outside it is rejected as escaping the repository. GitHub sources require <code>git</code> on <code>PATH</code>; without it the command tells you to install git or use <code>file:</code>. The temporary clone is removed whether the install succeeds or fails.</p>
+        <p>Before anything is written, the review block prints what the skill declares: budget, standing limit, disclosure mode, target mode, tool permissions, network and write flags, and any required capabilities. A skill with only a <code>SKILL.md</code> and no <code>skill.toml</code> is flagged as unmanifested. Every failing or warning static check is printed too, so you see budget overruns and injection heuristics before you consent.</p>
+        <ul class="flag-list">
+          <li><code>--yes</code>, <code>-y</code> <span>Skip the confirmation prompt. Does not skip the review block, and does not skip <code>[policy]</code>.</span></li>
+        </ul>
+        <p>The prompt only appears when both stdin and stdout are TTYs. In a pipe, a CI runner, or a non-interactive shell, install proceeds without asking — <code>--yes</code> is for readability, not for unblocking automation.</p>
+        <pre><code><span class="c">$ kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview</span>
+review: prereview@0.1.0 — Reviews a diff against the team's actual standards
+  budget 1500 tokens · standing 60 · lazy disclosure · mode skill
+  permissions: tools [read, grep, bash:git *] · network no · write no
+install prereview@0.1.0? [y/N] <span class="k">y</span>
+installed prereview@0.1.0
+  pinned in kitbash.lock
+next: kitbash compile</code></pre>
+        <p>Only <code>y</code> or <code>yes</code>, case-insensitive, count as consent. Anything else — including an empty line — aborts:</p>
+        <pre><code>aborted — nothing installed.</code></pre>
+        <p><b><code>[policy]</code> is a hard gate.</b> If <code>kitbash.toml</code> declares a <code>[policy]</code> table, the source is matched against <code>allow_sources</code> and the manifest against <code>deny_network</code>, <code>deny_write</code>, and <code>max_budget</code>. Violations are printed and the install is refused — <code>--yes</code> does not bypass it, because the flag suppresses a question and policy is not a question.</p>
+        <pre><code><span class="c">$ kitbash install gh:stranger/skills/exfil --yes</span>
+review: exfil@1.0.0 — Summarizes your codebase
+  budget 4000 tokens · standing 90 · lazy disclosure · mode skill
+  permissions: tools [read, bash] · network YES · write no
+  <span class="warn">⚠</span> lint: injection — heuristic match — review: data-exfiltration shape
+  <span class="warn">✗</span> policy: source "gh:stranger/skills/exfil" is not in allow_sources (gh:your-org/*)
+  <span class="warn">✗</span> policy: exfil declares network permission and deny_network = true
+blocked by [policy] in kitbash.toml.</code></pre>
+        <p>Reinstalling is explicit. If the skill name is already present the command refuses rather than overwriting, and tells you the two-step sequence.</p>
+        <pre><code>prereview is already installed. To reinstall: kitbash remove prereview &amp;&amp; kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview</code></pre>
+        <p><b>Exit codes:</b> <code>0</code> when installed. <code>1</code> when no source was given, the source string is malformed, <code>git</code> is missing, the clone or ref checkout fails, the subpath is missing or escapes the repo, the folder has no <code>SKILL.md</code>, the skill is already installed, a policy rule is violated, or the prompt is declined.</p>
+      </div>
+
+      <div class="cmd-entry">
+        <h3 id="remove">remove</h3>
+        <p class="sig">kitbash remove &lt;skill-name&gt;</p>
+        <p>Deletes <code>.kitbash/skills/&lt;name&gt;/</code> and drops the skill's entry from <code>kitbash.lock</code>. It takes an installed skill name only — not a path and not a source — and the name must match the KSF name rule (lowercase, starting with a letter, 2–41 characters).</p>
+        <p>Removing does not clean up compiled output. The next <code>kitbash compile</code> prunes the generated files this skill owned, which is why the command says so.</p>
+        <ul class="flag-list">
+          <li><code>&lt;skill-name&gt;</code> <span>Required. The installed name, as shown by <code>kitbash list</code>.</span></li>
+        </ul>
+        <pre><code><span class="c">$ kitbash remove prereview</span>
+removed prereview
+next: kitbash compile (prunes this skill's generated outputs)</code></pre>
+        <p>If the name isn't installed, the error lists what is:</p>
+        <pre><code><span class="c">$ kitbash remove prereviw</span>
+prereviw is not installed.
+  installed: prereview, release-notes</code></pre>
+        <p><b>Exit codes:</b> <code>0</code> when removed. <code>1</code> when the name is missing, malformed, or not installed.</p>
+      </div>
+
+      <div class="cmd-entry">
+        <h3 id="list">list</h3>
+        <p class="sig">kitbash list</p>
+        <p>Prints one line per installed skill, sorted by name: name and version, declared context budget, declared standing limit, target mode, an <code>[unmanifested]</code> marker for <code>SKILL.md</code>-only skills, and the description. Directories under <code>.kitbash/skills/</code> without a <code>SKILL.md</code> are skipped, so aborted installs and stray folders don't break the listing.</p>
+        <ul class="flag-list">
+          <li><code>(none)</code> <span>Takes no arguments and no flags.</span></li>
+        </ul>
+        <pre><code><span class="c">$ kitbash list</span>
+prereview@0.1.0  budget=1500  standing=60  mode=skill  — Reviews a diff against the team's actual standards
+release-notes@0.2.0  budget=2200  standing=80  mode=skill  — Turns merged PRs into a release note
+scratch@0.0.0  budget=6000  standing=250  mode=skill  [unmanifested]  — Imported skill (no manifest)</code></pre>
+        <p>An empty project says so instead of printing nothing:</p>
+        <pre><code>no skills installed — kitbash install &lt;source&gt;</code></pre>
+        <p><b>Exit codes:</b> <code>0</code> always, including when nothing is installed.</p>
+      </div>
+
+      <div class="cmd-entry">
+        <h3 id="compile">compile</h3>
+        <p class="sig">kitbash compile [--strict]</p>
+        <p>Compiles every installed skill for every configured target and writes the results to disk. Targets come from <code>[project] targets</code> in <code>kitbash.toml</code>; with no config or no <code>targets</code> key, Kitbash autodetects by looking for each adapter's marker file or directory. An unknown target name in the config is a hard error before anything is written.</p>
+        <p>Per-skill files (<code>.claude/skills/</code>, <code>.claude/commands/</code>, <code>.cursor/rules/</code>, <code>.github/instructions/</code>, <code>.clinerules/</code>, <code>.windsurf/rules/</code>) are written whole. Shared files (<code>AGENTS.md</code>, <code>GEMINI.md</code>, <code>CONVENTIONS.md</code>) are marker-merged: each skill owns a <code>&lt;!-- kitbash:begin &lt;name&gt; --&gt;</code> … <code>&lt;!-- kitbash:end &lt;name&gt; --&gt;</code> section and your own prose around it is preserved.</p>
+        <p>Compile is also the garbage collector. Files in managed directories that carry the generated header but were not written by this run are deleted, and stale sections in <code>AGENTS.md</code> and <code>GEMINI.md</code> are pruned even when no adapter rewrites those files this run. That is how removing a skill eventually removes its output.</p>
+        <p>Budgets are enforced here, not merely reported. A manifested skill whose compiled body exceeds <code>context.budget</code>, or whose standing stub exceeds <code>context.standing</code>, fails the whole compile before any file is written. Unmanifested skills never declared those numbers, so their overruns are measured and warned about instead.</p>
+        <ul class="flag-list">
+          <li><code>--strict</code> <span>Exit <code>1</code> if the run produced any warnings. Files are still written; the failure is reported after.</span></li>
+        </ul>
+        <pre><code><span class="c">$ kitbash compile</span>
+<span class="c">→</span> .claude/skills/prereview/SKILL.md
+<span class="c">→</span> .claude/commands/prereview.md
+<span class="c">→</span> .cursor/rules/prereview.mdc
+<span class="c">→</span> AGENTS.md
+<span class="warn">✂</span> removed .claude/commands/old-review.md (stale)
+<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~464 tokens standing every session (declared limit: 60)
+compiled 1 skill(s) for 3 agent target(s)</code></pre>
+        <p>Warnings cover eager-target standing cost, capability degradation, unmanifested skills, and output-path conflicts where two skills write the same file. With <code>--strict</code> those same warnings end the run:</p>
+        <pre><code><span class="c">$ kitbash compile --strict</span>
+<span class="c">→</span> .claude/skills/prereview/SKILL.md
+<span class="c">→</span> AGENTS.md
+<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~464 tokens standing every session (declared limit: 60)
+compiled 1 skill(s) for 2 agent target(s)
+--strict: failing on 1 warning(s)</code></pre>
+        <p>A budget violation stops the run outright:</p>
+        <pre><code><span class="warn">✗</span> prereview: compiled body is ~1712 tokens, over its budget of 1500</code></pre>
+        <p>With nothing installed, compile still prunes stale output, then reports and succeeds:</p>
+        <pre><code>no skills installed — kitbash install &lt;source&gt; to add one</code></pre>
+        <p><b>Exit codes:</b> <code>0</code> on a clean compile. <code>1</code> on an unknown target in <code>kitbash.toml</code>, a manifested skill over its budget or standing limit, or <code>--strict</code> with at least one warning.</p>
+      </div>
+
+      <div class="cmd-entry">
+        <h3 id="doctor">doctor</h3>
+        <p class="sig">kitbash doctor</p>
+        <p>The repo health check. It reports which of the eight adapters were detected, how many skills are installed, the total standing context cost of their stubs, the worst-case active cost if every skill fired in one session, and then verifies the lockfile.</p>
+        <p>Three integrity conditions are checked: skills installed with no <code>kitbash.lock</code> at all, a locked skill whose files on disk no longer match their recorded hash, and a skill present on disk but absent from the lockfile. All three mean the code your agents load is not the code somebody reviewed.</p>
+        <p>If <code>[policy]</code> is configured, doctor rechecks it against everything already installed — using each skill's recorded source from the lockfile. That catches skills that predate the policy or were copied in without going through <code>kitbash install</code>.</p>
+        <ul class="flag-list">
+          <li><code>(none)</code> <span>Takes no arguments and no flags.</span></li>
+        </ul>
+        <pre><code><span class="c">$ kitbash doctor</span>
+detected targets:
+  <span class="ok">✓</span> claude-code
+  <span class="ok">✓</span> cursor
+  <span class="warn">✗</span> copilot
+  <span class="warn">✗</span> cline
+  <span class="warn">✗</span> windsurf
+  <span class="warn">✗</span> gemini
+  <span class="warn">✗</span> aider
+  <span class="ok">✓</span> agentsmd (floor: Codex, Gemini CLI, anything reading AGENTS.md)
+installed skills: 2
+standing context cost: ~98 tokens (stubs); worst-case active: 3700 tokens (budgets)
+lock integrity: ok
+policy: ok</code></pre>
+        <p>The <code>agentsmd</code> target is always detected — <code>AGENTS.md</code> is the floor every repo compiles to. A failing run looks like this:</p>
+        <pre><code>installed skills: 2
+standing context cost: ~98 tokens (stubs); worst-case active: 3700 tokens (budgets)
+  <span class="warn">✗</span> prereview: integrity drift — installed files differ from kitbash.lock
+  <span class="warn">✗</span> scratch: installed but not pinned in kitbash.lock — reinstall to pin it.
+2 integrity problem(s) — reinstall or investigate</code></pre>
+        <p>A lockfile entry for a skill that is not installed is a warning, not a failure — that is the ordinary state after removing a skill from disk by hand.</p>
+        <p><b>Exit codes:</b> <code>0</code> when detection, integrity, and policy all pass. <code>1</code> on a missing lockfile with skills installed, integrity drift, an unpinned installed skill, or a policy violation.</p>
+      </div>
+
+      <div class="cmd-entry">
+        <h3 id="test">test</h3>
+        <p class="sig">kitbash test [skill-name] [--strict]</p>
+        <p>Runs the static-tier evals over installed skills: manifest presence, template and reference resolution, measured body tokens against <code>context.budget</code>, measured stub tokens against <code>context.standing</code>, artifact reference shape (<code>name@version</code>), slash-prefixed trigger commands, schema-conformance lints, and prompt-injection heuristics.</p>
+        <p>No eval file is required — these checks always run. Failures print <code>✗</code>, warnings print <code>⚠</code>, passing checks print <code>·</code>. Injection heuristics and schema lints only ever warn: a security skill may legitimately quote the phrases it defends against, so the tool refuses to hard-fail on a pattern match.</p>
+        <p>The optional positional argument filters to a single <em>installed</em> skill. Unlike <a href="#lint">lint</a>, test does not accept a path or a remote source.</p>
+        <ul class="flag-list">
+          <li><code>[skill-name]</code> <span>Optional. Restrict the run to one installed skill.</span></li>
+          <li><code>--strict</code> <span>Exit <code>1</code> if any check warned, not just if one failed.</span></li>
+        </ul>
+        <pre><code><span class="c">$ kitbash test</span>
+<span class="ok">✓</span> prereview
+    · manifest — prereview@0.1.0
+    · references
+    · budget — body ~464 tok / budget 1500
+    · standing — stub ~38 tok / limit 60
+    · artifacts — produces 1, consumes 0
+<span class="warn">⚠</span> scratch
+    <span class="warn">⚠</span> manifest — unmanifested (SKILL.md only) — defaults applied
+    · references
+    · budget — body ~1204 tok / budget 6000
+    · standing — stub ~61 tok / limit 250
+    <span class="warn">⚠</span> injection — heuristic match — review: role reassignment
+
+tested 2 skill(s) · 0 failure(s) · 2 warning(s) (static tier)</code></pre>
+        <p>If any skill has an <code>evals/</code> directory, test says plainly that only the static tier ran:</p>
+        <pre><code>note: evals/ present — audit &amp; behavioral tiers need a runner (not in this build); static tier ran</code></pre>
+        <p>A real failure — here a dead template reference and a malformed artifact id:</p>
+        <pre><code><span class="warn">✗</span> release-notes
+    · manifest — release-notes@0.2.0
+    <span class="warn">✗</span> references — release-notes: template references missing /repo/.kitbash/skills/release-notes/prompts/summarize.md
+    <span class="warn">✗</span> artifacts — malformed: changelog (want name@version)
+
+tested 1 skill(s) · 2 failure(s) · 0 warning(s) (static tier)</code></pre>
+        <p><b>Exit codes:</b> <code>0</code> when nothing failed (and, under <code>--strict</code>, nothing warned). <code>1</code> when the named skill is not installed, no skills are installed, any check failed, or <code>--strict</code> saw a warning.</p>
+      </div>
+
+      <div class="cmd-entry">
+        <h3 id="lint">lint</h3>
+        <p class="sig">kitbash lint [skill-name | path | source] [--strict]</p>
+        <p>Runs the same static checks as <a href="#test">test</a> and prints the same report, but resolves its target far more broadly. The argument is tried in this order: an existing path relative to the project root, then an installed skill name, then a fetchable source (<code>gh:owner/repo[/path][@ref]</code>, <code>owner/repo</code>, <code>file:path</code>). With no argument it lints everything installed.</p>
+        <p>That last case is the point: you can lint a stranger's skill before it ever touches your repo. The remote is cloned to a temporary directory, checked, and deleted.</p>
+        <ul class="flag-list">
+          <li><code>[target]</code> <span>Optional. A path, an installed name, or an uninstalled source. Omit to lint every installed skill.</span></li>
+          <li><code>--strict</code> <span>Exit <code>1</code> if any check warned, not just if one failed.</span></li>
+        </ul>
+        <pre><code><span class="c">$ kitbash lint gh:stranger/skills/summarize</span>
+<span class="warn">⚠</span> summarize
+    <span class="warn">⚠</span> manifest — unmanifested (SKILL.md only) — defaults applied
+    · references
+    <span class="warn">⚠</span> budget — body ~7310 tok / budget 6000
+    · standing — stub ~112 tok / limit 250
+    <span class="warn">⚠</span> injection — heuristic match — review: override of prior instructions, data-exfiltration shape
+
+linted 1 skill(s) · 0 failure(s) · 3 warning(s)</code></pre>
+        <p>The same run under <code>--strict</code> adds one line and fails:</p>
+        <pre><code>--strict: failing on 3 warning(s)</code></pre>
+        <p>An unresolvable argument tells you what it tried:</p>
+        <pre><code><span class="c">$ kitbash lint prereviw</span>
+prereviw: not found as a path or installed skill name (or pass a source: gh:owner/repo, file:path)
+  installed: prereview, release-notes</code></pre>
+        <p><b>Exit codes:</b> <code>0</code> when nothing failed (and, under <code>--strict</code>, nothing warned). <code>1</code> when the target cannot be resolved or loaded, no argument was given and nothing is installed, any check failed, or <code>--strict</code> saw a warning.</p>
+      </div>
+
+      <div class="cmd-entry">
+        <h3 id="explain">explain</h3>
+        <p class="sig">kitbash explain &lt;skill-name | path | source&gt; &lt;adapter&gt;</p>
+        <p>Answers one question: what does this skill lose on that agent? Both arguments are positional and both are required. The first resolves the same way as <a href="#lint">lint</a>'s target — path, installed name, or fetchable source. The second names an adapter: <code>claude-code</code>, <code>cursor</code>, <code>copilot</code>, <code>cline</code>, <code>windsurf</code>, <code>gemini</code>, <code>aider</code>, or <code>agentsmd</code>.</p>
+        <p>Explain reports two independent kinds of loss. Capability degradation: each entry in the skill's <code>targets.requires</code> that the adapter does not support, which compiles down to instruction-only. And loading degradation: a skill authored for lazy disclosure on an eager adapter, which pays its full body as standing context in every session.</p>
+        <ul class="flag-list">
+          <li><code>&lt;target&gt;</code> <span>Required, first positional. Path, installed name, or uninstalled source.</span></li>
+          <li><code>&lt;adapter&gt;</code> <span>Required, second positional. One of the eight adapter ids.</span></li>
+        </ul>
+        <pre><code><span class="c">$ kitbash explain prereview agentsmd</span>
+prereview → agentsmd: no capability degradation
+  <span class="warn">⚠</span> loading: agentsmd is eager — skill costs ~464 tokens standing every session (declared limit: 60)</code></pre>
+        <p>Only <code>claude-code</code> declares capabilities at all — <code>scripts</code>, <code>hooks</code>, and <code>subagents</code> — so a skill requiring any of them degrades everywhere else:</p>
+        <pre><code><span class="c">$ kitbash explain prereview cursor</span>
+prereview → cursor: degraded
+  <span class="warn">✗</span> requires "scripts" — not supported by cursor; compiled instruction-only</code></pre>
+        <p>Missing arguments print the usage line and the adapter list:</p>
+        <pre><code><span class="c">$ kitbash explain prereview</span>
+usage: kitbash explain &lt;skill-name-or-path-or-source&gt; &lt;adapter&gt;
+  adapters: claude-code, cursor, copilot, cline, windsurf, gemini, aider, agentsmd</code></pre>
+        <p><b>Exit codes:</b> <code>0</code> whether or not degradation was found — explain reports, it does not judge. <code>1</code> when an argument is missing, the adapter name is unknown, the target cannot be resolved or loaded, or the body's template references cannot be resolved.</p>
+      </div>
+
+      <div class="cmd-entry">
+        <h3 id="preview">preview</h3>
+        <p class="sig">kitbash preview &lt;skill-name | path | source&gt;</p>
+        <p>Renders, without writing anything, exactly what each adapter would emit — every output path, every byte of frontmatter, the full compiled body — plus that adapter's loading mode and what it costs in standing context. Target resolution is identical to <a href="#lint">lint</a> and <a href="#explain">explain</a>, so remote sources work.</p>
+        <p>Adapters come from <code>[project] targets</code> or autodetection, the same as <a href="#compile">compile</a>. If <code>kitbash.toml</code> names an unknown target, preview does not error out — it falls back to rendering all eight adapters, because the job here is to show you output, not to gate anything.</p>
+        <p>Lazy adapters are labelled <code>lazy (0 tok standing)</code>. Eager adapters show the measured token count of their emitted files, because on those targets that is what every session carries.</p>
+        <ul class="flag-list">
+          <li><code>&lt;target&gt;</code> <span>Required. Path, installed name, or uninstalled source. The first argument not starting with <code>-</code>.</span></li>
+        </ul>
+        <pre><code><span class="c">$ kitbash preview gh:singhharsh1708/kitbash/examples/skills/prereview</span>
+preview: prereview@0.1.0
+
+─── claude-code [lazy] lazy (0 tok standing) ───
+
+  <span class="c">→</span> .claude/skills/prereview/SKILL.md
+
+---
+name: prereview
+description: "Reviews a diff against the team's actual standards"
+---
+&lt;!-- generated by kitbash — do not edit; source: .kitbash/skills/prereview @ 0.1.0 --&gt;
+
+# prereview
+<span class="c">…</span>
+
+  <span class="c">→</span> .claude/commands/prereview.md
+
+&lt;!-- generated by kitbash — do not edit; source: .kitbash/skills/prereview @ 0.1.0 --&gt;
+
+Load the "prereview" skill: read .claude/skills/prereview/SKILL.md and follow it exactly.
+
+Arguments: $ARGUMENTS
+
+─── agentsmd [eager] ~487 tok standing ───
+<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~464 tokens standing every session (declared limit: 60)
+
+  <span class="c">→</span> AGENTS.md
+
+&lt;!-- kitbash:begin prereview --&gt;
+&lt;!-- generated by kitbash — do not edit; source: .kitbash/skills/prereview @ 0.1.0 --&gt;
+
+## Skill: prereview
+
+<span class="c">…</span>
+&lt;!-- kitbash:end prereview --&gt;</code></pre>
+        <p>The shared-file adapters print only the skill's own marker-delimited section, not the merged file — that section is what <a href="#compile">compile</a> would splice in.</p>
+        <p><b>Exit codes:</b> <code>0</code> on a successful render, warnings included. <code>1</code> when no target was given, the target cannot be resolved or loaded, or the body's template references cannot be resolved.</p>
+      </div>
+
+      <h2 id="exit-codes">Exit codes</h2>
+      <p>Three codes, used consistently. Wire CI against these rather than parsing output.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Code</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>0</code></td><td>Success. Also returned by <code>--version</code>, <code>help</code>, and by read-only commands that found problems worth reporting but not failing on — <code>explain</code> on a degraded target, <code>list</code> with nothing installed.</td></tr>
+            <tr><td><code>1</code></td><td>Failure. Bad or missing arguments, an unresolvable target, a failed fetch, a validation or integrity failure, a policy violation, a declined prompt, a budget overrun, or <code>--strict</code> tripping on warnings. Unknown commands and uncaught errors also land here.</td></tr>
+            <tr><td><code>2</code></td><td>The command exists but is not implemented in this build. Reserved for the roadmap commands listed in the <a href="#command-summary">summary table</a>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>A useful CI shape: <code>doctor</code> to prove the lockfile still matches disk and policy still holds, <code>test --strict</code> to fail on any warning in your own skills, then <code>compile --strict</code> to fail if the generated output would carry a degradation warning nobody has acknowledged.</p>
+      <pre class="copyable"><code>kitbash doctor
+kitbash test --strict
+kitbash compile --strict</code></pre>
+      <div class="callout">
+        <p><b>One caveat for CI.</b> <code>install</code> only prompts when stdin and stdout are both TTYs, so in a pipeline it installs without asking whether or not you passed <code>--yes</code>. The thing that actually stops an unwanted skill in automation is <code>[policy]</code> in <code>kitbash.toml</code> — see <a href="trust">trust &amp; review</a>.</p>
+      </div>
+
+    </div>
+
+    <nav class="pager" aria-label="Page navigation">
+      <a href="authoring"><span>Previous</span> Write your first skill</a>
+      <a class="next" href="format"><span>Next</span> Skill format (KSF)</a>
+    </nav>
+  </div>
+
+  <aside class="docs-toc" data-toc aria-label="On this page"></aside>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-divider"></div>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+        <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+      </svg>
+      <strong>kitbash</strong>
+      <span>One skill, every coding agent.</span>
+    </div>
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <a href="./">Docs</a>
+      <a href="cli">CLI</a>
+      <a href="format">Format</a>
+      <a href="trust">Trust</a>
+      <a href="../benchmark">Benchmark</a>
+      <a href="../changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">Manifesto</a>
+    </nav>
+    <div class="footer-actions">
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+    </div>
+    <p class="footer-meta">Apache-2.0 · stable spec</p>
+  </div>
+</footer>
+
+<script src="../assets/kitbash.js" defer></script>
+</body>
+</html>

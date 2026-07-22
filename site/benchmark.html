@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>The standing token tax, measured — Kitbash</title>
+<meta name="description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 12x to 46x, across eight targets.">
+<link rel="canonical" href="https://kitbash.vercel.app/benchmark">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="kitbash">
+<meta property="og:url" content="https://kitbash.vercel.app/benchmark">
+<meta property="og:title" content="The standing token tax, measured — Kitbash">
+<meta property="og:description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 12x to 46x, across eight targets.">
+<meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The standing token tax, measured — Kitbash">
+<meta name="twitter:description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 12x to 46x, across eight targets.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/kitbash.css">
+</head>
+<body>
+
+<header class="site-header" data-header>
+  <a class="brand" href="#top" aria-label="kitbash home">
+    <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+    </svg>
+    <span><span class="kit">kit</span>bash</span>
+  </a>
+  <nav class="top-nav" aria-label="Main navigation">
+    <a href="docs/">Docs</a>
+    <a href="docs/adapters">Adapters</a>
+    <a href="docs/trust">Trust</a>
+    <a href="benchmark" aria-current="page">Benchmark</a>
+    <a href="skills">Skills</a>
+    <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+      <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+      Support
+    </a>
+    <a class="icon-link" href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener" aria-label="GitHub repository">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+      <span>GitHub</span>
+    </a>
+  </nav>
+  <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
+    <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-14.7a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 16.8a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1Zm9.5-8.3a1 1 0 1 1 0 2h-1.2a1 1 0 1 1 0-2h1.2ZM4.7 11a1 1 0 1 1 0 2H3.5a1 1 0 1 1 0-2h1.2Zm13.74-6.44a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0ZM7.83 16.17a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0Zm9.76 0 .85.85a1 1 0 1 1-1.42 1.42l-.85-.85a1 1 0 0 1 1.42-1.42ZM6.98 4.56l.85.85a1 1 0 0 1-1.42 1.42l-.85-.85a1 1 0 1 1 1.42-1.42Z"></path></svg>
+    <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 14.58A8.2 8.2 0 0 1 9.42 3a9.25 9.25 0 1 0 11.59 11.59Z"></path></svg>
+  </button>
+  <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-label="Open menu" aria-expanded="false">
+    <svg class="mobile-menu-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+    <svg class="mobile-close-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+  </button>
+  <div class="mobile-menu" data-mobile-menu>
+    <div class="mobile-menu-card">
+      <div class="mobile-menu-head">Menu</div>
+      <a href="docs/">Docs</a>
+      <a href="docs/quickstart">Quickstart</a>
+      <a href="docs/cli">CLI reference</a>
+      <a href="docs/adapters">Adapters</a>
+      <a href="docs/trust">Trust &amp; review</a>
+      <a href="benchmark">Benchmark</a>
+      <a href="skills">Skills</a>
+      <a href="changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+    </div>
+  </div>
+</header>
+<div class="mobile-backdrop" data-mobile-backdrop></div>
+
+<main id="top">
+
+  <section class="section">
+    <div class="section-header">
+      <h2><span class="hash">#</span>The standing token tax, measured</h2>
+      <p>Every agent that cannot lazy-load carries a skill's entire body in context <em>every session, before the skill is ever invoked</em>. No other skill format has a field for that cost. Kitbash measures it at compile time — these are the numbers, generated by the benchmark script from committed fixtures run through the real compile pipeline.</p>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><b>12&times;</b><span>Standing cost of a manifested skill on an eager target vs a lazy one</span></div>
+      <div class="stat"><b>46&times;</b><span>Same comparison for an unmanifested SKILL.md-only skill</span></div>
+      <div class="stat"><b>8</b><span>Targets measured, every one through <code>kitbash compile</code></span></div>
+      <div class="stat"><b>0</b><span>Hand-entered numbers — the table is generated and CI fails if it drifts</span></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <h2><span class="hash">#</span>What is measured</h2>
+    </div>
+    <div class="prose">
+      <p>Two costs matter, and conflating them is how the expensive one stays invisible:</p>
+      <ul>
+        <li><b>Loaded</b> — tokens the agent reads when the skill is actually in play. Roughly the same everywhere; this is the number people assume they are paying.</li>
+        <li><b>Standing</b> — tokens sitting in the context window every session, before the skill is invoked. Lazy targets keep only a short stub. Eager targets keep the whole body. This is the number nobody measures.</li>
+      </ul>
+      <p>Token counts are estimates at roughly four characters per token — the same estimator the compiler enforces <code>context.budget</code> and <code>context.standing</code> with, so the benchmark and the build agree by construction.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <h2><span class="hash">#</span>prereview — manifested, budget 1500, authored lazy</h2>
+      <p>The first-party example skill, compiled to all eight targets.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Target</th><th>Loaded (tok)</th><th>Standing (tok)</th><th>Loading</th></tr></thead>
+        <tbody><tr><td><code>claude-code</code></td><td>515</td><td><b>40</b></td><td><span class="badge lazy">lazy</span></td></tr>
+          <tr><td><code>cursor</code></td><td>516</td><td><b>40</b></td><td><span class="badge lazy">lazy</span></td></tr>
+          <tr><td><code>copilot</code></td><td>492</td><td><b>492</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>cline</code></td><td>486</td><td><b>486</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>windsurf</code></td><td>486</td><td><b>486</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>gemini</code></td><td>507</td><td><b>507</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>aider</code></td><td>507</td><td><b>507</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>agentsmd</code></td><td>507</td><td><b>507</b></td><td><span class="badge eager">eager</span></td></tr></tbody>
+      </table>
+    </div>
+    <div class="prose" style="margin-top: 1.2rem">
+      <p><b>Standing tax:</b> about 40 tokens on a lazy target against about 492 on an eager one — roughly <b>12&times; per session</b> for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <h2><span class="hash">#</span>review-checklist — bare, no manifest</h2>
+      <p>A plain <code>SKILL.md</code> folder following the skills.sh / Claude Skills convention. Longer body, no declared budget — the gap widens.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Target</th><th>Loaded (tok)</th><th>Standing (tok)</th><th>Loading</th></tr></thead>
+        <tbody><tr><td><code>claude-code</code></td><td>880</td><td><b>19</b></td><td><span class="badge lazy">lazy</span></td></tr>
+          <tr><td><code>cursor</code></td><td>879</td><td><b>19</b></td><td><span class="badge lazy">lazy</span></td></tr>
+          <tr><td><code>copilot</code></td><td>865</td><td><b>865</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>cline</code></td><td>859</td><td><b>859</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>windsurf</code></td><td>859</td><td><b>859</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>gemini</code></td><td>885</td><td><b>885</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>aider</code></td><td>885</td><td><b>885</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>agentsmd</code></td><td>885</td><td><b>885</b></td><td><span class="badge eager">eager</span></td></tr></tbody>
+      </table>
+    </div>
+    <div class="prose" style="margin-top: 1.2rem">
+      <p><b>Standing tax:</b> about 19 tokens on a lazy target against about 865 on an eager one — roughly <b>46&times; per session</b>. The longer the skill, the worse the ratio, because the lazy stub stays small while the eager copy grows with the body.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <h2><span class="hash">#</span>What the compiler does with it</h2>
+    </div>
+    <div class="prose">
+      <p>Measuring is only useful if something acts on the measurement. At compile time Kitbash:</p>
+      <ul>
+        <li>warns when a skill authored <code>lazy</code> lands on an eager target, naming the standing cost and the declared limit;</li>
+        <li>fails the build under <code>--strict</code>, so the warning can gate CI instead of scrolling past;</li>
+        <li>enforces <code>context.budget</code> against the compiled body and <code>context.standing</code> against the stub, per target;</li>
+        <li>reports the whole repo's standing cost in <code>kitbash doctor</code>, so the total is visible before it is a problem.</li>
+      </ul>
+      <p>The copy-per-agent status quo pays the eager cost everywhere and never sees the number.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <h2><span class="hash">#</span>Reproduce it</h2>
+      <p>The table above is generated, committed, and re-checked in CI — if a change to any adapter moves a number and the committed results are not regenerated, the build fails.</p>
+    </div>
+    <div class="install-strip">
+      <div>
+        <strong>Run the benchmark</strong>
+        <span>No network, no API keys, no model calls — it compiles fixtures and counts.</span>
+      </div>
+      <div class="code-frame">
+        <pre class="copyable"><code>git clone https://github.com/singhharsh1708/kitbash
+cd kitbash/packages/cli &amp;&amp; npm install
+npm run bench</code></pre>
+      </div>
+      <a class="button secondary" href="https://github.com/singhharsh1708/kitbash/blob/main/docs/benchmarks/README.md" target="_blank" rel="noopener">Raw results</a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <h2><span class="hash">#</span>Honest caveats</h2>
+    </div>
+    <div class="prose">
+      <ul>
+        <li>Token counts are a four-characters-per-token estimate, not a model-specific tokenizer. Real counts vary by a few percent per model; the <em>ratio</em> between lazy and eager is what the argument rests on, and that ratio is robust.</li>
+        <li>Only two fixtures are measured. They differ in size and manifest status on purpose, but they are not a survey of every skill anyone will write.</li>
+        <li>This measures what the format costs, not what the model does with it. A cheap skill that gives bad instructions is still a bad skill — that is what <code>kitbash test</code> and <code>kitbash lint</code> are for.</li>
+        <li>The standing figure is a floor. It counts one skill. Install ten and an eager agent carries all ten bodies at once.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <h2><span class="hash">#</span>Keep reading</h2>
+    </div>
+    <div class="docs-grid">
+      <a class="doc-link" href="docs/adapters">
+        <h3>Adapters &amp; targets</h3>
+        <p>Which of the eight targets are lazy, which are eager, and what each one supports.</p>
+      </a>
+      <a class="doc-link" href="docs/format">
+        <h3>Budgets in the format</h3>
+        <p><code>context.budget</code>, <code>context.standing</code>, and <code>disclosure</code> — what they mean and what enforces them.</p>
+      </a>
+      <a class="doc-link" href="docs/cli">
+        <h3>compile &amp; doctor</h3>
+        <p>The commands that surface these numbers in your own repo.</p>
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-divider"></div>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+        <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+      </svg>
+      <strong>kitbash</strong>
+      <span>One skill, every coding agent.</span>
+    </div>
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <a href="docs/">Docs</a>
+      <a href="docs/cli">CLI</a>
+      <a href="docs/format">Format</a>
+      <a href="docs/trust">Trust</a>
+      <a href="benchmark">Benchmark</a>
+      <a href="changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">Manifesto</a>
+    </nav>
+    <div class="footer-actions">
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+    </div>
+    <p class="footer-meta">Apache-2.0 · stable spec</p>
+  </div>
+</footer>
+
+
+<script src="assets/kitbash.js" defer></script>
+</body>
+</html>

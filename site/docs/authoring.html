@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Write your first skill — Kitbash docs</title>
+<meta name="description" content="Author a Kitbash skill from an empty folder: skill.toml table by table, SKILL.md and the standing stub, template variables, and the lint–preview–compile–test loop.">
+<link rel="canonical" href="https://kitbash.vercel.app/docs/authoring">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="kitbash">
+<meta property="og:title" content="Write your first skill — Kitbash docs">
+<meta property="og:description" content="Author a Kitbash skill from an empty folder: the manifest, the body, budgets, templates, and the authoring loop.">
+<meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Write your first skill — Kitbash docs">
+<meta name="twitter:description" content="Author a Kitbash skill from an empty folder: the manifest, the body, budgets, templates, and the authoring loop.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/kitbash.css">
+</head>
+<body>
+
+<header class="site-header" data-header>
+  <a class="brand" href="../" aria-label="kitbash home">
+    <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+    </svg>
+    <span><span class="kit">kit</span>bash</span>
+  </a>
+  <nav class="top-nav" aria-label="Main navigation">
+    <a href="./">Docs</a>
+    <a href="adapters">Adapters</a>
+    <a href="trust">Trust</a>
+    <a href="../benchmark">Benchmark</a>
+    <a href="../skills">Skills</a>
+    <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+      <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+      Support
+    </a>
+    <a class="icon-link" href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener" aria-label="GitHub repository">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+      <span>GitHub</span>
+    </a>
+  </nav>
+  <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
+    <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-14.7a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 16.8a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1Zm9.5-8.3a1 1 0 1 1 0 2h-1.2a1 1 0 1 1 0-2h1.2ZM4.7 11a1 1 0 1 1 0 2H3.5a1 1 0 1 1 0-2h1.2Zm13.74-6.44a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0ZM7.83 16.17a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0Zm9.76 0 .85.85a1 1 0 1 1-1.42 1.42l-.85-.85a1 1 0 0 1 1.42-1.42ZM6.98 4.56l.85.85a1 1 0 0 1-1.42 1.42l-.85-.85a1 1 0 1 1 1.42-1.42Z"></path></svg>
+    <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 14.58A8.2 8.2 0 0 1 9.42 3a9.25 9.25 0 1 0 11.59 11.59Z"></path></svg>
+  </button>
+  <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-label="Open menu" aria-expanded="false">
+    <svg class="mobile-menu-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+    <svg class="mobile-close-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+  </button>
+  <div class="mobile-menu" data-mobile-menu>
+    <div class="mobile-menu-card">
+      <div class="mobile-menu-head">Menu</div>
+      <a href="./">Docs</a>
+      <a href="quickstart">Quickstart</a>
+      <a href="cli">CLI reference</a>
+      <a href="adapters">Adapters</a>
+      <a href="trust">Trust &amp; review</a>
+      <a href="../benchmark">Benchmark</a>
+      <a href="../skills">Skills</a>
+      <a href="../changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+    </div>
+  </div>
+</header>
+<div class="mobile-backdrop" data-mobile-backdrop></div>
+
+<main class="docs-shell" id="top">
+
+  <button class="docs-nav-toggle" type="button" data-docs-nav-toggle>Documentation menu</button>
+  <nav class="docs-nav" aria-label="Docs navigation" data-docs-nav>
+    <h4>Getting started</h4>
+    <a href="./">Overview</a>
+    <a href="install">Installation</a>
+    <a href="quickstart">Quickstart</a>
+    <a href="authoring" aria-current="page">Write your first skill</a>
+    <h4>Reference</h4>
+    <a href="cli">CLI reference</a>
+    <a href="format">Skill format (KSF)</a>
+    <a href="config">Project config</a>
+    <a href="adapters">Adapters &amp; targets</a>
+    <h4>Guides</h4>
+    <a href="trust">Trust &amp; review</a>
+    <a href="../benchmark">Token budgets</a>
+    <a href="../skills">Skills catalog</a>
+    <h4>Project</h4>
+    <a href="../changelog">Changelog</a>
+    <a href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">Spec ↗</a>
+    <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+
+  <div class="docs-main">
+    <p class="crumb"><a href="../">kitbash</a> / <a href="./">docs</a> / authoring</p>
+    <div class="page-head">
+      <h1>Write your first skill</h1>
+      <p>A skill is a folder with a manifest and a markdown body. This page builds one from an empty directory to a compiled, tested skill — layer by layer, with the bounds the validator actually enforces.</p>
+    </div>
+
+    <div class="prose">
+
+      <h2 id="layout">1. Create the folder</h2>
+      <p>Everything a skill is lives in one directory. Two files are required; the rest are optional and can be added later.</p>
+      <pre><code>test-gaps/
+  skill.toml        <span class="c"># REQUIRED — manifest</span>
+  SKILL.md          <span class="c"># REQUIRED — instructions</span>
+  prompts/          <span class="c"># optional — named prompt templates</span>
+  scripts/          <span class="c"># optional — deterministic helpers</span>
+  evals/            <span class="c"># optional — *.eval.yaml</span>
+  fixtures/         <span class="c"># optional — fixture material for evals</span></code></pre>
+      <pre class="copyable"><code>mkdir test-gaps &amp;&amp; cd test-gaps</code></pre>
+      <p>Skill names match <code>^[a-z][a-z0-9-]{1,40}$</code>: lowercase, starts with a letter, two to forty-one characters, hyphens allowed. Keep the folder name and <code>skill.name</code> the same — installs land at <code>.kitbash/skills/&lt;name&gt;/</code>, keyed by the manifest name.</p>
+      <div class="callout">
+        <p><b>A folder with only SKILL.md still loads.</b> That is the skills.sh and Claude Skills convention, and Kitbash reads it as KSF-minus-manifest: it synthesizes permissive defaults (budget 6000, standing 250, no declared permissions) and flags the skill as <code>unmanifested</code> at install, list, and compile. Write the manifest — the defaults are a compatibility shim, not a target.</p>
+      </div>
+
+      <h2 id="manifest">2. Start with the smallest manifest that validates</h2>
+      <p>Two tables are required: <code>[skill]</code> and <code>[context]</code>. Everything else defaults to the most restrictive value, so a minimal manifest declares no permissions, no network, no writes.</p>
+      <pre class="copyable"><code><span class="k">[skill]</span>
+name = <span class="s">"test-gaps"</span>
+version = <span class="s">"0.1.0"</span>
+description = <span class="s">"Name the code paths a diff adds or changes that no test exercises"</span>
+
+<span class="k">[context]</span>
+budget = 1200</code></pre>
+      <p>That is a valid skill. The two numbers in <code>[context]</code> are the whole reason KSF has a manifest at all:</p>
+      <ul>
+        <li><b>budget</b> — the ceiling on the compiled body when the skill is <em>active</em>. If the compiled output exceeds it, <code>kitbash compile</code> fails the build rather than silently overflowing someone's context window.</li>
+        <li><b>standing</b> — the ceiling on what is present when the skill is <em>not</em> invoked. This is the number that keeps thirty installed skills from quietly eating the window.</li>
+      </ul>
+      <p>Token counts are estimated at roughly four characters per token. Budget enforcement uses that estimate; treat it as a guardrail, not an invoice.</p>
+
+      <h3 id="bounds">The bounds the validator enforces</h3>
+      <p>These mirror <code>spec/schema/skill.schema.json</code>. Violating any of them is a hard manifest error — the skill will not load at all.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Field</th><th>Rule</th></tr></thead>
+          <tbody>
+            <tr><td><code>skill.name</code></td><td>required · <code>^[a-z][a-z0-9-]{1,40}$</code></td></tr>
+            <tr><td><code>skill.version</code></td><td>required · semver <code>x.y.z</code>, optional <code>-prerelease</code> suffix</td></tr>
+            <tr><td><code>skill.description</code></td><td>required · 10–200 characters</td></tr>
+            <tr><td><code>context.budget</code></td><td>required · integer, 50–20000</td></tr>
+            <tr><td><code>context.standing</code></td><td>integer, 0–500 · defaults to 100</td></tr>
+            <tr><td><code>context.disclosure</code></td><td><code>lazy</code> or <code>eager</code> · defaults to <code>lazy</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>A manifest that misses one reports every failure at once and stops:</p>
+      <pre><code>test-gaps/skill.toml: invalid manifest
+  - context.standing must be 0–500</code></pre>
+
+      <h2 id="layering">3. Layer on the optional tables</h2>
+      <p>Add these one at a time, and only when the skill actually needs them. Every table you add is something a reviewer has to read before installing.</p>
+
+      <h3 id="triggers">triggers</h3>
+      <pre class="copyable"><code><span class="k">[triggers]</span>
+commands = [<span class="s">"/test-gaps"</span>]
+auto = []
+events = [<span class="s">"pre-push"</span>]</code></pre>
+      <p><code>commands</code> are explicit invocations to register and must be slash-prefixed and lowercase (<code>^/[a-z][a-z0-9-]*$</code>); lint fails on anything else. <code>auto</code> holds natural-language trigger hints, honored where the target supports them. <code>events</code> are hook points for gate-mode skills, drawn from <code>pre-push</code>, <code>pre-commit</code>, <code>ci</code>, <code>pr-open</code>.</p>
+      <p>The Claude Code adapter compiles each declared command into a native slash command at <code>.claude/commands/&lt;cmd&gt;.md</code> — a thin shim that loads the skill.</p>
+
+      <h3 id="permissions">permissions</h3>
+      <pre class="copyable"><code><span class="k">[permissions]</span>
+tools = [<span class="s">"read"</span>, <span class="s">"grep"</span>, <span class="s">"bash:git diff *"</span>]
+network = false
+write = false</code></pre>
+      <p>This is the block a reviewer reads at install time, and the block org policy gates on — <code>deny_network</code>, <code>deny_write</code>, and <code>max_budget</code> in <code>kitbash.toml</code> are checked against it and are not bypassable with <code>--yes</code>. See <a href="trust">trust &amp; review</a>.</p>
+      <p>Permissions are enforced natively where the platform supports it; otherwise they are compiled into the instructions and surfaced at install review. An adapter must never claim enforcement it does not have. The tool-string grammar (<code>"bash:git diff *"</code>) is stable in shape but provisional and advisory in meaning today — declare honestly, do not rely on it as a sandbox.</p>
+
+      <h3 id="artifacts">artifacts</h3>
+      <pre class="copyable"><code><span class="k">[artifacts]</span>
+produces = [<span class="s">"findings@1"</span>]
+consumes = [<span class="s">"plan@1"</span>]</code></pre>
+      <p>Artifacts are JSON files under <code>.kitbash/artifacts/</code>, named <code>&lt;type&gt;.json</code> or <code>&lt;type&gt;/&lt;id&gt;.json</code>, each with a versioned schema in <code>spec/schema/artifacts/</code>. Every reference must match <code>name@version</code>; lint reports malformed ones. v0.1 reserves <code>plan@1</code>, <code>findings@1</code>, <code>verify@1</code>, and <code>benchmark@1</code>.</p>
+      <p><code>consumes</code> declares optional inputs. The skill must still work when they are absent — write the body so a missing artifact degrades the run rather than breaking it.</p>
+
+      <h3 id="targets">targets</h3>
+      <pre class="copyable"><code><span class="k">[targets]</span>
+requires = []
+mode = <span class="s">"skill"</span></code></pre>
+      <p><code>requires</code> declares capabilities the skill needs: <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, <code>network</code>. Of the eight adapters, only <code>claude-code</code> declares capabilities today (<code>scripts</code>, <code>hooks</code>, <code>subagents</code>). Anything a target lacks produces a visible warning at compile:</p>
+      <pre><code><span class="warn">⚠</span> test-gaps → cursor: target lacks "scripts"; compiled instruction-only (degraded)</code></pre>
+      <p>Under <code>--strict</code> that warning becomes a build failure. Silent degradation is a conformance violation — leave <code>requires</code> empty unless the skill genuinely cannot function without the capability.</p>
+      <p><code>mode</code> is <code>skill</code> or <code>gate</code>. A gate-mode skill must route its verdict through a script exit code or a schema-validated artifact. A bare model opinion is not a gate verdict.</p>
+
+      <h3 id="lore-dependencies">lore and dependencies</h3>
+      <pre class="copyable"><code><span class="k">[lore]</span>
+reads = [<span class="s">"conventions"</span>, <span class="s">"invariants"</span>]
+writes = [<span class="s">"conventions"</span>]
+
+<span class="k">[dependencies]</span>
+plan = <span class="s">"^1.0"</span></code></pre>
+      <p><code>[lore]</code> declares which project-knowledge collections the skill reads or writes, from <code>decisions</code>, <code>conventions</code>, <code>invariants</code>, <code>map</code>. Writes only ever happen through human-reviewed proposals. The table is experimental and may move out of core KSF.</p>
+      <p><code>[dependencies]</code> names other skills by semver range. The resolver installs the transitive closure and pins every node in <code>kitbash.lock</code>; cycles are an install-time error. A dependency's <code>produces</code> artifacts become available to the dependent's <code>consumes</code> — and nothing else crosses the edge. Permissions and budgets never inherit; each manifest stands alone. The table is provisional.</p>
+      <p>Unknown tables and unrecognized enum values warn rather than fail, so a skill written against a newer KSF still loads on an older compiler:</p>
+      <pre><code><span class="warn">⚠</span> schema — unknown table [trigger] — typo or unsupported, ignored</code></pre>
+
+      <h2 id="body">4. Write SKILL.md</h2>
+      <p>Plain markdown, no frontmatter — the adapters generate whatever frontmatter their target needs. Write it as a procedure the agent follows, not as a description of a procedure.</p>
+
+      <h3 id="standing-stub">The first paragraph is the standing stub</h3>
+      <p>The first real paragraph of <code>SKILL.md</code> is the standing stub: what the skill does and when to invoke it. Leading markdown headings are skipped when the stub is located, so a <code>#&nbsp;Title</code> line cannot smuggle a bloated paragraph past the check.</p>
+      <p>This matters more than any other line you will write. On a lazy target the stub is the <em>only</em> part of the skill that exists until it is invoked — it is the entire basis on which the agent decides whether to load the rest. Too vague and the skill never fires; too long and it taxes every session, multiplied by every skill installed. That is what <code>context.standing</code> caps.</p>
+      <p>At the four-characters-per-token estimate, <code>standing = 60</code> is about 240 characters. Overrun it and lint fails, and so does compile:</p>
+      <pre><code><span class="warn">✗</span> test-gaps
+    · manifest — test-gaps@0.1.0
+    · references
+    · budget — body ~425 tok / budget 1200
+    <span class="warn">✗</span> standing — stub ~102 tok / limit 60
+    · artifacts — produces 1, consumes 0
+
+linted 1 skill(s) · 1 failure(s) · 0 warning(s)</code></pre>
+      <p>Everything after the stub loads only on invocation, and is capped by <code>context.budget</code>.</p>
+
+      <h3 id="templates">Template variables</h3>
+      <p>Double-braced variables in the body resolve at compile time. Three namespaces exist:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Variable</th><th>Resolves to</th></tr></thead>
+          <tbody>
+            <tr><td><code>{{lore.&lt;collection&gt;}}</code></td><td>A pointer to <code>.kitbash/lore/&lt;collection&gt;/</code>, with instructions to skip silently if absent. Declare the collection in <code>[lore] reads</code>.</td></tr>
+            <tr><td><code>{{artifact.&lt;type&gt;}}</code></td><td>The path <code>.kitbash/artifacts/&lt;type&gt;.json</code>, which the agent reads at invocation time.</td></tr>
+            <tr><td><code>{{prompt.&lt;name&gt;}}</code></td><td>The contents of <code>prompts/&lt;name&gt;.md</code>, inlined. A missing file is an error.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout warn">
+        <p><b>An unresolved <code>{{...}}</code> is a hard error, not a warning.</b> Anything still in brace form after resolution — an unknown namespace, a typo, spaces around the dot — stops lint, preview, and compile. It is never passed through into generated output, because a template variable that leaks into an agent's instructions is an instruction the agent will try to follow.</p>
+      </div>
+      <pre><code><span class="warn">✗</span> references — test-gaps: unknown template variable {{prompts.foo}}
+<span class="warn">✗</span> references — test-gaps: unresolved template variable "{{ lore . conventions }}"
+  — unknown namespace or malformed (spec §3)</code></pre>
+
+      <h2 id="extras">5. prompts/, scripts/, evals/</h2>
+      <p>All three are optional. Add them when the skill has outgrown a single markdown file.</p>
+      <h3 id="prompts-dir">prompts/</h3>
+      <p>Named markdown fragments pulled into the body by <code>{{prompt.&lt;name&gt;}}</code>. Useful when several steps share a rubric and you want one copy of it. The inlined text counts against <code>context.budget</code> like any other body content.</p>
+      <h3 id="scripts-dir">scripts/</h3>
+      <p>Deterministic helpers in any executable form. They are <b>never executed at install time</b> — only when the agent invokes the skill, and only within the declared permissions. Make them idempotent, or name them so the difference is obvious: <code>check-*</code> versus <code>apply-*</code>. If the skill cannot work without them, declare <code>requires = ["scripts"]</code> and accept the degradation warning on targets that lack the capability.</p>
+      <h3 id="evals-dir">evals/</h3>
+      <p>One <code>*.eval.yaml</code> per behavior worth defending. The static tier — schema, budgets, dead references, injection heuristics — needs no eval file and always runs under <code>kitbash lint</code> and <code>kitbash test</code>. Audit and behavioral tiers need a runner:</p>
+      <pre><code><span class="k">tier</span>: behavioral
+<span class="k">fixture</span>: fixtures/express-app
+<span class="k">task</span>: <span class="s">"Run /test-gaps on the current branch"</span>
+<span class="k">runner</span>: claude-code
+<span class="k">assert</span>:
+  - artifact: findings@1
+    where: { file: <span class="s">"src/db.ts"</span> }
+    expect: { severity: high }
+  - files_unchanged: [<span class="s">"**"</span>]</code></pre>
+      <p>The current build reports what it did and did not run:</p>
+      <pre><code>note: evals/ present — audit &amp; behavioral tiers need a runner
+  (not in this build); static tier ran</code></pre>
+
+      <h2 id="loop">6. The loop</h2>
+      <p>Five commands, run from the repo root. <code>lint</code> and <code>preview</code> both accept a plain path, so you can iterate on a skill before it is installed anywhere.</p>
+
+      <h3 id="loop-lint">kitbash lint</h3>
+      <pre class="copyable"><code>kitbash lint ./test-gaps</code></pre>
+      <pre><code><span class="ok">✓</span> test-gaps
+    · manifest — test-gaps@0.1.0
+    · references
+    · budget — body ~364 tok / budget 1200
+    · standing — stub ~41 tok / limit 60
+    · artifacts — produces 1, consumes 0
+
+linted 1 skill(s) · 0 failure(s) · 0 warning(s)</code></pre>
+      <p>Schema conformance, template resolution, both budgets, artifact and trigger shape, and prompt-injection heuristics. Failures exit 1; <code>--strict</code> makes warnings exit 1 too.</p>
+
+      <h3 id="loop-preview">kitbash preview</h3>
+      <pre class="copyable"><code>kitbash preview ./test-gaps</code></pre>
+      <p>Renders exactly what each adapter will emit, with the standing cost per target. Read the frontmatter it generates — that is what the agent sees first.</p>
+      <pre><code>preview: test-gaps@0.1.0
+
+─── claude-code [lazy] lazy (0 tok standing) ───
+
+  → .claude/skills/test-gaps/SKILL.md
+
+---
+name: test-gaps
+description: <span class="s">"Name the code paths a diff adds or changes that no test exercises"</span>
+---
+<span class="c">&lt;!-- generated by kitbash — do not edit; source: .kitbash/skills/test-gaps @ 0.1.0 --&gt;</span>
+
+List the code paths this diff adds or changes that no test exercises, and name
+the missing cases. Invoke with /test-gaps before opening a PR, or run it on
+pre-push.
+...</code></pre>
+
+      <h3 id="loop-install">kitbash install</h3>
+      <pre class="copyable"><code>kitbash install file:./test-gaps</code></pre>
+      <p>A local path installs through the same review gate as a remote source, which is the point — you get to read your own skill the way a stranger would.</p>
+      <pre><code>review: test-gaps@0.1.0 — Name the code paths a diff adds or changes that no test exercises
+  budget 1200 tokens · standing 60 · lazy disclosure · mode skill
+  permissions: tools [read, grep, bash:git diff *] · network no · write no
+install test-gaps@0.1.0? [y/N] y
+installed test-gaps@0.1.0
+  pinned in kitbash.lock
+next: kitbash compile</code></pre>
+      <p>Installs are content-hashed into <code>kitbash.lock</code>, so editing the source folder afterwards does not update the installed copy. To pick up changes:</p>
+      <pre class="copyable"><code>kitbash remove test-gaps &amp;&amp; kitbash install file:./test-gaps --yes</code></pre>
+
+      <h3 id="loop-compile">kitbash compile</h3>
+      <pre class="copyable"><code>kitbash compile</code></pre>
+      <pre><code><span class="c">→</span> .claude/skills/test-gaps/SKILL.md
+<span class="c">→</span> .claude/commands/test-gaps.md
+<span class="c">→</span> AGENTS.md
+<span class="warn">⚠</span> test-gaps → agentsmd: agentsmd is eager and cannot lazy-load; this skill
+  costs ~364 tokens standing every session (declared limit: 60)
+compiled 1 skill(s) for 2 agent target(s)</code></pre>
+      <p>That warning is not a mistake in your manifest — it is the honest cost of an eager target. Lazy targets honor <code>disclosure = "lazy"</code>; eager ones carry the whole body every session regardless. The gap is the case for keeping bodies short. See the <a href="../benchmark">token budget benchmark</a> and <a href="adapters">adapters &amp; targets</a>.</p>
+
+      <h3 id="loop-test">kitbash test</h3>
+      <pre class="copyable"><code>kitbash test test-gaps</code></pre>
+      <p>The same static tier as lint, run over installed skills, plus a note when <code>evals/</code> is present. Wire <code>kitbash lint --strict</code> and <code>kitbash compile --strict</code> into CI so a budget overrun or a dead reference fails the pipeline instead of a session.</p>
+
+      <h2 id="worked-example">A complete skill</h2>
+      <p>This validates as written. Modeled on <a href="https://github.com/singhharsh1708/kitbash/tree/main/examples/skills/prereview" target="_blank" rel="noopener">examples/skills/prereview</a>, which ships in the repo and is worth reading next to it.</p>
+
+      <h3 id="example-manifest">test-gaps/skill.toml</h3>
+      <pre class="copyable"><code><span class="k">[skill]</span>
+name = <span class="s">"test-gaps"</span>
+version = <span class="s">"0.1.0"</span>
+description = <span class="s">"Name the code paths a diff adds or changes that no test exercises"</span>
+license = <span class="s">"Apache-2.0"</span>
+authors = [<span class="s">"Your Name &lt;you@example.com&gt;"</span>]
+
+<span class="k">[triggers]</span>
+commands = [<span class="s">"/test-gaps"</span>]
+events = [<span class="s">"pre-push"</span>]
+
+<span class="k">[context]</span>
+budget = 1200
+standing = 60
+disclosure = <span class="s">"lazy"</span>
+
+<span class="k">[permissions]</span>
+tools = [<span class="s">"read"</span>, <span class="s">"grep"</span>, <span class="s">"bash:git diff *"</span>]
+network = false
+write = false
+
+<span class="k">[artifacts]</span>
+produces = [<span class="s">"findings@1"</span>]
+
+<span class="k">[targets]</span>
+requires = []
+mode = <span class="s">"skill"</span>
+
+<span class="k">[lore]</span>
+reads = [<span class="s">"conventions"</span>]</code></pre>
+
+      <h3 id="example-body">test-gaps/SKILL.md</h3>
+      <pre class="copyable"><code>List the code paths this diff adds or changes that no test exercises, and name
+the missing cases. Invoke with /test-gaps before opening a PR, or run it on
+pre-push.
+
+## Procedure
+
+1. Collect the diff under review: staged changes if any, otherwise the branch
+   diff against the default branch. Consider **only** lines in the diff.
+2. For each changed function, enumerate its branches: happy path, each error
+   path, each boundary (empty, null, zero, max), and each early return.
+3. Locate the tests that reach each branch. A test counts only if it actually
+   executes that line — a test that imports the module proves nothing.
+4. Check the project's testing conventions:
+
+{{lore.conventions}}
+
+   If a convention names a required test tier for this kind of change, an
+   untested path that skips it is high severity.
+5. Write gaps to `.kitbash/artifacts/findings.json` (`findings@1`), most severe
+   first: `file`, `line`, `severity`, `summary`, `scenario`.
+6. Report one line per gap: `path:line severity: the branch, and the input that
+   reaches it.` No praise, no coverage percentages, no gaps outside the diff.
+
+## Boundaries
+
+- Do not write tests unless asked. Name the gap and the input that would reach it.
+- Generated files, fixtures, and vendored code are out of scope. Say so once and
+  skip them.
+- If a path is genuinely unreachable, say that instead of inventing a test for it.</code></pre>
+      <p>The stub measures about 41 tokens against a limit of 60, and the whole body about 364 against a budget of 1200 — room to grow without a rewrite.</p>
+
+      <h2 id="next">Where to go next</h2>
+      <ul>
+        <li><a href="format">Skill format (KSF)</a> — every field, and which ones are frozen for 1.0.</li>
+        <li><a href="cli">CLI reference</a> — every command, flag, and exit code.</li>
+        <li><a href="adapters">Adapters &amp; targets</a> — what each of the eight outputs supports, and where skills degrade.</li>
+        <li><a href="trust">Trust &amp; review</a> — the install gate, and <code>[policy]</code> allowlists for teams.</li>
+      </ul>
+
+    </div>
+
+    <nav class="pager" aria-label="Page navigation">
+      <a href="quickstart"><span>Previous</span> Quickstart</a>
+      <a class="next" href="cli"><span>Next</span> CLI reference</a>
+    </nav>
+  </div>
+
+  <aside class="docs-toc" data-toc aria-label="On this page"></aside>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-divider"></div>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+        <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+      </svg>
+      <strong>kitbash</strong>
+      <span>One skill, every coding agent.</span>
+    </div>
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <a href="./">Docs</a>
+      <a href="cli">CLI</a>
+      <a href="format">Format</a>
+      <a href="trust">Trust</a>
+      <a href="../benchmark">Benchmark</a>
+      <a href="../changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">Manifesto</a>
+    </nav>
+    <div class="footer-actions">
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+    </div>
+    <p class="footer-meta">Apache-2.0 · stable spec</p>
+  </div>
+</footer>
+
+<script src="../assets/kitbash.js" defer></script>
+</body>
+</html>
