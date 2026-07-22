@@ -81,7 +81,53 @@ Gate: no orphaned generated files, no lingering `kitbash:begin` sections in
 
 ## 6. Publish
 
-- Bump `packages/cli/package.json` version (semver).
-- `npm test` runs again via `prepublishOnly`.
-- `npm publish` (2FA / web-auth as configured).
-- Tag the release; note user-facing changes.
+Publishing is automated. Land the version bump, push a tag, and
+`.github/workflows/release.yml` does the rest.
+
+```bash
+# on a branch, in a PR
+npm version <major|minor|patch> --no-git-tag-version --prefix packages/cli
+$EDITOR CHANGELOG.md          # add the release section
+node site/build.mjs           # restamp the version, regenerate changelog.html
+```
+
+Once that PR is merged:
+
+```bash
+git checkout main && git pull
+git tag v<version> && git push origin v<version>
+```
+
+The workflow then:
+
+1. **verify** — refuses to continue unless the tag matches `packages/cli/package.json`, then re-runs typecheck, the full suite, the benchmark-determinism gate, and `site/build.mjs --check`. A tag cannot ship something `main` would have rejected.
+2. **publish** — `npm publish` over OIDC trusted publishing. No token is stored, nothing expires between releases, no OTP prompt, and npm attaches a provenance attestation automatically. Skipped when that version is already on the registry, so re-running is safe.
+3. **homebrew** — downloads the published tarball, rewrites `url` + `sha256` in the tap formula, pushes. Skipped with a warning if `TAP_TOKEN` is not set.
+
+Then write the release notes: `gh release create v<version>`.
+
+### One-time setup
+
+**npm trusted publishing.** On npmjs.com → the `kitbash` package → Settings →
+Trusted Publishers → add a GitHub Actions publisher:
+
+| Field | Value |
+|---|---|
+| Organization or user | `singhharsh1708` |
+| Repository | `kitbash` |
+| Workflow filename | `release.yml` |
+| Environment | *(leave empty)* |
+| Allowed actions | tick **npm publish** — required for publishers created after 2026-05-20 |
+
+Needs npm ≥ 11.5.1 and Node ≥ 22.14 on the runner; the workflow pins Node 24 and
+fails loudly if npm is older.
+
+**Homebrew tap (optional).** Create a fine-grained PAT with `contents: write` on
+`singhharsh1708/homebrew-tap`, add it to this repo as the `TAP_TOKEN` secret.
+Without it the tap step is skipped and the formula is bumped by hand.
+
+### Manual fallback
+
+If the workflow is unavailable: `npm publish` from `packages/cli` (the web-auth
+token goes stale between releases — expect to run `npm login --auth-type=web`
+first), then bump the tap formula by hand.
