@@ -33,6 +33,10 @@
     { "source": "/manifesto", "destination": "https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" },
     { "source": "/repo", "destination": "https://github.com/singhharsh1708/kitbash" },
     { "source": "/npm", "destination": "https://www.npmjs.com/package/kitbash" },
-    { "source": "/docs/index", "destination": "/docs", "permanent": true }
+    { "source": "/docs/index", "destination": "/docs", "permanent": true },
+    { "source": "/docs/commands", "destination": "/docs/cli", "permanent": true },
+    { "source": "/docs/skill-format", "destination": "/docs/format", "permanent": true },
+    { "source": "/docs/targets", "destination": "/docs/adapters", "permanent": true },
+    { "source": "/docs/policy", "destination": "/docs/trust", "permanent": true }
   ]
 }
