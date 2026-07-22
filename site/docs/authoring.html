@@ -190,7 +190,7 @@ consumes = [<span class="s">"plan@1"</span>]</code></pre>
       <pre class="copyable"><code><span class="k">[targets]</span>
 requires = []
 mode = <span class="s">"skill"</span></code></pre>
-      <p><code>requires</code> declares capabilities the skill needs: <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, <code>network</code>. Of the eight adapters, only <code>claude-code</code> declares capabilities today (<code>scripts</code>, <code>hooks</code>, <code>subagents</code>). Anything a target lacks produces a visible warning at compile:</p>
+      <p><code>requires</code> declares capabilities the skill needs: <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, <code>network</code>. Of the nine adapters, only <code>claude-code</code> (<code>scripts</code>, <code>hooks</code>, <code>subagents</code>) and <code>agents</code> (<code>scripts</code>) declare capabilities today. Anything a target lacks produces a visible warning at compile:</p>
       <pre><code><span class="warn">⚠</span> test-gaps → cursor: target lacks "scripts"; compiled instruction-only (degraded)</code></pre>
       <p>Under <code>--strict</code> that warning becomes a build failure. Silent degradation is a conformance violation — leave <code>requires</code> empty unless the skill genuinely cannot function without the capability.</p>
       <p><code>mode</code> is <code>skill</code> or <code>gate</code>. A gate-mode skill must route its verdict through a script exit code or a schema-validated artifact. A bare model opinion is not a gate verdict.</p>
@@ -320,7 +320,7 @@ next: kitbash compile</code></pre>
 <span class="warn">⚠</span> test-gaps → agentsmd: agentsmd is eager and cannot lazy-load; this skill
   costs ~364 tokens standing every session (declared limit: 60)
 compiled 1 skill(s) for 2 agent target(s)</code></pre>
-      <p>That warning is not a mistake in your manifest — it is the honest cost of an eager target. Lazy targets honor <code>disclosure = "lazy"</code>; eager ones carry the whole body every session regardless. The gap is the case for keeping bodies short. See the <a href="../benchmark">token budget benchmark</a> and <a href="adapters">adapters &amp; targets</a>.</p>
+      <p>That warning is not a mistake in your manifest — it is the honest cost of an eager target. Kitbash compiles to the cheapest mode each target supports, so Claude Code, Cursor, Devin and the <code>.agents/skills/</code> path honor <code>disclosure = "lazy"</code>; the targets with no deferred mode carry the whole body every session regardless. The gap is the case for keeping bodies short. See the <a href="../benchmark">token budget benchmark</a> and <a href="adapters">adapters &amp; targets</a>.</p>
 
       <h3 id="loop-test">kitbash test</h3>
       <pre class="copyable"><code>kitbash test test-gaps</code></pre>
@@ -397,7 +397,7 @@ pre-push.
       <ul>
         <li><a href="format">Skill format (KSF)</a> — every field, and which ones are frozen for 1.0.</li>
         <li><a href="cli">CLI reference</a> — every command, flag, and exit code.</li>
-        <li><a href="adapters">Adapters &amp; targets</a> — what each of the eight outputs supports, and where skills degrade.</li>
+        <li><a href="adapters">Adapters &amp; targets</a> — what each of the nine outputs supports, and where skills degrade.</li>
         <li><a href="trust">Trust &amp; review</a> — the install gate, and <code>[policy]</code> allowlists for teams.</li>
       </ul>
 

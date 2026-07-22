@@ -288,7 +288,7 @@ scratch@0.0.0  budget=6000  standing=250  mode=skill  [unmanifested]  — Import
         <h3 id="compile">compile</h3>
         <p class="sig">kitbash compile [--strict]</p>
         <p>Compiles every installed skill for every configured target and writes the results to disk. Targets come from <code>[project] targets</code> in <code>kitbash.toml</code>; with no config or no <code>targets</code> key, Kitbash autodetects by looking for each adapter's marker file or directory. An unknown target name in the config is a hard error before anything is written.</p>
-        <p>Per-skill files (<code>.claude/skills/</code>, <code>.claude/commands/</code>, <code>.cursor/rules/</code>, <code>.github/instructions/</code>, <code>.clinerules/</code>, <code>.windsurf/rules/</code>) are written whole. Shared files (<code>AGENTS.md</code>, <code>GEMINI.md</code>, <code>CONVENTIONS.md</code>) are marker-merged: each skill owns a <code>&lt;!-- kitbash:begin &lt;name&gt; --&gt;</code> … <code>&lt;!-- kitbash:end &lt;name&gt; --&gt;</code> section and your own prose around it is preserved.</p>
+        <p>Per-skill files (<code>.claude/skills/</code>, <code>.claude/commands/</code>, <code>.cursor/rules/</code>, <code>.agents/skills/</code>, <code>.github/instructions/</code>, <code>.clinerules/</code>, <code>.devin/rules/</code> or <code>.windsurf/rules/</code>) are written whole. Shared files (<code>AGENTS.md</code>, <code>GEMINI.md</code>, <code>CONVENTIONS.md</code>) are marker-merged: each skill owns a <code>&lt;!-- kitbash:begin &lt;name&gt; --&gt;</code> … <code>&lt;!-- kitbash:end &lt;name&gt; --&gt;</code> section and your own prose around it is preserved.</p>
         <p>Compile is also the garbage collector. Files in managed directories that carry the generated header but were not written by this run are deleted, and stale sections in <code>AGENTS.md</code> and <code>GEMINI.md</code> are pruned even when no adapter rewrites those files this run. That is how removing a skill eventually removes its output.</p>
         <p>Budgets are enforced here, not merely reported. A manifested skill whose compiled body exceeds <code>context.budget</code>, or whose standing stub exceeds <code>context.standing</code>, fails the whole compile before any file is written. Unmanifested skills never declared those numbers, so their overruns are measured and warned about instead.</p>
         <ul class="flag-list">
@@ -319,7 +319,7 @@ compiled 1 skill(s) for 2 agent target(s)
       <div class="cmd-entry">
         <h3 id="doctor">doctor</h3>
         <p class="sig">kitbash doctor</p>
-        <p>The repo health check. It reports which of the eight adapters were detected, how many skills are installed, the total standing context cost of their stubs, the worst-case active cost if every skill fired in one session, and then verifies the lockfile.</p>
+        <p>The repo health check. It reports which of the nine adapters were detected, how many skills are installed, the total standing context cost of their stubs, the worst-case active cost if every skill fired in one session, and then verifies the lockfile.</p>
         <p>Three integrity conditions are checked: skills installed with no <code>kitbash.lock</code> at all, a locked skill whose files on disk no longer match their recorded hash, and a skill present on disk but absent from the lockfile. All three mean the code your agents load is not the code somebody reviewed.</p>
         <p>If <code>[policy]</code> is configured, doctor rechecks it against everything already installed — using each skill's recorded source from the lockfile. That catches skills that predate the policy or were copied in without going through <code>kitbash install</code>.</p>
         <ul class="flag-list">
@@ -329,6 +329,7 @@ compiled 1 skill(s) for 2 agent target(s)
 detected targets:
   <span class="ok">✓</span> claude-code
   <span class="ok">✓</span> cursor
+  <span class="warn">✗</span> agents
   <span class="warn">✗</span> copilot
   <span class="warn">✗</span> cline
   <span class="warn">✗</span> windsurf
@@ -352,8 +353,14 @@ standing context cost: ~98 tokens (stubs); worst-case active: 3700 tokens (budge
       <div class="cmd-entry">
         <h3 id="test">test</h3>
         <p class="sig">kitbash test [skill-name] [--strict]</p>
-        <p>Runs the static-tier evals over installed skills: manifest presence, template and reference resolution, measured body tokens against <code>context.budget</code>, measured stub tokens against <code>context.standing</code>, artifact reference shape (<code>name@version</code>), slash-prefixed trigger commands, schema-conformance lints, and prompt-injection heuristics.</p>
+        <p>Runs the static-tier evals over installed skills: manifest presence, template and reference resolution, measured body tokens against <code>context.budget</code>, measured stub tokens against <code>context.standing</code>, artifact reference shape (<code>name@version</code>), slash-prefixed trigger commands, schema-conformance lints, prompt-injection heuristics, and two checks on the body itself — <code>visible-text</code> and <code>dynamic-context</code>.</p>
         <p>No eval file is required — these checks always run. Failures print <code>✗</code>, warnings print <code>⚠</code>, passing checks print <code>·</code>. Injection heuristics and schema lints only ever warn: a security skill may legitimately quote the phrases it defends against, so the tool refuses to hard-fail on a pattern match.</p>
+        <p><code>visible-text</code> and <code>dynamic-context</code> are the exception — both are hard failures that exit <code>1</code> with or without <code>--strict</code>:</p>
+        <ul>
+          <li><code>visible-text</code> rejects a body containing zero-width characters, bidi overrides, or codepoints from the Unicode Tags block (U+E0000–U+E007F), which encodes plain ASCII invisibly. Those are instructions a human reviewer cannot see while the agent still reads them. The report names each run of hidden characters by codepoint.</li>
+          <li><code>dynamic-context</code> rejects <code>!</code> followed by a backtick command substitution in the body. That construct executes at load time, before the model reads anything, so it never gets a pass.</li>
+        </ul>
+        <p>Kitbash fans one skill out to nine files, several of them always in context, which is why neither of these is a warning.</p>
         <p>The optional positional argument filters to a single <em>installed</em> skill. Unlike <a href="#lint">lint</a>, test does not accept a path or a remote source.</p>
         <ul class="flag-list">
           <li><code>[skill-name]</code> <span>Optional. Restrict the run to one installed skill.</span></li>
@@ -366,12 +373,14 @@ standing context cost: ~98 tokens (stubs); worst-case active: 3700 tokens (budge
     · budget — body ~464 tok / budget 1500
     · standing — stub ~38 tok / limit 60
     · artifacts — produces 1, consumes 0
+    · visible-text — no hidden characters
 <span class="warn">⚠</span> scratch
     <span class="warn">⚠</span> manifest — unmanifested (SKILL.md only) — defaults applied
     · references
     · budget — body ~1204 tok / budget 6000
     · standing — stub ~61 tok / limit 250
     <span class="warn">⚠</span> injection — heuristic match — review: role reassignment
+    · visible-text — no hidden characters
 
 tested 2 skill(s) · 0 failure(s) · 2 warning(s) (static tier)</code></pre>
         <p>If any skill has an <code>evals/</code> directory, test says plainly that only the static tier ran:</p>
@@ -391,6 +400,17 @@ tested 1 skill(s) · 2 failure(s) · 0 warning(s) (static tier)</code></pre>
         <p class="sig">kitbash lint [skill-name | path | source] [--strict]</p>
         <p>Runs the same static checks as <a href="#test">test</a> and prints the same report, but resolves its target far more broadly. The argument is tried in this order: an existing path relative to the project root, then an installed skill name, then a fetchable source (<code>gh:owner/repo[/path][@ref]</code>, <code>owner/repo</code>, <code>file:path</code>). With no argument it lints everything installed.</p>
         <p>That last case is the point: you can lint a stranger's skill before it ever touches your repo. The remote is cloned to a temporary directory, checked, and deleted.</p>
+        <p>Two of those checks are hard failures rather than warnings, and they apply to an uninstalled source exactly as they do to an installed skill: <code>visible-text</code>, which rejects hidden characters — zero-width, bidi overrides, the Unicode Tags block — and <code>dynamic-context</code>, which rejects <code>!</code> plus backtick command substitution in the body. Either one exits <code>1</code> without <code>--strict</code>:</p>
+        <pre><code><span class="c">$ kitbash lint gh:stranger/skills/helper</span>
+<span class="warn">✗</span> helper
+    · manifest — helper@1.0.0
+    · references
+    · budget — body ~318 tok / budget 1500
+    · standing — stub ~24 tok / limit 60
+    <span class="warn">✗</span> visible-text — 2 run(s) of invisible characters (U+200B, U+E0041) — instructions a reviewer cannot see
+    <span class="warn">✗</span> dynamic-context — command substitution in the skill body executes before the model sees it: !`cat ~/.ssh/id_rsa`
+
+linted 1 skill(s) · 2 failure(s) · 0 warning(s)</code></pre>
         <ul class="flag-list">
           <li><code>[target]</code> <span>Optional. A path, an installed name, or an uninstalled source. Omit to lint every installed skill.</span></li>
           <li><code>--strict</code> <span>Exit <code>1</code> if any check warned, not just if one failed.</span></li>
@@ -402,6 +422,7 @@ tested 1 skill(s) · 2 failure(s) · 0 warning(s) (static tier)</code></pre>
     <span class="warn">⚠</span> budget — body ~7310 tok / budget 6000
     · standing — stub ~112 tok / limit 250
     <span class="warn">⚠</span> injection — heuristic match — review: override of prior instructions, data-exfiltration shape
+    · visible-text — no hidden characters
 
 linted 1 skill(s) · 0 failure(s) · 3 warning(s)</code></pre>
         <p>The same run under <code>--strict</code> adds one line and fails:</p>
@@ -416,23 +437,23 @@ prereviw: not found as a path or installed skill name (or pass a source: gh:owne
       <div class="cmd-entry">
         <h3 id="explain">explain</h3>
         <p class="sig">kitbash explain &lt;skill-name | path | source&gt; &lt;adapter&gt;</p>
-        <p>Answers one question: what does this skill lose on that agent? Both arguments are positional and both are required. The first resolves the same way as <a href="#lint">lint</a>'s target — path, installed name, or fetchable source. The second names an adapter: <code>claude-code</code>, <code>cursor</code>, <code>copilot</code>, <code>cline</code>, <code>windsurf</code>, <code>gemini</code>, <code>aider</code>, or <code>agentsmd</code>.</p>
+        <p>Answers one question: what does this skill lose on that agent? Both arguments are positional and both are required. The first resolves the same way as <a href="#lint">lint</a>'s target — path, installed name, or fetchable source. The second names an adapter: <code>claude-code</code>, <code>cursor</code>, <code>agents</code>, <code>copilot</code>, <code>cline</code>, <code>windsurf</code>, <code>gemini</code>, <code>aider</code>, or <code>agentsmd</code>.</p>
         <p>Explain reports two independent kinds of loss. Capability degradation: each entry in the skill's <code>targets.requires</code> that the adapter does not support, which compiles down to instruction-only. And loading degradation: a skill authored for lazy disclosure on an eager adapter, which pays its full body as standing context in every session.</p>
         <ul class="flag-list">
           <li><code>&lt;target&gt;</code> <span>Required, first positional. Path, installed name, or uninstalled source.</span></li>
-          <li><code>&lt;adapter&gt;</code> <span>Required, second positional. One of the eight adapter ids.</span></li>
+          <li><code>&lt;adapter&gt;</code> <span>Required, second positional. One of the nine adapter ids.</span></li>
         </ul>
         <pre><code><span class="c">$ kitbash explain prereview agentsmd</span>
 prereview → agentsmd: no capability degradation
   <span class="warn">⚠</span> loading: agentsmd is eager — skill costs ~464 tokens standing every session (declared limit: 60)</code></pre>
-        <p>Only <code>claude-code</code> declares capabilities at all — <code>scripts</code>, <code>hooks</code>, and <code>subagents</code> — so a skill requiring any of them degrades everywhere else:</p>
+        <p>Only <code>claude-code</code> (<code>scripts</code>, <code>hooks</code>, <code>subagents</code>) and <code>agents</code> (<code>scripts</code>) declare capabilities at all, so a skill requiring any of them degrades on every other target:</p>
         <pre><code><span class="c">$ kitbash explain prereview cursor</span>
 prereview → cursor: degraded
   <span class="warn">✗</span> requires "scripts" — not supported by cursor; compiled instruction-only</code></pre>
         <p>Missing arguments print the usage line and the adapter list:</p>
         <pre><code><span class="c">$ kitbash explain prereview</span>
 usage: kitbash explain &lt;skill-name-or-path-or-source&gt; &lt;adapter&gt;
-  adapters: claude-code, cursor, copilot, cline, windsurf, gemini, aider, agentsmd</code></pre>
+  adapters: claude-code, cursor, agents, copilot, cline, windsurf, gemini, aider, agentsmd</code></pre>
         <p><b>Exit codes:</b> <code>0</code> whether or not degradation was found — explain reports, it does not judge. <code>1</code> when an argument is missing, the adapter name is unknown, the target cannot be resolved or loaded, or the body's template references cannot be resolved.</p>
       </div>
 
@@ -440,7 +461,7 @@ usage: kitbash explain &lt;skill-name-or-path-or-source&gt; &lt;adapter&gt;
         <h3 id="preview">preview</h3>
         <p class="sig">kitbash preview &lt;skill-name | path | source&gt;</p>
         <p>Renders, without writing anything, exactly what each adapter would emit — every output path, every byte of frontmatter, the full compiled body — plus that adapter's loading mode and what it costs in standing context. Target resolution is identical to <a href="#lint">lint</a> and <a href="#explain">explain</a>, so remote sources work.</p>
-        <p>Adapters come from <code>[project] targets</code> or autodetection, the same as <a href="#compile">compile</a>. If <code>kitbash.toml</code> names an unknown target, preview does not error out — it falls back to rendering all eight adapters, because the job here is to show you output, not to gate anything.</p>
+        <p>Adapters come from <code>[project] targets</code> or autodetection, the same as <a href="#compile">compile</a>. If <code>kitbash.toml</code> names an unknown target, preview does not error out — it falls back to rendering all nine adapters, because the job here is to show you output, not to gate anything.</p>
         <p>Lazy adapters are labelled <code>lazy (0 tok standing)</code>. Eager adapters show the measured token count of their emitted files, because on those targets that is what every session carries.</p>
         <ul class="flag-list">
           <li><code>&lt;target&gt;</code> <span>Required. Path, installed name, or uninstalled source. The first argument not starting with <code>-</code>.</span></li>

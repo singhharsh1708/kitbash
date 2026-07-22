@@ -46,3 +46,7 @@ jobs:
           node-version: 22
       - name: Validate JSON schema is well-formed
         run: node -e "JSON.parse(require('fs').readFileSync('spec/schema/skill.schema.json','utf8')); console.log('schema ok')"
+      - name: Committed site output is current
+        # build.mjs stamps the CLI version and renders CHANGELOG.md into the site,
+        # and its output is committed — a stale commit ships a wrong version badge.
+        run: node site/build.mjs --check

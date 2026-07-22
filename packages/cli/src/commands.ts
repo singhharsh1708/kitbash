@@ -580,9 +580,49 @@ function staticChecks(skill: LoadedSkill): Check[] {
   if (body !== undefined) {
     const hits = INJECTION_PATTERNS.filter((p) => p.re.test(body!)).map((p) => p.label);
     if (hits.length) checks.push({ name: "injection", ok: true, warn: true, detail: `heuristic match — review: ${hits.join(", ")}` });
+
+    // Hard failures: instructions a human reviewer cannot see, or that execute
+    // before the model reads anything. Kitbash fans one skill out to nine files,
+    // several of them always in context, so these never get a pass.
+    const invisible = invisibleRuns(body);
+    checks.push({
+      name: "visible-text",
+      ok: invisible.length === 0,
+      detail: invisible.length
+        ? `${invisible.length} run(s) of invisible characters (${invisible.join(", ")}) — instructions a reviewer cannot see`
+        : "no hidden characters",
+    });
+
+    const escapes = [...body.matchAll(DYNAMIC_CONTEXT_RE)].map((m) => m[0].slice(0, 40));
+    if (escapes.length) {
+      checks.push({
+        name: "dynamic-context",
+        ok: false,
+        detail: `command substitution in the skill body executes before the model sees it: ${escapes.join(", ")}`,
+      });
+    }
   }
 
   return checks;
+}
+
+/**
+ * Invisible codepoints used to hide instructions from human review while agents
+ * still read them: zero-width characters, bidi overrides, and the Unicode Tags
+ * block (U+E0000–U+E007F), which encodes plain ASCII invisibly.
+ */
+const INVISIBLE_RE = /[​-‏‪-‮⁠-⁤⁦-⁩﻿\u{E0000}-\u{E007F}]/gu;
+
+/** Backtick command substitution in Claude Code frontmatter/body runs at load time. */
+const DYNAMIC_CONTEXT_RE = /!`[^`\n]+`/g;
+
+function invisibleRuns(body: string): string[] {
+  const found = new Set<string>();
+  for (const m of body.matchAll(INVISIBLE_RE)) {
+    const cp = m[0].codePointAt(0)!;
+    found.add(`U+${cp.toString(16).toUpperCase().padStart(4, "0")}`);
+  }
+  return [...found];
 }
 
 export async function cmdTest(args: string[]): Promise<number> {
@@ -776,14 +816,16 @@ function budgetViolations(skill: LoadedSkill, body: string): string[] {
  * current compile — covers removed skills and renamed commands alike.
  */
 /** Shared marker-merged files whose stale sections are pruned even when no adapter rewrites them. */
-const MANAGED_SHARED_FILES = ["AGENTS.md", "GEMINI.md"];
+const MANAGED_SHARED_FILES = ["AGENTS.md", "GEMINI.md", "CONVENTIONS.md"];
 
 const MANAGED_DIRS: { dir: string; suffix: string; wholeDir?: boolean }[] = [
   { dir: ".claude/skills", suffix: "/SKILL.md", wholeDir: true },
   { dir: ".claude/commands", suffix: ".md" },
+  { dir: ".agents/skills", suffix: "/SKILL.md", wholeDir: true },
   { dir: ".cursor/rules", suffix: ".mdc" },
   { dir: ".clinerules", suffix: ".md" },
   { dir: ".windsurf/rules", suffix: ".md" },
+  { dir: ".devin/rules", suffix: ".md" },
   { dir: ".github/instructions", suffix: ".instructions.md" },
 ];
 

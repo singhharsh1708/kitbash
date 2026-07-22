@@ -120,7 +120,7 @@ assert:
   - files_unchanged: ["src/**"]
 ```
 
-Static-tier checks (schema, budgets, dead refs, injection heuristics) need no eval file; `kitbash test` always runs them.
+Static-tier checks (schema, budgets, dead refs, injection heuristics, visible text, dynamic context) need no eval file; `kitbash test` always runs them.
 
 ## 7. Compilation model
 

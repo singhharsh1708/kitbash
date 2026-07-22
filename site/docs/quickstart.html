@@ -148,7 +148,7 @@ install prereview@0.1.0? [y/N]</code></pre>
 <span class="c">→</span> AGENTS.md §prereview
 <span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load;
   this skill costs ~464 tokens standing every session</code></pre>
-      <p>That last warning is the part other tools don't give you. Lazy targets (Claude Code, Cursor) load a skill only when it's invoked. Eager targets carry the whole body in context every single session — a standing tax measured at 12×–46× in the <a href="../benchmark">benchmark</a>.</p>
+      <p>That last warning is the part other tools don't give you. Kitbash compiles to the cheapest loading mode each target supports, so lazy targets (Claude Code, Cursor, Devin, the <code>.agents/skills/</code> path) load a skill only when it's invoked. Targets with no deferred mode carry the whole body in context every single session — a standing tax measured at 12×–46× in the <a href="../benchmark">benchmark</a>.</p>
 
       <h2 id="inspect">5. Inspect before you trust</h2>
       <p>Three read-only commands work on installed skills <em>and</em> on sources you haven't installed:</p>
@@ -173,7 +173,7 @@ install prereview@0.1.0? [y/N]</code></pre>
       <ul>
         <li><a href="authoring">Write your first skill</a> — the manifest, the body, budgets, and templates.</li>
         <li><a href="cli">CLI reference</a> — every command, flag, and exit code.</li>
-        <li><a href="adapters">Adapters &amp; targets</a> — all eight outputs and what each one supports.</li>
+        <li><a href="adapters">Adapters &amp; targets</a> — all nine outputs and what each one supports.</li>
         <li><a href="trust">Trust &amp; review</a> — org allowlists with <code>[policy]</code>.</li>
       </ul>
 
