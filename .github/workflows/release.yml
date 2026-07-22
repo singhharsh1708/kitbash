@@ -1,0 +1,158 @@
+name: release
+
+# Publishing used to be a manual chore: log in to npm (the web-auth token goes
+# stale between releases), approve an OTP in a browser, then hand-bump the
+# Homebrew formula. This does all of it from a pushed tag.
+#
+# npm auth here is OIDC trusted publishing — no token is stored anywhere, and
+# npm attaches a provenance attestation automatically. One-time setup on
+# npmjs.com: package settings → Trusted Publishers → GitHub Actions, with
+# repository `singhharsh1708/kitbash`, workflow `release.yml`, and `npm publish`
+# ticked under allowed actions.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release (e.g. v0.7.1)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      already-published: ${{ steps.published.outputs.already }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Tag must match packages/cli/package.json
+        id: version
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          pkg=$(node -p "require('./packages/cli/package.json').version")
+          if [ "$tag" != "v$pkg" ]; then
+            echo "::error::tag $tag does not match package version v$pkg — bump the manifest and re-tag"
+            exit 1
+          fi
+          echo "version=$pkg" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if this version is already on npm
+        id: published
+        run: |
+          v="${{ steps.version.outputs.version }}"
+          if npm view "kitbash@$v" version >/dev/null 2>&1; then
+            echo "kitbash@$v is already published; the publish job will be skipped"
+            echo "already=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The same gates CI runs — a tag must not be able to ship something main would reject.
+      - run: npm install
+        working-directory: packages/cli
+      - run: npm run check
+        working-directory: packages/cli
+      - run: npm test
+        working-directory: packages/cli
+      - name: Benchmark output is fresh
+        run: npm run bench --prefix packages/cli && git diff --exit-code docs/benchmarks/README.md
+      - name: Site output is current
+        run: node site/build.mjs --check
+
+  publish:
+    needs: verify
+    if: needs.verify.outputs.already-published == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC token for trusted publishing
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: npm must support trusted publishing
+        run: |
+          have=$(npm --version)
+          need=11.5.1
+          if [ "$(printf '%s\n%s\n' "$need" "$have" | sort -V | head -1)" != "$need" ]; then
+            echo "::error::npm $have is too old for trusted publishing (need >= $need)"
+            exit 1
+          fi
+          echo "npm $have"
+
+      - run: npm install
+        working-directory: packages/cli
+      # No NODE_AUTH_TOKEN: auth is the OIDC id-token, and provenance is automatic.
+      - run: npm publish
+        working-directory: packages/cli
+
+  homebrew:
+    needs: [verify, publish]
+    if: always() && needs.verify.result == 'success' && needs.publish.result != 'failure'
+    runs-on: ubuntu-latest
+    env:
+      TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+      VERSION: ${{ needs.verify.outputs.version }}
+    steps:
+      - name: Check for a tap token
+        id: gate
+        run: |
+          if [ -z "$TAP_TOKEN" ]; then
+            echo "::warning::TAP_TOKEN secret not set — skipping the Homebrew bump. Add a PAT with contents:write on singhharsh1708/homebrew-tap to automate it."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out the tap
+        if: steps.gate.outputs.ok == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: singhharsh1708/homebrew-tap
+          token: ${{ secrets.TAP_TOKEN }}
+          path: tap
+
+      - name: Point the formula at the new tarball
+        if: steps.gate.outputs.ok == 'true'
+        working-directory: tap
+        run: |
+          set -euo pipefail
+          url="https://registry.npmjs.org/kitbash/-/kitbash-${VERSION}.tgz"
+          # The tarball can lag the publish by a few seconds on the CDN.
+          for i in 1 2 3 4 5; do
+            if curl -fsSL "$url" -o /tmp/kitbash.tgz; then break; fi
+            echo "tarball not on the registry yet, retrying ($i/5)"
+            sleep 10
+          done
+          sha=$(sha256sum /tmp/kitbash.tgz | cut -d' ' -f1)
+          sed -i -E "s|url \".*\"|url \"${url}\"|; s|sha256 \".*\"|sha256 \"${sha}\"|" Formula/kitbash.rb
+          grep -E '^\s+(url|sha256)' Formula/kitbash.rb
+
+      - name: Commit and push
+        if: steps.gate.outputs.ok == 'true'
+        working-directory: tap
+        run: |
+          if git diff --quiet; then
+            echo "formula already at ${VERSION}; nothing to push"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "kitbash ${VERSION}"
+          git push
