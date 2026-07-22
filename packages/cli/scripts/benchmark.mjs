@@ -47,15 +47,16 @@ function measure(tmp, target, skillName) {
     case "agents":
       return estimateTokens(read(`.agents/skills/${skillName}/SKILL.md`));
     case "copilot":
-      return estimateTokens(read(`.github/instructions/${skillName}.instructions.md`));
+      return estimateTokens(read(`.github/skills/${skillName}/SKILL.md`));
+    case "gemini":
+      return estimateTokens(read(`.gemini/skills/${skillName}/SKILL.md`));
     case "cline":
       return estimateTokens(read(`.clinerules/${skillName}.md`));
     case "windsurf":
       return estimateTokens(read(`.windsurf/rules/${skillName}.md`));
-    case "gemini":
     case "aider":
     case "agentsmd": {
-      const file = target === "gemini" ? "GEMINI.md" : target === "aider" ? "CONVENTIONS.md" : "AGENTS.md";
+      const file = target === "aider" ? "CONVENTIONS.md" : "AGENTS.md";
       const m = read(file).match(new RegExp(`<!-- kitbash:begin ${skillName} -->[\\s\\S]*?<!-- kitbash:end ${skillName} -->`));
       return m ? estimateTokens(m[0]) : 0;
     }

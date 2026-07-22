@@ -2,6 +2,21 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.8.0] — 2026-07-23
+
+Every target that can lazy-load now does. Two adapters were still emitting always-on files for agents that had since grown proper skill directories.
+
+### Changed
+- **`copilot` compiles to `.github/skills/<name>/SKILL.md`** instead of a `.github/instructions/*.instructions.md` file with `applyTo: "**"`. Copilot reads agentskills.io skills and loads only the frontmatter until the skill is needed; the old form applied to every single request.
+- **`gemini` compiles to `.gemini/skills/<name>/SKILL.md`** instead of merging into `GEMINI.md`. Gemini CLI injects only each skill's name and description at session start and pulls the body in via its `activate_skill` tool; Google's own docs describe `GEMINI.md` as persistent workspace-wide background.
+- Six of nine targets now lazy-load — claude-code, cursor, agents, copilot, windsurf/devin, gemini. The eager holdouts are cline, aider and the AGENTS.md floor.
+
+### Fixed
+- Stale sections in a marker-merged file are now pruned whenever nothing wrote to that file during a compile, not only when the owning skill was uninstalled. Without this, a `GEMINI.md` from an older Kitbash kept its generated section forever after the adapter moved. Upgrading cleans up the old `GEMINI.md` sections and `.github/instructions/` files on the next `kitbash compile`; your own content in those files is untouched.
+
+### Added
+- `.github/workflows/release.yml` — a pushed `v*` tag verifies the tag against the manifest, re-runs the full gate suite, publishes to npm via OIDC trusted publishing (no stored token, provenance attached automatically), and bumps the Homebrew formula.
+
 ## [0.7.0] — 2026-07-22
 
 Ecosystem-correctness release. Two of Kitbash's assumptions about the agent landscape had gone stale, and one of them was flattering its own headline number.

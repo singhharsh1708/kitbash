@@ -17,7 +17,7 @@
 └──────────────┘                         ▼
    KSF (spec)      ┌──────────┬──────────┬──────────┬──────────┐
                    │ .claude/ │ .cursor/ │ AGENTS.md│ .github/ │ …
-                   │ skills/  │ rules/   │ sections │ instr.   │
+                   │ skills/  │ rules/   │ sections │ skills/  │
                    └──────────┴──────────┴──────────┴──────────┘
 ```
 

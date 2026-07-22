@@ -280,10 +280,10 @@ integrity = <span class="s">"sha256-…"</span></code></pre>
             <tr><td><code>claude-code</code></td><td><code>.claude/skills/&lt;name&gt;/SKILL.md</code>, plus <code>.claude/commands/&lt;cmd&gt;.md</code> per declared trigger command</td></tr>
             <tr><td><code>cursor</code></td><td><code>.cursor/rules/&lt;name&gt;.mdc</code></td></tr>
             <tr><td><code>agents</code></td><td><code>.agents/skills/&lt;name&gt;/SKILL.md</code></td></tr>
-            <tr><td><code>copilot</code></td><td><code>.github/instructions/&lt;name&gt;.instructions.md</code></td></tr>
+            <tr><td><code>copilot</code></td><td><code>.github/skills/&lt;name&gt;/SKILL.md</code></td></tr>
             <tr><td><code>cline</code></td><td><code>.clinerules/&lt;name&gt;.md</code></td></tr>
             <tr><td><code>windsurf</code></td><td><code>.devin/rules/&lt;name&gt;.md</code>, or <code>.windsurf/rules/&lt;name&gt;.md</code> when there is no <code>.devin/</code></td></tr>
-            <tr><td><code>gemini</code></td><td><code>GEMINI.md</code> (merged section)</td></tr>
+            <tr><td><code>gemini</code></td><td><code>.gemini/skills/&lt;name&gt;/SKILL.md</code></td></tr>
             <tr><td><code>aider</code></td><td><code>CONVENTIONS.md</code> (merged section)</td></tr>
             <tr><td><code>agentsmd</code></td><td><code>AGENTS.md</code> (merged section)</td></tr>
           </tbody>
@@ -292,7 +292,7 @@ integrity = <span class="s">"sha256-…"</span></code></pre>
       <p>Removing a skill and recompiling prunes its outputs, reported as <code>✂ removed .cursor/rules/prereview.mdc (stale)</code>. Renaming a trigger command prunes the old slash command the same way.</p>
 
       <h3 id="shared-files">Marker-merged shared files</h3>
-      <p><code>AGENTS.md</code>, <code>GEMINI.md</code>, and <code>CONVENTIONS.md</code> are files you already own and already write in. Kitbash cannot overwrite them, so it does not: each skill gets a delimited section, and only the bytes between its markers are ever replaced.</p>
+      <p><code>AGENTS.md</code> and <code>CONVENTIONS.md</code> are files you already own and already write in. Kitbash cannot overwrite them, so it does not: each skill gets a delimited section, and only the bytes between its markers are ever replaced.</p>
       <pre><code><span class="c"># Contributing</span>
 
 Build with `make`. Run the integration suite before you open a PR.
@@ -306,11 +306,11 @@ Everything above and below the markers is yours — kitbash never rewrites it.
 Reviews a diff against the team's actual standards.
 …
 &lt;!-- kitbash:end prereview --&gt;</code></pre>
-      <p>On each compile the section is replaced in place if its markers are already present, and appended after your existing content if not. Sections belonging to skills that are no longer installed are dropped. For <code>AGENTS.md</code> and <code>GEMINI.md</code> that sweep runs even when no adapter rewrites the file — which is what makes removing the last skill actually clean up — and prints <code>✂ pruned stale section(s) from AGENTS.md</code>.</p>
+      <p>On each compile the section is replaced in place if its markers are already present, and appended after your existing content if not. Sections belonging to skills that are no longer installed are dropped. If nothing wrote to a managed shared file at all during a compile — <code>AGENTS.md</code>, <code>GEMINI.md</code> or <code>CONVENTIONS.md</code> — every generated section in it is stale by definition and all of them are pruned, printing <code>✂ pruned stale section(s) from AGENTS.md</code>. That is what makes removing the last skill actually clean up, and what removes the <code>GEMINI.md</code> sections an older Kitbash wrote before <code>gemini</code> moved to <code>.gemini/skills/</code>.</p>
       <div class="callout">
         <p><b>Do not edit inside the markers.</b> Your changes are overwritten on the next compile, and — worse — the file no longer matches the reviewed skill while looking as though it does. Edit the skill in <code>.kitbash/skills/</code> and recompile, or write your own prose outside the markers.</p>
       </div>
-      <p>These three targets are eager: whatever sits between the markers is in the agent's context on every single session. That is the cost <a href="../benchmark">the benchmark</a> measures, and why <code>compile</code> warns when a skill authored to lazy-load lands on one of them.</p>
+      <p>Both of these targets are eager: whatever sits between the markers is in the agent's context on every single session. That is the cost <a href="../benchmark">the benchmark</a> measures, and why <code>compile</code> warns when a skill authored to lazy-load lands on one of them.</p>
 
       <h2 id="commit">What to commit, what to ignore</h2>
       <div class="table-wrap">
@@ -320,8 +320,8 @@ Reviews a diff against the team's actual standards.
             <tr><td><code>kitbash.toml</code></td><td>Commit</td><td>The targets and the install policy are team decisions, not local ones.</td></tr>
             <tr><td><code>.kitbash/skills/</code></td><td>Commit</td><td>The reviewed skill body. Vendored on purpose.</td></tr>
             <tr><td><code>kitbash.lock</code></td><td>Commit</td><td>Without it nothing is pinned and <code>doctor</code> fails. It is what makes drift detectable.</td></tr>
-            <tr><td><code>AGENTS.md</code>, <code>GEMINI.md</code>, <code>CONVENTIONS.md</code></td><td>Commit</td><td>Mostly your own content; the generated sections are a subset.</td></tr>
-            <tr><td><code>.claude/</code>, <code>.cursor/</code>, <code>.agents/</code>, <code>.github/instructions/</code>, <code>.clinerules/</code>, <code>.devin/</code>, <code>.windsurf/</code></td><td>Either</td><td>Fully derived from the two above. Commit them and a fresh clone works with no build step; gitignore them and run <code>kitbash compile</code> in CI or a post-checkout hook. Pick one and be consistent — half-committed generated output produces confusing diffs.</td></tr>
+            <tr><td><code>AGENTS.md</code>, <code>CONVENTIONS.md</code></td><td>Commit</td><td>Mostly your own content; the generated sections are a subset.</td></tr>
+            <tr><td><code>.claude/</code>, <code>.cursor/</code>, <code>.agents/</code>, <code>.github/skills/</code>, <code>.gemini/skills/</code>, <code>.clinerules/</code>, <code>.devin/</code>, <code>.windsurf/</code></td><td>Either</td><td>Fully derived from the two above. Commit them and a fresh clone works with no build step; gitignore them and run <code>kitbash compile</code> in CI or a post-checkout hook. Pick one and be consistent — half-committed generated output produces confusing diffs.</td></tr>
           </tbody>
         </table>
       </div>
