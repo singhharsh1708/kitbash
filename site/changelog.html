@@ -2,42 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Changelog — kitbash</title>
-<meta name="description" content="Every kitbash release — new commands, adapters, and fixes. Generated from CHANGELOG.md on every deploy.">
-<link rel="canonical" href="https://singhharsh1708.github.io/kitbash/changelog.html">
-<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width">
+<title>Changelog — Kitbash</title>
+<meta name="description" content="Every release of the Kitbash CLI, newest first — the pre-install review gate, org policy, eight compile targets, lockfile pins, and the KSF spec draft.">
+<link rel="canonical" href="https://kitbash.vercel.app/changelog">
+<meta property="og:type" content="article">
 <meta property="og:site_name" content="kitbash">
-<meta property="og:title" content="Changelog — kitbash">
-<meta property="og:description" content="Every kitbash release — new commands, adapters, and fixes.">
+<meta property="og:title" content="Changelog — Kitbash">
+<meta property="og:description" content="Every release of the Kitbash CLI, newest first. Keep a Changelog format, semver, published to npm and Homebrew.">
+<meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Changelog — Kitbash">
+<meta name="twitter:description" content="Every release of the Kitbash CLI, newest first. Keep a Changelog format, semver, published to npm and Homebrew.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
 <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="docs.css">
-<style>
-  .release { margin-top: 2rem; padding: 1.5rem 1.6rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-card); }
-  .release-head { display: flex; align-items: baseline; gap: .8rem; flex-wrap: wrap; }
-  .release-head h2 { margin: 0; font-size: 1.45rem; letter-spacing: -0.01em; }
-  .release-head h2 a { color: inherit; text-decoration: none; }
-  .release-head h2 a:hover { color: var(--accent-strong); }
-  .release-date { color: var(--muted); font-family: "SFMono-Regular", ui-monospace, monospace; font-size: .8rem; }
-  .release-tag {
-    padding: .1rem .6rem; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 999px;
-    color: var(--accent-strong); font-family: "SFMono-Regular", ui-monospace, monospace; font-size: .68rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .05em;
-  }
-  .release-tag.soon { color: var(--muted); border-color: var(--line); }
-  .release-intro { margin: .9rem 0 0; color: var(--muted); }
-  .release h3.group { margin: 1.3rem 0 .4rem; color: var(--accent-strong); font-size: .78rem; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; }
-  .release ul { margin: .3rem 0 0; }
-  .cli-version { margin-top: .4rem; font-family: "SFMono-Regular", ui-monospace, monospace; font-size: .85rem; color: var(--muted); }
-  .cli-version b { color: var(--accent-strong); }
-</style>
+<link rel="stylesheet" href="assets/kitbash.css">
 </head>
 <body>
 
 <header class="site-header" data-header>
-  <a class="brand" href="index.html" aria-label="kitbash home">
+  <a class="brand" href="./" aria-label="kitbash home">
     <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
       <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
       <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
@@ -45,13 +31,19 @@
     <span><span class="kit">kit</span>bash</span>
   </a>
   <nav class="top-nav" aria-label="Main navigation">
-    <a href="index.html#why">Why</a>
-    <a href="index.html#how">How</a>
-    <a href="index.html#skills">Skills</a>
-    <a href="docs/index.html">Docs</a>
-    <a href="changelog.html" aria-current="page">Changelog</a>
-    <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener"><svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg> Support</a>
-    <a class="icon-link" href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener" aria-label="GitHub repository"><svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg><span>GitHub</span></a>
+    <a href="docs/">Docs</a>
+    <a href="docs/adapters">Adapters</a>
+    <a href="docs/trust">Trust</a>
+    <a href="benchmark">Benchmark</a>
+    <a href="skills">Skills</a>
+    <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+      <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+      Support
+    </a>
+    <a class="icon-link" href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener" aria-label="GitHub repository">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+      <span>GitHub</span>
+    </a>
   </nav>
   <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
     <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-14.7a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 16.8a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1Zm9.5-8.3a1 1 0 1 1 0 2h-1.2a1 1 0 1 1 0-2h1.2ZM4.7 11a1 1 0 1 1 0 2H3.5a1 1 0 1 1 0-2h1.2Zm13.74-6.44a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0ZM7.83 16.17a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0Zm9.76 0 .85.85a1 1 0 1 1-1.42 1.42l-.85-.85a1 1 0 0 1 1.42-1.42ZM6.98 4.56l.85.85a1 1 0 0 1-1.42 1.42l-.85-.85a1 1 0 1 1 1.42-1.42Z"></path></svg>
@@ -64,55 +56,55 @@
   <div class="mobile-menu" data-mobile-menu>
     <div class="mobile-menu-card">
       <div class="mobile-menu-head">Menu</div>
-      <a href="index.html#why">Why</a>
-      <a href="index.html#how">How</a>
-      <a href="index.html#skills">Skills</a>
-      <a href="docs/index.html">Docs</a>
-      <a href="changelog.html" aria-current="page">Changelog</a>
-      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener"><svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg> GitHub</a>
-      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener"><svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg> Support</a>
+      <a href="docs/">Docs</a>
+      <a href="docs/quickstart">Quickstart</a>
+      <a href="docs/cli">CLI reference</a>
+      <a href="docs/adapters">Adapters</a>
+      <a href="docs/trust">Trust &amp; review</a>
+      <a href="benchmark">Benchmark</a>
+      <a href="skills">Skills</a>
+      <a href="changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
     </div>
   </div>
 </header>
 <div class="mobile-backdrop" data-mobile-backdrop></div>
 
-<div class="docs-shell">
-<aside class="docs-sidebar" aria-label="Documentation navigation">
-  <details class="docs-nav" open>
-    <summary>Docs navigation</summary>
-    <a class="docs-home" href="docs/index.html">Documentation</a>
-    <section>
-      <h2>Get started</h2>
-      <ul>
-        <li><a href="docs/index.html">Overview</a></li>
-        <li><a href="docs/install.html">Install</a></li>
-      </ul>
-    </section>
-    <section>
-      <h2>Use</h2>
-      <ul>
-        <li><a href="docs/commands.html">Commands</a></li>
-        <li><a href="docs/skill-format.html">Skill format</a></li>
-        <li><a href="docs/policy.html">Trust &amp; policy</a></li>
-      </ul>
-    </section>
-    <section>
-      <h2>Reference</h2>
-      <ul>
-        <li><a href="docs/targets.html">Compile targets</a></li>
-        <li><a href="changelog.html" class="active">Changelog</a></li>
-        <li><a href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">Spec (KSF)</a></li>
-        <li><a href="https://github.com/singhharsh1708/kitbash/blob/main/docs/roadmap.md" target="_blank" rel="noopener">Roadmap</a></li>
-      </ul>
-    </section>
-  </details>
-</aside>
-<main class="docs-content">
-  <h1>Changelog</h1>
-  <p class="lead">Every release, rendered from <code>CHANGELOG.md</code> on each deploy — this page can't go stale. Also on <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub Releases</a> and <a href="https://www.npmjs.com/package/kitbash?activeTab=versions" target="_blank" rel="noopener">npm</a>.</p>
-  <p class="cli-version">current: <b><span data-version>v0.6.0</span></b> · npm install -g kitbash</p>
+<main id="top">
 
-  <!-- changelog:begin -->
+  <section class="section">
+    <p class="crumb"><a href="./">kitbash</a> / changelog</p>
+    <div class="page-head">
+      <h1>Changelog</h1>
+      <p>Every release of the Kitbash CLI, newest first. Nothing is summarised here — this is the shipped record.</p>
+    </div>
+
+    <div class="prose">
+
+      <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
+
+      <div class="stat-row">
+        <div class="stat"><b><span data-version>v0.6.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b>8</b><span>Compile targets</span></div>
+        <div class="stat"><b>Apache-2.0</b><span>License</span></div>
+      </div>
+
+      <p>To move to the current version:</p>
+      <pre class="copyable"><code><span class="c"># npm</span>
+npm install -g kitbash@latest
+
+<span class="c"># Homebrew</span>
+brew update &amp;&amp; brew upgrade kitbash</code></pre>
+      <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
+
+      <!-- changelog:begin -->
 <article class="release" id="v0.6.0">
   <div class="release-head">
     <h2><a href="#v0.6.0">v0.6.0</a></h2>
@@ -184,66 +176,45 @@
 </article>
 <!-- changelog:end -->
 
-  <div class="docs-footer">
-    <span>Semver, for skills and for the CLI — breaking prompt changes are breaking changes.</span>
-    <a href="index.html">← kitbash home</a>
-  </div>
+    </div>
+  </section>
+
 </main>
-</div>
 
-<script>
-  // theme
-  (() => {
-    const key = 'kitbash-theme';
-    const root = document.documentElement;
-    const stored = localStorage.getItem(key);
-    const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    const apply = (t) => {
-      root.dataset.theme = t;
-      document.querySelector('[data-theme-toggle]')?.setAttribute('aria-pressed', String(t === 'dark'));
-    };
-    apply(stored || preferred);
-    document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
-      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
-      localStorage.setItem(key, next);
-      apply(next);
-    });
-  })();
+<footer class="site-footer">
+  <div class="footer-divider"></div>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+        <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+      </svg>
+      <strong>kitbash</strong>
+      <span>One skill, every coding agent.</span>
+    </div>
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <a href="docs/">Docs</a>
+      <a href="docs/cli">CLI</a>
+      <a href="docs/format">Format</a>
+      <a href="docs/trust">Trust</a>
+      <a href="benchmark">Benchmark</a>
+      <a href="changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">Manifesto</a>
+    </nav>
+    <div class="footer-actions">
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+    </div>
+    <p class="footer-meta">Apache-2.0 · stable spec</p>
+  </div>
+</footer>
 
-  // hide header on scroll down
-  (() => {
-    const header = document.querySelector('[data-header]');
-    if (!header) return;
-    let lastY = window.scrollY, ticking = false;
-    const update = () => {
-      const y = window.scrollY;
-      if (header.classList.contains('menu-open')) { lastY = y; ticking = false; return; }
-      if (y <= 60) header.classList.remove('header-hidden');
-      else if (y > lastY) header.classList.add('header-hidden');
-      else header.classList.remove('header-hidden');
-      lastY = y; ticking = false;
-    };
-    window.addEventListener('scroll', () => { if (!ticking) { requestAnimationFrame(update); ticking = true; } }, { passive: true });
-  })();
-
-  // mobile menu
-  (() => {
-    const header = document.querySelector('[data-header]');
-    const toggle = document.querySelector('[data-mobile-menu-toggle]');
-    const backdrop = document.querySelector('[data-mobile-backdrop]');
-    const menu = document.querySelector('[data-mobile-menu]');
-    const close = () => { header?.classList.remove('menu-open'); toggle?.setAttribute('aria-expanded', 'false'); };
-    const open = () => { header?.classList.add('menu-open'); toggle?.setAttribute('aria-expanded', 'true'); };
-    toggle?.addEventListener('click', () => header?.classList.contains('menu-open') ? close() : open());
-    backdrop?.addEventListener('click', close);
-    menu?.querySelectorAll('a').forEach((a) => a.addEventListener('click', close));
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
-  })();
-
-  // collapse the docs sidebar into a tap-to-open panel on phones
-  (() => {
-    if (window.matchMedia('(max-width: 860px)').matches) document.querySelector('.docs-nav')?.removeAttribute('open');
-  })();
-</script>
+<script src="assets/kitbash.js" defer></script>
 </body>
 </html>

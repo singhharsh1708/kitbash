@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width">
-<title>Documentation — Kitbash</title>
-<meta name="description" content="An open format for AI agent skills, plus a compiler that turns one skill into every agent's native format — and measures what each one costs.">
-<link rel="canonical" href="https://kitbash.vercel.app/docs">
+<title>Quickstart — Kitbash docs</title>
+<meta name="description" content="Install Kitbash, add a skill, and compile it to every coding agent in your repo — in about two minutes.">
+<link rel="canonical" href="https://kitbash.vercel.app/docs/quickstart">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="kitbash">
-<meta property="og:title" content="Documentation — Kitbash">
-<meta property="og:description" content="An open format for AI agent skills, plus a compiler that turns one skill into every agent's native format — and measures what each one costs.">
+<meta property="og:title" content="Quickstart — Kitbash docs">
+<meta property="og:description" content="Install Kitbash, add a skill, and compile it to every coding agent in your repo.">
 <meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Documentation — Kitbash">
-<meta name="twitter:description" content="An open format for AI agent skills, plus a compiler that turns one skill into every agent's native format — and measures what each one costs.">
+<meta name="twitter:title" content="Quickstart — Kitbash docs">
+<meta name="twitter:description" content="Install Kitbash, add a skill, and compile it to every coding agent in your repo.">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
 <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
@@ -82,9 +82,9 @@
   <button class="docs-nav-toggle" type="button" data-docs-nav-toggle>Documentation menu</button>
   <nav class="docs-nav" aria-label="Docs navigation" data-docs-nav>
     <h4>Getting started</h4>
-    <a href="./" aria-current="page">Overview</a>
+    <a href="./">Overview</a>
     <a href="install">Installation</a>
-    <a href="quickstart">Quickstart</a>
+    <a href="quickstart" aria-current="page">Quickstart</a>
     <a href="authoring">Write your first skill</a>
     <h4>Reference</h4>
     <a href="cli">CLI reference</a>
@@ -102,153 +102,86 @@
   </nav>
 
   <div class="docs-main">
-    <p class="crumb"><a href="../">kitbash</a> / docs</p>
+    <p class="crumb"><a href="../">kitbash</a> / <a href="./">docs</a> / quickstart</p>
     <div class="page-head">
-      <h1>Documentation</h1>
-      <p>An open format for agent skills, plus a compiler that turns one skill into whatever your agent actually reads — and tells you what it costs there.</p>
+      <h1>Quickstart</h1>
+      <p>Install the CLI, add a skill, compile it for every agent in your repo. About two minutes end to end.</p>
     </div>
 
     <div class="prose">
 
-      <h2 id="what-kitbash-is">What Kitbash is</h2>
-      <p>Every coding assistant invented its own extension format: <code>.claude/skills/</code>, <code>.cursor/rules/*.mdc</code>, <code>copilot-instructions.md</code>, <code>.clinerules</code>, <code>.windsurfrules</code>, <code>GEMINI.md</code>, <code>CONVENTIONS.md</code>, <code>AGENTS.md</code>. A skill written for one of them does nothing for the rest of the team. Kitbash defines a single format — <a href="format">KSF</a>, a directory with a <code>skill.toml</code> manifest and a <code>SKILL.md</code> body — and compiles it into all eight of those native outputs. There is no runtime: your agent reads its own format and never knows Kitbash was involved.</p>
-      <p>The compiler is the part that matters. Because a skill declares its context budget and its disclosure mode, <code>kitbash compile</code> can measure the skill's <strong>standing token cost</strong> — what it adds to your context window on every single request — for each target, before you ever ship it. Lazy targets like Claude Code and Cursor load a skill only when it is invoked. Eager targets carry the whole body every session. In the <a href="../benchmark">benchmark</a> the same skill costs roughly 40 standing tokens on a lazy target and roughly 490 on an eager one: a 12× per-session tax that a team running four agents pays four times over. A converter would translate the format and stop there.</p>
-      <p>The KSF core is stabilized through <a href="https://github.com/singhharsh1708/kitbash/blob/main/rfcs/0002-ksf-1.0-stabilization.md" target="_blank" rel="noopener">RFC 0002</a>: the manifest fields are frozen and evolve additive-only within the major version, so skills and third-party adapters can be written against a contract that will not shift. The ecosystem around the spec — more adapters, the index, first-party skills — is still early. Read <a href="#current-status">current status</a> before you plan around it.</p>
+      <h2 id="install">1. Install the CLI</h2>
+      <p>Kitbash is a zero-dependency CLI. The npm route needs Node 20 or newer; the Homebrew route brings its own.</p>
+      <pre class="copyable"><code><span class="c"># npm</span>
+npm install -g kitbash
 
-      <div class="stat-row">
-        <div class="stat"><b>8</b><span>compile targets from one source directory</span></div>
-        <div class="stat"><b>12×</b><span>measured standing-cost gap, lazy vs eager</span></div>
-        <div class="stat"><b>0</b><span>runtime dependencies, in the CLI and in your repo</span></div>
+<span class="c"># or Homebrew</span>
+brew install singhharsh1708/tap/kitbash</code></pre>
+      <p>Check it landed:</p>
+      <pre class="copyable"><code>kitbash --version</code></pre>
+      <p>Full install, update, and uninstall instructions live on the <a href="install">installation page</a>.</p>
+
+      <h2 id="init">2. Set up a repo</h2>
+      <p>From the root of any project:</p>
+      <pre class="copyable"><code>kitbash init</code></pre>
+      <p>That writes <code>kitbash.toml</code> (project config) and creates <code>.kitbash/skills/</code>, where installed skills live. Both belong in version control — your team gets the same skills the same way they get the same dependencies.</p>
+
+      <h2 id="install-skill">3. Install a skill</h2>
+      <p>Skills come from a GitHub repo, a subfolder of one, or a local path:</p>
+      <pre class="copyable"><code>kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview</code></pre>
+      <p>Before anything is written to disk, Kitbash shows you what the skill declares and asks for confirmation:</p>
+      <pre><code>review: prereview@0.1.0 — Reviews a diff against the team's actual standards
+  budget 1500 tokens · standing 60 · lazy disclosure · mode skill
+  permissions: tools [read, grep, bash:git *] · network no · write no
+install prereview@0.1.0? [y/N]</code></pre>
+      <div class="callout">
+        <p><b>This is the point.</b> Installing a skill means letting someone else's instructions run with your agent's permissions. Read the review block before you answer. In scripts and CI, pass <code>--yes</code> to skip the prompt — see <a href="trust">trust &amp; review</a>.</p>
       </div>
+      <p>Kitbash records a content hash in <code>kitbash.lock</code> so the skill you reviewed is the skill you keep getting.</p>
 
-      <h2 id="documentation-map">Documentation map</h2>
-      <p>New here? <a href="install">Install the CLI</a>, then run through the <a href="quickstart">quickstart</a> — it is about two minutes end to end.</p>
-
-      <div class="docs-grid">
-        <a class="doc-link" href="install">
-          <h3>Installation</h3>
-          <p>npm or Homebrew, updating, and uninstalling without touching your repo.</p>
-        </a>
-        <a class="doc-link" href="quickstart">
-          <h3>Quickstart</h3>
-          <p><code>init</code>, install a skill, compile it for every agent your repo already uses.</p>
-        </a>
-        <a class="doc-link" href="authoring">
-          <h3>Write your first skill</h3>
-          <p>The manifest, the body, budgets, permissions, and what a good skill looks like.</p>
-        </a>
-        <a class="doc-link" href="cli">
-          <h3>CLI reference</h3>
-          <p>Every command, flag, and exit code — including the ones that are not built yet.</p>
-        </a>
-        <a class="doc-link" href="format">
-          <h3>Skill format (KSF)</h3>
-          <p>The <code>skill.toml</code> tables field by field, and the layout of a skill directory.</p>
-        </a>
-        <a class="doc-link" href="config">
-          <h3>Project config</h3>
-          <p><code>kitbash.toml</code>, the content-hash lockfile, and the <code>[policy]</code> gate.</p>
-        </a>
-        <a class="doc-link" href="adapters">
-          <h3>Adapters &amp; targets</h3>
-          <p>All eight outputs, which are lazy or eager, and where compilation degrades.</p>
-        </a>
-        <a class="doc-link" href="trust">
-          <h3>Trust &amp; review</h3>
-          <p>Pre-install review, content pinning, drift detection, and org allowlists.</p>
-        </a>
-        <a class="doc-link" href="../benchmark">
-          <h3>Token budgets</h3>
-          <p>The measured lazy-versus-eager standing cost, and how to reproduce it.</p>
-        </a>
-        <a class="doc-link" href="../skills">
-          <h3>Skills catalog</h3>
-          <p>The first-party skills, what each one does, and which ones have shipped.</p>
-        </a>
-      </div>
-
-      <h2 id="how-the-pieces-fit">How the pieces fit</h2>
-      <p>A skill is a directory. The manifest declares the contract; the Markdown body is the instructions the agent will read.</p>
-      <pre><code>prereview/
-  skill.toml        <span class="c"># budget, permissions, triggers, artifacts</span>
-  SKILL.md          <span class="c"># the instructions</span>
-  scripts/          <span class="c"># optional deterministic helpers</span>
-  evals/            <span class="c"># tests — yes, tests for a skill</span></code></pre>
-      <p>The manifest is roughly fifteen lines of TOML, and every table in it is read by the tool — at install review, at compile, or both:</p>
-      <pre><code><span class="k">[skill]</span>
-name = <span class="s">"prereview"</span>
-version = <span class="s">"0.1.0"</span>
-description = <span class="s">"Review the working diff against this team's real standards before it ships"</span>
-
-<span class="k">[triggers]</span>
-commands = [<span class="s">"/prereview"</span>]   <span class="c"># compiled to native slash commands where supported</span>
-
-<span class="k">[context]</span>
-budget = 1500                <span class="c"># hard cap on compiled size</span>
-standing = 60                <span class="c"># what it may cost every session</span>
-disclosure = <span class="s">"lazy"</span>         <span class="c"># load on invocation, not on every request</span>
-
-<span class="k">[permissions]</span>
-tools = [<span class="s">"read"</span>, <span class="s">"grep"</span>, <span class="s">"bash:git diff *"</span>, <span class="s">"bash:git log *"</span>]
-network = false
-write = false</code></pre>
-      <p><code>kitbash compile</code> reads every installed skill, detects which assistants the repo is set up for, and writes each one's native format:</p>
+      <h2 id="compile">4. Compile</h2>
       <pre class="copyable"><code>kitbash compile</code></pre>
+      <p>Kitbash detects which agents your repo is set up for and writes each one's native format:</p>
       <pre><code><span class="ok">✓</span> compiled 1 skill → 3 targets
 <span class="c">→</span> .claude/skills/prereview/SKILL.md
 <span class="c">→</span> .cursor/rules/prereview.mdc
 <span class="c">→</span> AGENTS.md §prereview
 <span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load;
   this skill costs ~464 tokens standing every session</code></pre>
-      <p>Per-file targets get a file of their own. Shared-file targets — <code>AGENTS.md</code>, <code>GEMINI.md</code>, Aider's <code>CONVENTIONS.md</code> — get a marker-delimited section merged into whatever is already there, so hand-written content survives a recompile and removed skills get pruned on the next one. <code>AGENTS.md</code> is the floor: it is always emitted, because everything that reads it (Codex among them) then gets the skill for free.</p>
-      <div class="callout">
-        <p><b>Degradation is visible, never silent.</b> When a target cannot honor something a skill declared — lazy loading, a required capability — the compiler says so on stdout and <code>kitbash explain &lt;skill&gt; &lt;adapter&gt;</code> says why. <code>--strict</code> turns those warnings into a non-zero exit for CI.</p>
-      </div>
+      <p>That last warning is the part other tools don't give you. Lazy targets (Claude Code, Cursor) load a skill only when it's invoked. Eager targets carry the whole body in context every single session — a standing tax measured at 12×–46× in the <a href="../benchmark">benchmark</a>.</p>
 
-      <h2 id="current-status">Current status</h2>
-      <p>The spec is stable; the tool is young. This is what the CLI does today versus what is still on the <a href="https://github.com/singhharsh1708/kitbash/blob/main/docs/roadmap.md" target="_blank" rel="noopener">roadmap</a>.</p>
-
-      <h3 id="working-today">Working today</h3>
-      <ul>
-        <li><code>init</code>, <code>install</code>, <code>remove</code>, <code>list</code>, <code>compile</code>, <code>doctor</code> — the core loop, end-to-end tested in CI.</li>
-        <li><code>lint</code>, <code>preview</code>, <code>explain</code>, <code>test</code> — read-only inspection. The first three also accept an uninstalled source, so you can read a stranger's skill before it touches your disk.</li>
-        <li>Sources: <code>gh:owner/repo[/path][@ref]</code>, bare <code>owner/repo</code>, and <code>file:path</code>.</li>
-        <li>Eight adapters: <code>claude-code</code>, <code>cursor</code>, <code>copilot</code>, <code>cline</code>, <code>windsurf</code>, <code>gemini</code>, <code>aider</code>, and the <code>agentsmd</code> floor.</li>
-        <li>Budget and standing enforcement at compile time, degradation warnings, and <code>--strict</code>.</li>
-        <li><code>kitbash.lock</code> with directory content hashes, drift detection in <code>doctor</code>, and stale-output pruning after <code>remove</code>.</li>
-        <li>Pre-install review with <code>--yes</code> for scripts, and the <code>[policy]</code> allowlist as a hard gate that <code>--yes</code> does not bypass.</li>
-        <li>SKILL.md-only interop: a plain skills.sh / Claude Skills folder installs directly and is flagged <code>unmanifested</code>.</li>
-        <li>Declared trigger commands compiled to native slash commands where the host supports them.</li>
-      </ul>
-
-      <h3 id="not-built-yet">Not built yet</h3>
-      <p>These commands exist in the surface — <code>kitbash help</code> lists them — but running one prints where it lands and exits <code>2</code>:</p>
-      <pre><code>$ kitbash update
-kitbash update: not implemented yet (lands in v0.2 — see docs/roadmap.md)</code></pre>
+      <h2 id="inspect">5. Inspect before you trust</h2>
+      <p>Three read-only commands work on installed skills <em>and</em> on sources you haven't installed:</p>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Command</th><th>What it will do</th><th>Milestone</th></tr></thead>
+          <thead><tr><th>Command</th><th>Answers</th></tr></thead>
           <tbody>
-            <tr><td><code>update</code></td><td>Update skills, showing instruction diffs before applying</td><td>v0.2</td></tr>
-            <tr><td><code>diff</code></td><td>Instruction, permission, and budget diff between two versions</td><td>v0.2</td></tr>
-            <tr><td><code>audit</code></td><td>Scan installed skills for permission drift and unsigned sources</td><td>v0.2</td></tr>
-            <tr><td><code>gate</code></td><td>Run a gate-mode skill with a deterministic exit code</td><td>v0.3</td></tr>
-            <tr><td><code>search</code></td><td>Search the community index</td><td>v0.4</td></tr>
-            <tr><td><code>publish</code></td><td>Validate and publish a skill to the index</td><td>v0.4</td></tr>
-            <tr><td><code>lore</code></td><td>Build, query, and curate repo intelligence</td><td>v0.5</td></tr>
-            <tr><td><code>run</code></td><td>Run a declared pipeline, e.g. <code>kitbash run ship</code></td><td>v0.5</td></tr>
+            <tr><td><code>kitbash preview &lt;source&gt;</code></td><td>What exactly does each agent receive, and what does it cost there?</td></tr>
+            <tr><td><code>kitbash lint &lt;source&gt;</code></td><td>Is the manifest valid, are refs dead, does the body smell like prompt injection?</td></tr>
+            <tr><td><code>kitbash explain &lt;source&gt; &lt;adapter&gt;</code></td><td>Why did this compilation degrade on that agent?</td></tr>
           </tbody>
         </table>
       </div>
-      <p>Also outstanding: skill-to-skill <code>[dependencies]</code> with a pinned transitive closure, behavioral eval tiers beyond the static one, permissions compiled down to Claude Code permission rules, and the community index. On skills, <code>prereview</code> is the one first-party skill that ships today; <code>excavate</code>, <code>plan</code>, <code>verify</code>, <code>triage</code>, <code>migrate</code>, and <code>onboard</code> are specified but not released — the <a href="../skills">catalog</a> marks which is which.</p>
-      <div class="callout warn">
-        <p><b>Nothing here is lock-in.</b> Compiled output is plain files in your repo. Delete <code>kitbash.toml</code>, stop running the compiler, and every agent keeps reading exactly what it was reading before.</p>
-      </div>
+      <p>All three accept a remote source, so you can read a stranger's skill without installing it:</p>
+      <pre class="copyable"><code>kitbash preview gh:singhharsh1708/kitbash/examples/skills/prereview</code></pre>
+
+      <h2 id="health">6. Check the repo's health</h2>
+      <pre class="copyable"><code>kitbash doctor</code></pre>
+      <p>Reports which agents were detected, the total standing context cost of everything installed, whether every skill is pinned, and whether any file on disk has drifted from its hash in the lockfile.</p>
+
+      <h2 id="next">Where to go next</h2>
+      <ul>
+        <li><a href="authoring">Write your first skill</a> — the manifest, the body, budgets, and templates.</li>
+        <li><a href="cli">CLI reference</a> — every command, flag, and exit code.</li>
+        <li><a href="adapters">Adapters &amp; targets</a> — all eight outputs and what each one supports.</li>
+        <li><a href="trust">Trust &amp; review</a> — org allowlists with <code>[policy]</code>.</li>
+      </ul>
 
     </div>
 
     <nav class="pager" aria-label="Page navigation">
-      <a class="next" href="install" style="grid-column: 1 / -1"><span>Next</span> Installation</a>
+      <a href="install"><span>Previous</span> Installation</a>
+      <a class="next" href="authoring"><span>Next</span> Write your first skill</a>
     </nav>
   </div>
 

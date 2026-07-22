@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Project config — Kitbash docs</title>
+<meta name="description" content="Reference for kitbash.toml — the [project] and [policy] tables — plus every file Kitbash manages in your repo: .kitbash/skills/, kitbash.lock, and the generated agent outputs.">
+<link rel="canonical" href="https://kitbash.vercel.app/docs/config">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="kitbash">
+<meta property="og:title" content="Project config — Kitbash docs">
+<meta property="og:description" content="kitbash.toml reference: [project] targets, the [policy] install allowlist, and the files Kitbash writes and manages.">
+<meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Project config — Kitbash docs">
+<meta name="twitter:description" content="kitbash.toml reference: [project] targets, the [policy] install allowlist, and the files Kitbash writes and manages.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/kitbash.css">
+</head>
+<body>
+
+<header class="site-header" data-header>
+  <a class="brand" href="../" aria-label="kitbash home">
+    <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+    </svg>
+    <span><span class="kit">kit</span>bash</span>
+  </a>
+  <nav class="top-nav" aria-label="Main navigation">
+    <a href="./">Docs</a>
+    <a href="adapters">Adapters</a>
+    <a href="trust">Trust</a>
+    <a href="../benchmark">Benchmark</a>
+    <a href="../skills">Skills</a>
+    <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+      <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+      Support
+    </a>
+    <a class="icon-link" href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener" aria-label="GitHub repository">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+      <span>GitHub</span>
+    </a>
+  </nav>
+  <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
+    <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-14.7a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 16.8a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1Zm9.5-8.3a1 1 0 1 1 0 2h-1.2a1 1 0 1 1 0-2h1.2ZM4.7 11a1 1 0 1 1 0 2H3.5a1 1 0 1 1 0-2h1.2Zm13.74-6.44a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0ZM7.83 16.17a1 1 0 0 1 0 1.42l-.85.85a1 1 0 0 1-1.42-1.42l.85-.85a1 1 0 0 1 1.42 0Zm9.76 0 .85.85a1 1 0 1 1-1.42 1.42l-.85-.85a1 1 0 0 1 1.42-1.42ZM6.98 4.56l.85.85a1 1 0 0 1-1.42 1.42l-.85-.85a1 1 0 1 1 1.42-1.42Z"></path></svg>
+    <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 14.58A8.2 8.2 0 0 1 9.42 3a9.25 9.25 0 1 0 11.59 11.59Z"></path></svg>
+  </button>
+  <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-label="Open menu" aria-expanded="false">
+    <svg class="mobile-menu-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+    <svg class="mobile-close-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>
+  </button>
+  <div class="mobile-menu" data-mobile-menu>
+    <div class="mobile-menu-card">
+      <div class="mobile-menu-head">Menu</div>
+      <a href="./">Docs</a>
+      <a href="quickstart">Quickstart</a>
+      <a href="cli">CLI reference</a>
+      <a href="adapters">Adapters</a>
+      <a href="trust">Trust &amp; review</a>
+      <a href="../benchmark">Benchmark</a>
+      <a href="../skills">Skills</a>
+      <a href="../changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+    </div>
+  </div>
+</header>
+<div class="mobile-backdrop" data-mobile-backdrop></div>
+
+<main class="docs-shell" id="top">
+
+  <button class="docs-nav-toggle" type="button" data-docs-nav-toggle>Documentation menu</button>
+  <nav class="docs-nav" aria-label="Docs navigation" data-docs-nav>
+    <h4>Getting started</h4>
+    <a href="./">Overview</a>
+    <a href="install">Installation</a>
+    <a href="quickstart">Quickstart</a>
+    <a href="authoring">Write your first skill</a>
+    <h4>Reference</h4>
+    <a href="cli">CLI reference</a>
+    <a href="format">Skill format (KSF)</a>
+    <a href="config" aria-current="page">Project config</a>
+    <a href="adapters">Adapters &amp; targets</a>
+    <h4>Guides</h4>
+    <a href="trust">Trust &amp; review</a>
+    <a href="../benchmark">Token budgets</a>
+    <a href="../skills">Skills catalog</a>
+    <h4>Project</h4>
+    <a href="../changelog">Changelog</a>
+    <a href="https://github.com/singhharsh1708/kitbash/blob/main/spec/SPEC.md" target="_blank" rel="noopener">Spec ↗</a>
+    <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+
+  <div class="docs-main">
+    <p class="crumb"><a href="../">kitbash</a> / <a href="./">docs</a> / config</p>
+    <div class="page-head">
+      <h1>Project config</h1>
+      <p>One file configures a repo: <code>kitbash.toml</code>. It has two tables — which agents to compile for, and which skills anyone is allowed to install. Everything else Kitbash owns on disk is derived from it.</p>
+    </div>
+
+    <div class="prose">
+
+      <h2 id="init">What kitbash init creates</h2>
+      <p>Run from the root of a repo:</p>
+      <pre class="copyable"><code>kitbash init</code></pre>
+      <pre><code>created kitbash.toml and .kitbash/skills/
+next: kitbash install &lt;gh:owner/repo | owner/repo | file:path&gt;, then kitbash compile</code></pre>
+      <p>Two things: the config file, and the empty directory installed skills land in. If <code>kitbash.toml</code> already exists, <code>init</code> prints <code>kitbash.toml already exists — nothing to do</code> and changes nothing — it is safe to re-run and it will never overwrite your config.</p>
+      <p>Everything in the file it writes is commented out apart from the <code>[project]</code> header, so a fresh config changes nothing. Every key is optional:</p>
+      <pre><code><span class="c"># kitbash project configuration — https://github.com/singhharsh1708/kitbash</span>
+<span class="k">[project]</span>
+<span class="c"># Adapters to compile for. Omit to autodetect (.claude/, .cursor/, AGENTS.md floor).</span>
+<span class="c"># targets = ["claude-code", "cursor", "agentsmd"]</span>
+
+<span class="c"># Install policy (org allowlist). Enforced at install and rechecked by doctor.</span>
+<span class="c"># [policy]</span>
+<span class="c"># allow_sources = ["gh:your-org/*"]  # globs; matched against gh:owner/repo[/path][@ref] or file:/abs/path</span>
+<span class="c"># deny_network = true                # refuse skills declaring network permission</span>
+<span class="c"># deny_write = true                  # refuse skills declaring write permission</span>
+<span class="c"># max_budget = 6000                  # refuse skills with a larger context budget</span></code></pre>
+      <p><code>init</code> does not create <code>kitbash.lock</code>. The lockfile appears on the first successful <code>kitbash install</code>.</p>
+      <p>Kitbash reads <code>kitbash.toml</code> from the current working directory only. There is no upward search for a config in a parent directory, so run commands from the repo root.</p>
+
+      <h2 id="project">The [project] table</h2>
+      <p>One key: <code>targets</code>.</p>
+
+      <h3 id="targets">targets</h3>
+      <p>An array of adapter ids. Omit the key and Kitbash autodetects — every adapter whose detection probe finds evidence of that agent in the repo. Set it and detection is bypassed entirely: the listed targets are compiled whether or not the agent's directory exists.</p>
+      <pre><code><span class="k">[project]</span>
+targets = [<span class="s">"claude-code"</span>, <span class="s">"cursor"</span>, <span class="s">"agentsmd"</span>]</code></pre>
+      <p>The eight valid ids, and what autodetection looks for:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>id</th><th>Detected when the repo contains</th></tr></thead>
+          <tbody>
+            <tr><td><code>claude-code</code></td><td><code>.claude/</code></td></tr>
+            <tr><td><code>cursor</code></td><td><code>.cursor/</code></td></tr>
+            <tr><td><code>copilot</code></td><td><code>.github/</code></td></tr>
+            <tr><td><code>cline</code></td><td><code>.clinerules/</code></td></tr>
+            <tr><td><code>windsurf</code></td><td><code>.windsurf/</code></td></tr>
+            <tr><td><code>gemini</code></td><td><code>GEMINI.md</code> or <code>.gemini/</code></td></tr>
+            <tr><td><code>aider</code></td><td><code>CONVENTIONS.md</code> or <code>.aider.conf.yml</code></td></tr>
+            <tr><td><code>agentsmd</code></td><td>always — it is the floor</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>An unrecognised id is a hard error, not a warning. <code>kitbash compile</code> writes nothing and exits <code>1</code>:</p>
+      <pre><code>unknown target(s) in kitbash.toml: claude (known: claude-code, cursor,
+copilot, cline, windsurf, gemini, aider, agentsmd)</code></pre>
+      <p>That is deliberate. A typo'd target silently dropping an agent from every compile is worse than a failed build.</p>
+      <p>Note that <code>kitbash doctor</code> reports <em>detection</em>, not configuration — its "detected targets" list runs the probes regardless of what <code>targets</code> says. If the two disagree, <code>targets</code> is what <code>compile</code> obeys.</p>
+      <p>What each adapter emits, which capabilities it supports, and whether it loads lazily or eagerly is covered in <a href="adapters">adapters &amp; targets</a>.</p>
+
+      <h2 id="policy">The [policy] table</h2>
+      <p>The org-allowlist layer: which sources may be installed, and what an installed skill is allowed to declare. Omit the table and there is no policy — every source is permitted.</p>
+
+      <h3 id="allow-sources">allow_sources</h3>
+      <p>An array of glob patterns. An empty array, or a missing key, means no source restriction at all.</p>
+      <p>The glob is minimal: <code>*</code> spans any run of characters <strong>including <code>/</code></strong>, every other character is literal, and the pattern must match the whole string — it is anchored at both ends. There is no <code>**</code>, no <code>?</code>, no brace expansion.</p>
+      <p>Each pattern is tested against two strings, and matching either one passes:</p>
+      <ul>
+        <li>the <strong>raw source</strong> exactly as typed on the command line;</li>
+        <li>its <strong>canonical form</strong> — <code>gh:owner/repo[/path][@ref]</code> for GitHub sources, or <code>file:</code> followed by the <em>absolute resolved path</em> for local ones.</li>
+      </ul>
+      <p>So a bare <code>acme/tools</code> canonicalises to <code>gh:acme/tools</code> and is caught by <code>"gh:acme/*"</code> even though the user never typed the prefix. A local <code>file:./skills/foo</code> canonicalises to <code>file:/Users/you/repo/skills/foo</code> — absolute, machine-specific. Matching local paths by glob is possible but rarely portable; prefer allowing GitHub sources.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Pattern</th><th>Matches</th><th>Does not match</th></tr></thead>
+          <tbody>
+            <tr><td><code>gh:acme/*</code></td><td><code>gh:acme/tools</code>, <code>gh:acme/tools/skills/lint</code>, <code>gh:acme/tools@v2</code></td><td><code>gh:acme-labs/tools</code></td></tr>
+            <tr><td><code>gh:acme/tools</code></td><td>exactly that source</td><td><code>gh:acme/tools/skills/lint</code>, <code>gh:acme/tools@v2</code></td></tr>
+            <tr><td><code>gh:acme/tools/*</code></td><td><code>gh:acme/tools/skills/lint</code></td><td><code>gh:acme/tools</code> (no trailing segment)</td></tr>
+            <tr><td><code>*</code></td><td>everything</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Because <code>*</code> crosses <code>/</code>, pinning a ref needs care: <code>gh:acme/*</code> also admits <code>gh:acme/tools@some-branch</code>. If you want a specific ref, write the whole source out with no wildcard.</p>
+
+      <h3 id="deny-network-write">deny_network and deny_write</h3>
+      <p>Booleans, default off. They gate what the skill's manifest <em>declares</em> under <code>[permissions]</code>:</p>
+      <ul>
+        <li><code>deny_network = true</code> refuses any skill with <code>permissions.network = true</code>.</li>
+        <li><code>deny_write = true</code> refuses any skill with <code>permissions.write = true</code>.</li>
+      </ul>
+      <p>Only the literal boolean <code>true</code> enables them. <code>deny_network = "true"</code> — a string — is read as off.</p>
+
+      <h3 id="max-budget">max_budget</h3>
+      <p>An integer. A skill is refused when its declared <code>context.budget</code> is strictly greater than this value. It must be a number; a quoted value is ignored. This is a ceiling on what a skill may cost when active, not on your repo's total — <code>kitbash doctor</code> reports the repo-wide standing and worst-case active totals separately.</p>
+
+      <h3 id="policy-enforcement">Where policy is enforced</h3>
+      <p>Two places, both non-negotiable.</p>
+      <p><strong>At install.</strong> The review block prints first, then policy runs, then the confirmation prompt — so a violation blocks before you are ever asked. <code>--yes</code> skips the prompt, not the policy:</p>
+      <pre><code>review: docfetch@1.2.0 — Pulls API docs into the review context
+  budget 2000 tokens · standing 90 · lazy disclosure · mode skill
+  permissions: tools [read, bash:curl *] · network YES · write no
+<span class="warn">  ✗ policy: docfetch declares network permission and deny_network = true</span>
+<span class="warn">blocked by [policy] in kitbash.toml.</span></code></pre>
+      <p>The command exits <code>1</code> and nothing is written to disk.</p>
+      <p><strong>At doctor.</strong> <code>kitbash doctor</code> rechecks every installed skill against the current policy, using the source recorded in <code>kitbash.lock</code>. That catches the two cases install-time enforcement structurally cannot: skills installed before the policy was written, and skills copied into <code>.kitbash/skills/</code> by hand. Violations print the same <code>✗ policy:</code> lines and doctor exits <code>1</code>.</p>
+      <div class="callout warn">
+        <p><b>Unknown keys are silent.</b> Kitbash reads the keys it knows and ignores the rest — there is no schema check on <code>kitbash.toml</code>. A misspelled <code>allow_source</code> (singular) does not error; it just means no allowlist is in force. After editing <code>[policy]</code>, run <code>kitbash doctor</code> and confirm it prints <code>policy: ok</code>. If the <code>[policy]</code> table is absent that line does not appear at all.</p>
+      </div>
+
+      <h2 id="example">A complete kitbash.toml</h2>
+      <pre class="copyable"><code><span class="c"># kitbash project configuration</span>
+
+<span class="k">[project]</span>
+<span class="c"># Compile only for these agents. Omit the key to autodetect from the repo.</span>
+<span class="c"># Listing a target compiles it whether or not its directory exists.</span>
+targets = [<span class="s">"claude-code"</span>, <span class="s">"cursor"</span>, <span class="s">"agentsmd"</span>]
+
+<span class="k">[policy]</span>
+<span class="c"># Sources anyone may install from. Anchored globs; * spans any characters,</span>
+<span class="c"># including "/". Matched against the raw source and its canonical form</span>
+<span class="c"># (gh:owner/repo[/path][@ref] or file:/abs/path). Omit for no restriction.</span>
+allow_sources = [<span class="s">"gh:acme/*"</span>, <span class="s">"gh:singhharsh1708/kitbash/examples/skills/*"</span>]
+
+<span class="c"># Refuse skills declaring permissions.network = true.</span>
+deny_network = true
+
+<span class="c"># Refuse skills declaring permissions.write = true.</span>
+deny_write = true
+
+<span class="c"># Refuse skills whose context.budget exceeds this.</span>
+max_budget = 6000</code></pre>
+      <p>Kitbash's TOML reader covers the subset manifests need: tables, arrays of tables, bare keys, basic strings, integers, floats, booleans, single-line arrays, and <code>#</code> comments. Multi-line arrays and inline tables are not supported — keep each array on one line.</p>
+
+      <h2 id="managed-files">Files Kitbash manages</h2>
+      <p>Three kinds, with different rules. You edit the first, never edit the second, and only edit around the third.</p>
+
+      <h3 id="skills-dir">.kitbash/skills/</h3>
+      <p>Where <code>kitbash install</code> copies each skill — one directory per skill, named after the skill. This is the source of truth for compilation: every command that operates on "installed skills" reads this directory, loading each subdirectory that contains a <code>SKILL.md</code> and skipping the rest, so an aborted install or a stray folder does not break every subsequent command.</p>
+      <p>Commit it. Vendoring the skill body is the point — your team gets byte-identical instructions the way they get byte-identical dependencies, and the lockfile can prove it.</p>
+
+      <h3 id="lockfile">kitbash.lock</h3>
+      <p>Written on install and removal, sorted by skill name, one <code>[[skill]]</code> block each:</p>
+      <pre><code><span class="c"># generated by kitbash — do not edit</span>
+
+<span class="k">[[skill]]</span>
+name = <span class="s">"prereview"</span>
+version = <span class="s">"0.1.0"</span>
+source = <span class="s">"gh:singhharsh1708/kitbash/examples/skills/prereview"</span>
+integrity = <span class="s">"sha256-…"</span></code></pre>
+      <p><code>integrity</code> is a SHA-256 over the whole skill directory: every file's relative path and contents, in a deterministic order. Paths are Unicode-NFC-normalised and sorted by binary code-unit order, and text files have CRLF normalised to LF, so the same skill hashes identically on macOS, Linux, and a Windows checkout with <code>core.autocrlf</code>. Files containing a NUL byte are treated as binary and hashed verbatim.</p>
+      <p>Hashes are the truth; the version string is human convenience.</p>
+      <p><strong>Drift detection.</strong> <code>kitbash doctor</code> rehashes each installed directory and compares:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Condition</th><th>Report</th><th>Exit</th></tr></thead>
+          <tbody>
+            <tr><td>Hash differs from the lock entry</td><td><code>✗ &lt;name&gt;: integrity drift — installed files differ from kitbash.lock</code></td><td>1</td></tr>
+            <tr><td>Installed but absent from the lock</td><td><code>✗ &lt;name&gt;: installed but not pinned in kitbash.lock — reinstall to pin it.</code></td><td>1</td></tr>
+            <tr><td>Skills installed, no lockfile at all</td><td><code>✗ N skill(s) installed but kitbash.lock is missing — nothing is pinned. Reinstall to regenerate it.</code></td><td>1</td></tr>
+            <tr><td>In the lock but not installed</td><td><code>⚠ &lt;name&gt;: in kitbash.lock but not installed</code></td><td>0</td></tr>
+            <tr><td>Everything matches</td><td><code>lock integrity: ok</code></td><td>0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Drift means someone edited a vendored skill in place, or a merge mangled it. Either way the instructions your agents are running are no longer the instructions that were reviewed at install. Commit the lockfile, and run <code>kitbash doctor</code> in CI so the diff is caught by a machine rather than trusted by a human.</p>
+
+      <h3 id="generated-outputs">Generated agent outputs</h3>
+      <p><code>kitbash compile</code> writes one native artifact per skill per target. Every generated file carries a marker on its first content line:</p>
+      <pre><code>&lt;!-- generated by kitbash — do not edit; source: .kitbash/skills/prereview @ 0.1.0 --&gt;</code></pre>
+      <p>The marker is not decoration. It is how Kitbash decides what it is allowed to delete: on each compile, the managed directories below are scanned, and a file is removed only if it bears the marker <em>and</em> was not written by the current run. Anything you wrote by hand into those directories has no marker and is never touched.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Target</th><th>Writes</th></tr></thead>
+          <tbody>
+            <tr><td><code>claude-code</code></td><td><code>.claude/skills/&lt;name&gt;/SKILL.md</code>, plus <code>.claude/commands/&lt;cmd&gt;.md</code> per declared trigger command</td></tr>
+            <tr><td><code>cursor</code></td><td><code>.cursor/rules/&lt;name&gt;.mdc</code></td></tr>
+            <tr><td><code>copilot</code></td><td><code>.github/instructions/&lt;name&gt;.instructions.md</code></td></tr>
+            <tr><td><code>cline</code></td><td><code>.clinerules/&lt;name&gt;.md</code></td></tr>
+            <tr><td><code>windsurf</code></td><td><code>.windsurf/rules/&lt;name&gt;.md</code></td></tr>
+            <tr><td><code>gemini</code></td><td><code>GEMINI.md</code> (merged section)</td></tr>
+            <tr><td><code>aider</code></td><td><code>CONVENTIONS.md</code> (merged section)</td></tr>
+            <tr><td><code>agentsmd</code></td><td><code>AGENTS.md</code> (merged section)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Removing a skill and recompiling prunes its outputs, reported as <code>✂ removed .cursor/rules/prereview.mdc (stale)</code>. Renaming a trigger command prunes the old slash command the same way.</p>
+
+      <h3 id="shared-files">Marker-merged shared files</h3>
+      <p><code>AGENTS.md</code>, <code>GEMINI.md</code>, and <code>CONVENTIONS.md</code> are files you already own and already write in. Kitbash cannot overwrite them, so it does not: each skill gets a delimited section, and only the bytes between its markers are ever replaced.</p>
+      <pre><code><span class="c"># Contributing</span>
+
+Build with `make`. Run the integration suite before you open a PR.
+Everything above and below the markers is yours — kitbash never rewrites it.
+
+&lt;!-- kitbash:begin prereview --&gt;
+&lt;!-- generated by kitbash — do not edit; source: .kitbash/skills/prereview @ 0.1.0 --&gt;
+
+## Skill: prereview
+
+Reviews a diff against the team's actual standards.
+…
+&lt;!-- kitbash:end prereview --&gt;</code></pre>
+      <p>On each compile the section is replaced in place if its markers are already present, and appended after your existing content if not. Sections belonging to skills that are no longer installed are dropped. For <code>AGENTS.md</code> and <code>GEMINI.md</code> that sweep runs even when no adapter rewrites the file — which is what makes removing the last skill actually clean up — and prints <code>✂ pruned stale section(s) from AGENTS.md</code>.</p>
+      <div class="callout">
+        <p><b>Do not edit inside the markers.</b> Your changes are overwritten on the next compile, and — worse — the file no longer matches the reviewed skill while looking as though it does. Edit the skill in <code>.kitbash/skills/</code> and recompile, or write your own prose outside the markers.</p>
+      </div>
+      <p>These three targets are eager: whatever sits between the markers is in the agent's context on every single session. That is the cost <a href="../benchmark">the benchmark</a> measures, and why <code>compile</code> warns when a skill authored to lazy-load lands on one of them.</p>
+
+      <h2 id="commit">What to commit, what to ignore</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Path</th><th>Verdict</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><code>kitbash.toml</code></td><td>Commit</td><td>The targets and the install policy are team decisions, not local ones.</td></tr>
+            <tr><td><code>.kitbash/skills/</code></td><td>Commit</td><td>The reviewed skill body. Vendored on purpose.</td></tr>
+            <tr><td><code>kitbash.lock</code></td><td>Commit</td><td>Without it nothing is pinned and <code>doctor</code> fails. It is what makes drift detectable.</td></tr>
+            <tr><td><code>AGENTS.md</code>, <code>GEMINI.md</code>, <code>CONVENTIONS.md</code></td><td>Commit</td><td>Mostly your own content; the generated sections are a subset.</td></tr>
+            <tr><td><code>.claude/</code>, <code>.cursor/</code>, <code>.github/instructions/</code>, <code>.clinerules/</code>, <code>.windsurf/</code></td><td>Either</td><td>Fully derived from the two above. Commit them and a fresh clone works with no build step; gitignore them and run <code>kitbash compile</code> in CI or a post-checkout hook. Pick one and be consistent — half-committed generated output produces confusing diffs.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Whichever you pick, the invariant is the same: <code>kitbash.toml</code> plus <code>.kitbash/skills/</code> plus <code>kitbash.lock</code> is enough to reproduce every generated file exactly.</p>
+
+      <h2 id="next">Where to go next</h2>
+      <ul>
+        <li><a href="adapters">Adapters &amp; targets</a> — what each of the eight ids actually emits, and what degrades.</li>
+        <li><a href="trust">Trust &amp; review</a> — designing a <code>[policy]</code> your team can live with.</li>
+        <li><a href="cli">CLI reference</a> — every command, flag, and exit code.</li>
+        <li><a href="format">Skill format (KSF)</a> — the manifest keys <code>[policy]</code> gates on.</li>
+      </ul>
+
+    </div>
+
+    <nav class="pager" aria-label="Page navigation">
+      <a href="format"><span>Previous</span> Skill format (KSF)</a>
+      <a class="next" href="adapters"><span>Next</span> Adapters &amp; targets</a>
+    </nav>
+  </div>
+
+  <aside class="docs-toc" data-toc aria-label="On this page"></aside>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-divider"></div>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+        <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+      </svg>
+      <strong>kitbash</strong>
+      <span>One skill, every coding agent.</span>
+    </div>
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <a href="./">Docs</a>
+      <a href="cli">CLI</a>
+      <a href="format">Format</a>
+      <a href="trust">Trust</a>
+      <a href="../benchmark">Benchmark</a>
+      <a href="../changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">Manifesto</a>
+    </nav>
+    <div class="footer-actions">
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+    </div>
+    <p class="footer-meta">Apache-2.0 · stable spec</p>
+  </div>
+</footer>
+
+<script src="../assets/kitbash.js" defer></script>
+</body>
+</html>
