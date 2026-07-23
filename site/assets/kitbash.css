@@ -496,3 +496,14 @@
   .release ul { margin: .6rem 0 0; padding-left: 1.3rem; }
   .release li { margin-top: .45rem; color: var(--muted); line-height: 1.7; }
   .release li::marker { color: var(--accent); }
+
+  /* ============================================================
+     Docs shell without a right-hand on-this-page rail — used by
+     root-level guide pages (benchmark, skills) so the left nav
+     persists when you arrive from a /docs/ page.
+     ============================================================ */
+  .docs-shell.no-toc { grid-template-columns: 15.5rem minmax(0, 1fr); }
+  .docs-main > .section { max-width: none; margin: 0; padding: 0 0 2.6rem; }
+  .docs-main > .section:first-of-type { padding-top: 0; }
+  @media (max-width: 1100px) { .docs-shell.no-toc { grid-template-columns: 14rem minmax(0, 1fr); } }
+  @media (max-width: 860px)  { .docs-shell.no-toc { grid-template-columns: minmax(0, 1fr); } }
