@@ -38,6 +38,14 @@
     { "source": "/docs/commands", "destination": "/docs/cli", "permanent": true },
     { "source": "/docs/skill-format", "destination": "/docs/format", "permanent": true },
     { "source": "/docs/targets", "destination": "/docs/adapters", "permanent": true },
-    { "source": "/docs/policy", "destination": "/docs/trust", "permanent": true }
+    { "source": "/docs/policy", "destination": "/docs/trust", "permanent": true },
+    { "source": "/adapters", "destination": "/docs/adapters", "permanent": false },
+    { "source": "/trust", "destination": "/docs/trust", "permanent": false },
+    { "source": "/cli", "destination": "/docs/cli", "permanent": false },
+    { "source": "/format", "destination": "/docs/format", "permanent": false },
+    { "source": "/config", "destination": "/docs/config", "permanent": false },
+    { "source": "/quickstart", "destination": "/docs/quickstart", "permanent": false },
+    { "source": "/install", "destination": "/docs/install", "permanent": false },
+    { "source": "/authoring", "destination": "/docs/authoring", "permanent": false }
   ]
 }
