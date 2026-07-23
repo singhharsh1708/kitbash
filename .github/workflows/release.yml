@@ -102,6 +102,43 @@ jobs:
       - run: npm publish
         working-directory: packages/cli
 
+  github-release:
+    needs: [verify, publish]
+    if: always() && needs.verify.result == 'success' && needs.publish.result != 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the GitHub release
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Create or update the release from CHANGELOG.md
+        run: |
+          set -euo pipefail
+          tag="v${VERSION}"
+          # Extract this version's section from CHANGELOG.md (between its heading and the next).
+          notes=$(awk -v v="## [${VERSION}]" '
+            index($0, v)==1 {f=1; next}
+            /^## \[/ && f {exit}
+            f {print}
+          ' CHANGELOG.md)
+          if [ -z "$(printf '%s' "$notes" | tr -d '[:space:]')" ]; then
+            echo "::error::no CHANGELOG.md section found for ${VERSION}"
+            exit 1
+          fi
+          printf '%s\n' "$notes" > /tmp/notes.md
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --notes-file /tmp/notes.md
+            echo "updated release $tag"
+          else
+            gh release create "$tag" --title "$tag" --notes-file /tmp/notes.md
+            echo "created release $tag"
+          fi
+
   homebrew:
     needs: [verify, publish]
     if: always() && needs.verify.result == 'success' && needs.publish.result != 'failure'
