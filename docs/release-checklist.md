@@ -102,9 +102,10 @@ The workflow then:
 
 1. **verify** — refuses to continue unless the tag matches `packages/cli/package.json`, then re-runs typecheck, the full suite, the benchmark-determinism gate, and `site/build.mjs --check`. A tag cannot ship something `main` would have rejected.
 2. **publish** — `npm publish` over OIDC trusted publishing. No token is stored, nothing expires between releases, no OTP prompt, and npm attaches a provenance attestation automatically. Skipped when that version is already on the registry, so re-running is safe.
-3. **homebrew** — downloads the published tarball, rewrites `url` + `sha256` in the tap formula, pushes. Skipped with a warning if `TAP_TOKEN` is not set.
+3. **github-release** — creates the GitHub release, with notes lifted verbatim from this version's `CHANGELOG.md` section. Runs on the built-in `GITHUB_TOKEN` — no secret needed. Idempotent: edits the release if it already exists.
+4. **homebrew** — downloads the published tarball, rewrites `url` + `sha256` in the tap formula, pushes. Skipped with a warning if `TAP_TOKEN` is not set.
 
-Then write the release notes: `gh release create v<version>`.
+Nothing is left to do by hand once the two one-time secrets below are in place — no browser, no OTP, no formula editing, no release notes.
 
 ### One-time setup
 
@@ -122,9 +123,13 @@ Trusted Publishers → add a GitHub Actions publisher:
 Needs npm ≥ 11.5.1 and Node ≥ 22.14 on the runner; the workflow pins Node 24 and
 fails loudly if npm is older.
 
-**Homebrew tap (optional).** Create a fine-grained PAT with `contents: write` on
-`singhharsh1708/homebrew-tap`, add it to this repo as the `TAP_TOKEN` secret.
-Without it the tap step is skipped and the formula is bumped by hand.
+**Homebrew tap.** The tap lives in a separate repo, and pushing to another repo
+from Actions needs a credential the default `GITHUB_TOKEN` doesn't grant. Create
+a fine-grained PAT scoped to `singhharsh1708/homebrew-tap` with **Contents:
+Read and write**, then add it to this repo (Settings → Secrets and variables →
+Actions) as `TAP_TOKEN`. Without it the tap step skips with a warning and the
+formula is bumped by hand. The GitHub release does **not** need this — it runs
+on the built-in token.
 
 ### Manual fallback
 
