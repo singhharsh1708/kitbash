@@ -12,6 +12,14 @@ import { parseToml } from "./toml.js";
 
 const CONFIG = "kitbash.toml";
 
+/**
+ * Lints that block install unconditionally (not just `lint`/`test`): they flag
+ * instructions a reviewer cannot see or code that runs on install. Everything
+ * else staticChecks reports — schema, budgets, dead refs — is quality, surfaced
+ * at `kitbash test`, and never stops an install.
+ */
+const SAFETY_LINTS = new Set(["visible-text", "dynamic-context", "remote-exec"]);
+
 const INIT_CONFIG = `# kitbash project configuration — https://github.com/singhharsh1708/kitbash
 [project]
 # Adapters to compile for. Omit to autodetect (.claude/, .cursor/, AGENTS.md floor).
@@ -23,6 +31,7 @@ const INIT_CONFIG = `# kitbash project configuration — https://github.com/sing
 # deny_network = true                # refuse skills declaring network permission
 # deny_write = true                  # refuse skills declaring write permission
 # max_budget = 6000                  # refuse skills with a larger context budget
+# deny_remote_exec = false           # opt OUT of the download-and-execute body lint (default: on)
 `;
 
 export async function cmdInit(): Promise<number> {
@@ -172,12 +181,31 @@ export async function cmdInstall(args: string[]): Promise<number> {
     console.log(`  permissions: tools [${m.permissions.tools.join(", ") || "none"}] · network ${m.permissions.network ? "YES" : "no"} · write ${m.permissions.write ? "YES" : "no"}`);
     if (m.targets.requires.length) console.log(`  requires: ${m.targets.requires.join(", ")}`);
     if (skill.bare) console.log(`  ⚠ unmanifested (SKILL.md only) — defaults applied, no permissions or budget declared by the author`);
-    for (const c of staticChecks(skill).filter((c) => !c.ok || c.warn)) {
+    const checks = staticChecks(skill);
+    for (const c of checks.filter((c) => c.ok && c.warn)) {
       console.log(`  ⚠ lint: ${c.name}${c.detail ? ` — ${c.detail}` : ""}`);
     }
 
-    // Policy is a hard gate: --yes does not bypass it.
     const policy = loadPolicy(root);
+
+    // Failed SAFETY lints are a hard gate — not bypassable by --yes, and enforced
+    // even with no kitbash.toml (loadPolicy returns null then). These catch hidden
+    // instructions and download-and-execute payloads before one skill fans out to
+    // nine files. Schema/quality failures (a malformed artifact ref, a non-slash
+    // command) are NOT gated here — they surface at `kitbash test`. A policy may
+    // opt out of the remote-exec block for a trusted internal skill; the
+    // visibility checks are never optional.
+    const remoteExecExempt = policy && !policy.denyRemoteExec;
+    const hardFails = checks.filter(
+      (c) => !c.ok && SAFETY_LINTS.has(c.name) && !(c.name === "remote-exec" && remoteExecExempt),
+    );
+    if (hardFails.length) {
+      for (const c of hardFails) console.error(`  ✗ lint: ${c.name}${c.detail ? ` — ${c.detail}` : ""}`);
+      console.error("blocked — this skill fails a non-bypassable safety lint. Read it before installing (kitbash lint <source>).");
+      return 1;
+    }
+
+    // Policy is a hard gate: --yes does not bypass it.
     if (policy) {
       const violations = [
         ...sourceViolations(policy, source, root),
@@ -327,6 +355,8 @@ interface Policy {
   denyNetwork: boolean;
   denyWrite: boolean;
   maxBudget?: number | undefined;
+  /** The remote-exec lint is a hard fail by default; a policy may consciously exempt it. */
+  denyRemoteExec: boolean;
 }
 
 function loadPolicy(root: string): Policy | null {
@@ -344,6 +374,8 @@ function loadPolicy(root: string): Policy | null {
     denyNetwork: tbl["deny_network"] === true,
     denyWrite: tbl["deny_write"] === true,
     maxBudget: typeof tbl["max_budget"] === "number" ? (tbl["max_budget"] as number) : undefined,
+    // Absent means true — you must opt OUT of the remote-exec block explicitly.
+    denyRemoteExec: tbl["deny_remote_exec"] !== false,
   };
 }
 
@@ -604,6 +636,19 @@ function staticChecks(skill: LoadedSkill): Check[] {
         detail: `command substitution in the skill body executes before the model sees it: ${escapes.join(", ")}`,
       });
     }
+
+    // Download-and-execute pipelines hidden in skill prose (a "Prerequisites"
+    // section, a code fence) — the ClawHavoc / ClickFix pattern. The fuzzy
+    // curl|sh entry in INJECTION_PATTERNS stays a warning (a defensive skill may
+    // quote it); the literal download→execute family below is a hard line.
+    const remoteExec = remoteExecHits(body);
+    if (remoteExec.length) {
+      checks.push({
+        name: "remote-exec",
+        ok: false,
+        detail: `download-and-execute pipeline in the skill body: ${remoteExec.join(", ")}`,
+      });
+    }
   }
 
   return checks;
@@ -625,6 +670,34 @@ function invisibleRuns(body: string): string[] {
     const cp = m[0].codePointAt(0)!;
     found.add(`U+${cp.toString(16).toUpperCase().padStart(4, "0")}`);
   }
+  return [...found];
+}
+
+/**
+ * Download-and-execute pipelines a skill body might try to get a user (or the
+ * agent) to run. This targets the *shape* — fetch remote content, pipe it to a
+ * shell — not one string, since the payload is the same whatever the URL. It is
+ * a heuristic, not a proof: `c=curl; $c url | sh` slips past a regex on prose.
+ * It raises attacker cost and catches the copy-paste ClickFix/ClawHavoc family
+ * at the install chokepoint, where one skill fans out to nine files.
+ */
+const REMOTE_EXEC: { re: RegExp; label: string }[] = [
+  { re: /\b(?:curl|wget|fetch)\b[^\n|]*\|\s*(?:sudo\s+)?(?:ba|z|d)?sh\b/i, label: "curl|sh" },
+  { re: /\b(?:curl|wget)\b[^\n|]*\|\s*(?:python3?|node|perl|ruby)\b/i, label: "curl|interpreter" },
+  { re: /\b(?:eval|exec)\s+["'`]?\$\((?:curl|wget|fetch)\b/i, label: "eval $(curl …)" },
+  { re: /\b(?:curl|wget|fetch)\b[^\n|]*\|\s*source\b/i, label: "curl|source" },
+  { re: /\bbase64\b[^\n|]*(?:-d|--decode)[^\n|]*\|\s*(?:ba|z)?sh\b/i, label: "base64 -d|sh" },
+  { re: /\b(?:iex|invoke-expression)\b[^\n]*\b(?:iwr|invoke-webrequest|new-object\s+net\.webclient|downloadstring)\b/i, label: "powershell iex(download)" },
+  { re: /\b(?:iwr|invoke-webrequest|curl|wget)\b[^\n|]*\|\s*(?:iex|invoke-expression)\b/i, label: "powershell download|iex" },
+  // Save to a file (-o/-O), then make it executable or run it directly — the
+  // classic dropper. Requires the fetch AND an execution signal, not either alone.
+  { re: /\b(?:curl|wget)\b[^\n]*\s-[oO]\b[\s\S]{0,120}?(?:chmod\s+\+x|\.\/[\w.-]+|\b(?:ba|z)?sh\s+[\w./-]+)/i, label: "download → run" },
+  { re: /\b(?:curl|wget)\b[^\n|]*\|\s*(?:tar|unzip|bsdtar)\b/i, label: "remote archive → extract" },
+];
+
+function remoteExecHits(body: string): string[] {
+  const found = new Set<string>();
+  for (const p of REMOTE_EXEC) if (p.re.test(body)) found.add(p.label);
   return [...found];
 }
 

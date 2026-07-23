@@ -196,18 +196,19 @@ linted 1 skill(s) · 0 failure(s) · 2 warning(s)</code></pre>
       </div>
       <p>The other warning on that run matters as much. <code>unmanifested</code> means the skill is a bare <code>SKILL.md</code> with no <code>skill.toml</code> — the <a href="https://www.skills.sh" target="_blank" rel="noopener">skills.sh</a> / Claude Skills convention. Kitbash installs those, but the author never declared a budget, a permission set, or a version, so the defaults you see (budget 6000, standing 250, no tools) are Kitbash's assumptions, not the author's promises. The label follows the skill through install, <code>list</code>, and <code>compile</code>.</p>
 
-      <h3 id="hard-checks">Two checks that do hard-fail</h3>
-      <p>The heuristics warn because a false positive is cheap and a false block is expensive. Two checks are the other way round, and both exit <code>1</code> with or without <code>--strict</code>:</p>
+      <h3 id="hard-checks">Three checks that do hard-fail</h3>
+      <p>The heuristics warn because a false positive is cheap and a false block is expensive. Three checks are the other way round, and each exits <code>1</code> with or without <code>--strict</code> — and, since 0.8.1, each also <strong>blocks <code>install</code></strong>, not only <code>lint</code> and <code>test</code>:</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Check</th><th>Rejects</th><th>Why it is not a warning</th></tr></thead>
           <tbody>
             <tr><td><code>visible-text</code></td><td>Zero-width characters, bidi overrides, and the Unicode Tags block (U+E0000–U+E007F), which encodes plain ASCII invisibly</td><td>Instructions a human reviewer cannot see while the agent reads them fine. There is no legitimate reason for a skill body to carry them</td></tr>
             <tr><td><code>dynamic-context</code></td><td><code>!</code> followed by a backtick command substitution in the body</td><td>That construct executes when the file is loaded, before the model reads anything — review happens after the command has already run</td></tr>
+            <tr><td><code>remote-exec</code></td><td>Download-and-execute pipelines in the body prose: <code>curl … | sh</code>, <code>eval "$(curl …)"</code>, <code>base64 -d | sh</code>, PowerShell <code>iex</code>/<code>iwr</code>, save-then-<code>chmod +x</code>-then-run, remote-archive extract-run</td><td>The payload that hides in a "Prerequisites" section, not in the manifest. A heuristic, not a proof — but it catches the copy-paste dropper family at the point where one skill becomes nine files</td></tr>
           </tbody>
         </table>
       </div>
-      <p>Both are reported per skill, and <code>visible-text</code> names every hidden run by codepoint:</p>
+      <p>An org can exempt <code>remote-exec</code> for a trusted internal skill with <code>deny_remote_exec = false</code> in <a href="#org-allowlists"><code>[policy]</code></a>; <code>visible-text</code> and <code>dynamic-context</code> are never exemptible. Each check is reported per skill, and <code>visible-text</code> names every hidden run by codepoint:</p>
       <pre><code><span class="warn">✗</span> changelog-bot
     · manifest — changelog-bot@1.2.0
     · references
@@ -217,7 +218,7 @@ linted 1 skill(s) · 0 failure(s) · 2 warning(s)</code></pre>
     <span class="warn">✗</span> dynamic-context — command substitution in the skill body executes before the model sees it: !`gh auth token`
 
 linted 1 skill(s) · 2 failure(s) · 0 warning(s)</code></pre>
-      <p>The same checks run in <code>kitbash test</code>, so a skill carrying either one cannot be fanned out to nine agent files by a green build. At install they appear in the review block as <code>⚠ lint:</code> lines like every other check — the block reports, <a href="#org-allowlists"><code>[policy]</code></a> is what refuses.</p>
+      <p>The same checks run in <code>kitbash test</code> and, since 0.8.1, at <code>install</code> itself: a skill carrying any of the three cannot be installed or fanned out to nine agent files, <code>--yes</code> does not override it, and the block holds with no <code>kitbash.toml</code> present. (Before 0.8.1 these were printed at install but did not stop it — only a <a href="#org-allowlists"><code>[policy]</code></a> violation did, so a policy-less repo was unprotected.) Quality checks — a malformed artifact ref, a non-slash command — still only surface at <code>kitbash test</code> and never block an install.</p>
 
       <h3 id="preview-and-explain">Preview the compiled output</h3>
       <p><code>lint</code> tells you whether a skill is well-formed. <code>preview</code> tells you what your agents will actually receive, and what it costs them:</p>

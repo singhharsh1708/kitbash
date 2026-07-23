@@ -130,6 +130,7 @@ Installing a skill means letting someone else's instructions run with your agent
 
 - **Readable before install** — `kitbash preview gh:owner/repo` (also `lint`, `explain`) fetches and renders a skill *without installing it*: exact compiled output per agent, token costs, permissions, injection heuristics.
 - **Review at install** — `kitbash install` shows what the skill declares (permissions, network/write access, budget, lint warnings) and asks before writing anything. `--yes` skips the prompt in scripts; CI is non-interactive by default.
+- **Safety lints block install** — a skill with hidden instructions (zero-width/bidi/Unicode-Tags text), load-time command substitution, or a `curl … | sh`-style download-and-execute payload in its body is refused before anything is written. Non-bypassable by `--yes`, enforced with or without a `[policy]` file.
 - **Pinned by content** — `kitbash.lock` records a content hash per skill; `doctor` flags any drift between what you reviewed and what's on disk.
 - **Org allowlists** — a `[policy]` table in `kitbash.toml` restricts which sources may be installed and what installed skills may declare. Policy is a hard gate: `--yes` doesn't bypass it, and `doctor` rechecks it against everything already installed.
 
@@ -139,6 +140,7 @@ allow_sources = ["gh:your-org/*"]  # only skills from your org
 deny_network = true                # refuse skills declaring network access
 deny_write = true                  # refuse skills declaring write access
 max_budget = 6000                  # cap per-skill context budget
+# deny_remote_exec = false         # opt out of the curl|sh body lint (default: on)
 ```
 
 ## Concepts

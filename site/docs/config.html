@@ -127,7 +127,8 @@ next: kitbash install &lt;gh:owner/repo | owner/repo | file:path&gt;, then kitba
 <span class="c"># allow_sources = ["gh:your-org/*"]  # globs; matched against gh:owner/repo[/path][@ref] or file:/abs/path</span>
 <span class="c"># deny_network = true                # refuse skills declaring network permission</span>
 <span class="c"># deny_write = true                  # refuse skills declaring write permission</span>
-<span class="c"># max_budget = 6000                  # refuse skills with a larger context budget</span></code></pre>
+<span class="c"># max_budget = 6000                  # refuse skills with a larger context budget</span>
+<span class="c"># deny_remote_exec = false           # opt OUT of the download-and-execute body lint (default: on)</span></code></pre>
       <p><code>init</code> does not create <code>kitbash.lock</code>. The lockfile appears on the first successful <code>kitbash install</code>.</p>
       <p>Kitbash reads <code>kitbash.toml</code> from the current working directory only. There is no upward search for a config in a parent directory, so run commands from the repo root.</p>
 
@@ -197,6 +198,9 @@ agents, copilot, cline, windsurf, gemini, aider, agentsmd)</code></pre>
 
       <h3 id="max-budget">max_budget</h3>
       <p>An integer. A skill is refused when its declared <code>context.budget</code> is strictly greater than this value. It must be a number; a quoted value is ignored. This is a ceiling on what a skill may cost when active, not on your repo's total — <code>kitbash doctor</code> reports the repo-wide standing and worst-case active totals separately.</p>
+
+      <h3 id="deny-remote-exec">deny_remote_exec</h3>
+      <p>Unlike the keys above, this one defaults to <strong>on</strong> — the <code>remote-exec</code> safety lint blocks install with or without a <code>[policy]</code> table. Setting <code>deny_remote_exec = false</code> is the deliberate opt-out: it lets a trusted internal skill carry a <code>curl … | sh</code> bootstrap in its body without being blocked. It exempts only <code>remote-exec</code>; the <code>visible-text</code> and <code>dynamic-context</code> lints stay in force. See <a href="trust#hard-checks">trust &amp; review</a> for the full list.</p>
 
       <h3 id="policy-enforcement">Where policy is enforced</h3>
       <p>Two places, both non-negotiable.</p>

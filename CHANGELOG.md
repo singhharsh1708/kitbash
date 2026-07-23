@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.8.1] — 2026-07-23
+
+Security fix. The pre-install review gate did not actually block what it flagged.
+
+### Fixed
+- **Safety lints now block `install`, not just `lint`/`test`.** The two hard-fail lints shipped in 0.8.0 (`visible-text`, `dynamic-context`) were printed at install as warnings and never stopped it — so a skill with hidden instructions installed cleanly for anyone without a `kitbash.toml`, since only a `[policy]` violation returned non-zero. Failed safety lints are now a hard gate at install: non-bypassable by `--yes`, enforced with or without a policy file, before anything is written. Schema and quality checks (a malformed artifact ref, a non-slash command) are unchanged — they still surface at `kitbash test` and never block an install.
+
+### Added
+- **`remote-exec` lint** — a third hard-fail that catches download-and-execute pipelines hidden in a skill's prose (a "Prerequisites" section, a fenced example): `curl … | sh`, `eval "$(curl …)"`, `base64 -d | sh`, PowerShell `iex`/`iwr`, save-then-`chmod +x`-then-run, and remote-archive extract-run. This is the ClawHavoc / ClickFix family — payloads that live in documentation, not in the manifest a structural lint reads. It is a heuristic, not a proof (`c=curl; $c url | sh` evades a regex on prose); it raises attacker cost at the point where one skill fans out to nine files. Verified against benign installs (`npm install`, `pip install`, `curl -o file`) to keep false positives out.
+- **`deny_remote_exec` in `[policy]`** — defaults to on; set `false` to consciously exempt a trusted internal skill from the remote-exec block. The hidden-text and dynamic-context lints are never exemptible.
+
 ## [0.8.0] — 2026-07-23
 
 Every target that can lazy-load now does. Two adapters were still emitting always-on files for agents that had since grown proper skill directories.
