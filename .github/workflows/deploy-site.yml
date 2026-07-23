@@ -1,0 +1,62 @@
+name: deploy-site
+
+# The site is deployed to Vercel (kitbash.vercel.app). Vercel's own git
+# integration was never connected for this repo, so merges that touched site/
+# only reached production when someone ran `vercel deploy --prod` by hand — and
+# a few didn't, which is how the live site drifted a whole release behind main.
+#
+# This deploys on every push to main that changes the site, plus the CLI
+# manifest and CHANGELOG (both feed site/build.mjs, which stamps the version and
+# renders the changelog page). One-time secret: VERCEL_TOKEN — a token from
+# vercel.com/account/tokens. The org and project IDs below are identifiers, not
+# secrets, and match .vercel/project.json.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - site/**
+      - CHANGELOG.md
+      - packages/cli/package.json
+      - vercel.json
+      - .github/workflows/deploy-site.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: true
+
+env:
+  VERCEL_ORG_ID: team_gOgioQjKvwZjLehLNHwN8fja
+  VERCEL_PROJECT_ID: prj_oeCacVoTtIJQk5BHJAM97s0e5nLt
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for a Vercel token
+        id: gate
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::warning::VERCEL_TOKEN secret not set — skipping the Vercel deploy. Add a token from vercel.com/account/tokens to automate it; until then deploy by hand with 'vercel deploy --prod'."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.ok == 'true'
+
+      # vercel.json sets buildCommand to `node site/build.mjs`, so Vercel stamps
+      # the version and renders the changelog itself during the build — this just
+      # uploads the source and promotes the result to production.
+      - name: Deploy to production
+        if: steps.gate.outputs.ok == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx --yes vercel@latest deploy --prod --yes --token "$VERCEL_TOKEN"
