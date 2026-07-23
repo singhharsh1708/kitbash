@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.8.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.8.1</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,22 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.8.1">
+  <div class="release-head">
+    <h2><a href="#v0.8.1">v0.8.1</a></h2>
+    <span class="release-date">2026-07-23</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">Security fix. The pre-install review gate did not actually block what it flagged.</p>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>Safety lints now block <code>install</code>, not just <code>lint</code>/<code>test</code>.</strong> The two hard-fail lints shipped in 0.8.0 (<code>visible-text</code>, <code>dynamic-context</code>) were printed at install as warnings and never stopped it — so a skill with hidden instructions installed cleanly for anyone without a <code>kitbash.toml</code>, since only a <code>[policy]</code> violation returned non-zero. Failed safety lints are now a hard gate at install: non-bypassable by <code>--yes</code>, enforced with or without a policy file, before anything is written. Schema and quality checks (a malformed artifact ref, a non-slash command) are unchanged — they still surface at <code>kitbash test</code> and never block an install.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>remote-exec</code> lint</strong> — a third hard-fail that catches download-and-execute pipelines hidden in a skill's prose (a "Prerequisites" section, a fenced example): <code>curl … | sh</code>, <code>eval "$(curl …)"</code>, <code>base64 -d | sh</code>, PowerShell <code>iex</code>/<code>iwr</code>, save-then-<code>chmod +x</code>-then-run, and remote-archive extract-run. This is the ClawHavoc / ClickFix family — payloads that live in documentation, not in the manifest a structural lint reads. It is a heuristic, not a proof (<code>c=curl; $c url | sh</code> evades a regex on prose); it raises attacker cost at the point where one skill fans out to nine files. Verified against benign installs (<code>npm install</code>, <code>pip install</code>, <code>curl -o file</code>) to keep false positives out.</li><li><strong><code>deny_remote_exec</code> in <code>[policy]</code></strong> — defaults to on; set <code>false</code> to consciously exempt a trusted internal skill from the remote-exec block. The hidden-text and dynamic-context lints are never exemptible.</li></ul>
+</article>
+
 <article class="release" id="v0.8.0">
   <div class="release-head">
     <h2><a href="#v0.8.0">v0.8.0</a></h2>
-    <span class="release-date">2026-07-23</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-07-23</span>
   </div>
 <p class="release-intro">Every target that can lazy-load now does. Two adapters were still emitting always-on files for agents that had since grown proper skill directories.</p>
 <h3 class="group">Changed</h3>
