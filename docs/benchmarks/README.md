@@ -15,17 +15,17 @@ Token counts are estimates (~4 chars/token), the same estimator the compiler enf
 
 | Target | Loaded (tok) | Standing (tok) | Loading |
 |---|--:|--:|:--|
-| claude-code | 515 | 40 | lazy |
-| cursor | 516 | 40 | lazy |
-| agents | 515 | 40 | lazy |
-| copilot | 515 | 40 | lazy |
-| cline | 486 | 486 | eager |
-| windsurf | 517 | 40 | lazy |
-| gemini | 515 | 40 | lazy |
-| aider | 507 | 507 | eager |
-| agentsmd | 507 | 507 | eager |
+| claude-code | 567 | 40 | lazy |
+| cursor | 568 | 40 | lazy |
+| agents | 567 | 40 | lazy |
+| copilot | 567 | 40 | lazy |
+| cline | 539 | 539 | eager |
+| windsurf | 569 | 40 | lazy |
+| gemini | 567 | 40 | lazy |
+| aider | 560 | 560 | eager |
+| agentsmd | 560 | 560 | eager |
 
-**Standing tax:** ~40 tokens on a lazy target vs ~486 on an eager one — about **12× per session** for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.
+**Standing tax:** ~40 tokens on a lazy target vs ~539 on an eager one — about **13× per session** for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.
 
 ## `review-checklist` — bare / unmanifested (no budget)
 

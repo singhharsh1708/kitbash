@@ -6,8 +6,8 @@ import { createInterface } from "node:readline";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { ADAPTERS, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, type CompiledFile } from "./adapters.js";
-import { dropLock, integrityOf, readLock, upsertLock, LOCK_FILE } from "./lock.js";
-import { estimateTokens, loadInstalledSkills, loadSkill, resolveBody, schemaLints, standingStub, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
+import { dropLock, integrityOf, readLock, upsertLock, walk, LOCK_FILE } from "./lock.js";
+import { estimateTokens, loadInstalledSkills, loadInstalledSkillsSafe, loadSkill, resolveBody, schemaLints, standingStub, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
 import { parseToml } from "./toml.js";
 
 const CONFIG = "kitbash.toml";
@@ -188,6 +188,13 @@ export async function cmdInstall(args: string[]): Promise<number> {
 
     const policy = loadPolicy(root);
 
+    // The three safety lints in staticChecks scan only SKILL.md, but install copies
+    // the whole directory — a curl|sh in scripts/setup.sh, or hidden text in a
+    // sibling .md, would sail through and script-capable adapters point the agent
+    // straight at it. Scan every other non-binary file the same way.
+    const fileHits = scanSkillFiles(fetched.dir);
+    checks.push(...fileHits);
+
     // Failed SAFETY lints are a hard gate — not bypassable by --yes, and enforced
     // even with no kitbash.toml (loadPolicy returns null then). These catch hidden
     // instructions and download-and-execute payloads before one skill fans out to
@@ -283,21 +290,28 @@ export async function cmdDoctor(): Promise<number> {
     console.log(`  ${found ? "✓" : "✗"} ${a.id}${note}`);
   }
 
-  const skills = loadInstalledSkills(root);
+  const { skills, failures } = loadInstalledSkillsSafe(root);
   const standing = skills.reduce((sum, s) => sum + estimateTokens(standingStub(s.body)), 0);
   const active = skills.reduce((sum, s) => sum + s.manifest.context.budget, 0);
   console.log(`installed skills: ${skills.length}`);
   console.log(`standing context cost: ~${standing} tokens (stubs); worst-case active: ${active} tokens (budgets)`);
 
+  let problems = 0;
+  // A skill whose manifest no longer loads (hand-edited, or the exact tamper doctor
+  // exists to catch). Count it, don't throw — the integrity loop below must still run.
+  for (const f of failures) {
+    console.error(`  ✗ ${f.name}: failed to load — ${f.message.split("\n")[0]}`);
+    problems++;
+  }
+
   // Skills installed but no lockfile at all — nothing is pinned.
-  if (skills.length && !existsSync(join(root, LOCK_FILE))) {
-    console.error(`  ✗ ${skills.length} skill(s) installed but ${LOCK_FILE} is missing — nothing is pinned. Reinstall to regenerate it.`);
+  if ((skills.length || failures.length) && !existsSync(join(root, LOCK_FILE))) {
+    console.error(`  ✗ ${skills.length + failures.length} skill(s) installed but ${LOCK_FILE} is missing — nothing is pinned. Reinstall to regenerate it.`);
     return 1;
   }
 
   const lock = readLock(root);
   const pinned = new Set(lock.map((e) => e.name));
-  let problems = 0;
   for (const entry of lock) {
     const dir = join(root, SKILLS_DIR, entry.name);
     if (!existsSync(dir)) {
@@ -471,6 +485,14 @@ export async function cmdCompile(args: string[]): Promise<number> {
     return 1;
   }
   const adapters = adaptersOrError;
+  // No adapters but skills present (e.g. `targets = []` in kitbash.toml) would run the
+  // prune pass and delete every previously-generated file while writing nothing back.
+  // Refuse rather than silently wipe output.
+  if (adapters.length === 0 && skills.length > 0) {
+    console.error(`no compile targets resolved, but ${skills.length} skill(s) are installed — refusing to compile (it would delete all generated output).`);
+    console.error(`  add a detectable agent dir (.claude/, .cursor/, …) or set [project].targets in ${CONFIG}.`);
+    return 1;
+  }
   const installedNames = new Set(skills.map((s) => s.manifest.skill.name));
 
   const files = new Map<string, string>();
@@ -490,8 +512,14 @@ export async function cmdCompile(args: string[]): Promise<number> {
     }
     warnings.push(...over); // bare skills: report, don't fail — the author never declared these limits
 
+    // Spec §2: declared permissions must be enforced natively or compiled into the
+    // instructions. No target enforces natively, so compile them into the body — the
+    // teammate who pulls the generated file sees the same limits the installer did.
+    // Appended after the budget check so kitbash's own note isn't charged to the author.
+    const emitBody = body + permissionsNote(skill.manifest);
+
     for (const adapter of adapters) {
-      const out = adapter.emit(skill, body, root);
+      const out = adapter.emit(skill, emitBody, root);
       warnings.push(...out.warnings);
       for (const f of out.files) {
         if (f.merge) {
@@ -597,6 +625,18 @@ function staticChecks(skill: LoadedSkill): Check[] {
     });
   }
 
+  // gate-mode skills (spec §4) must be able to produce a deterministic verdict —
+  // a scripts/ dir to run or a declared artifact. Neither present = a gate that
+  // can't gate. Structural proxy, but it catches the concrete empty case.
+  if (m.targets.mode === "gate") {
+    const hasVerdict = existsSync(join(skill.dir, "scripts")) || m.artifacts.produces.length > 0;
+    checks.push({
+      name: "gate-verdict",
+      ok: hasVerdict,
+      detail: hasVerdict ? "has a scripts/ dir or a declared artifact" : "gate mode but no scripts/ dir and no artifacts.produces — nothing to produce a verdict",
+    });
+  }
+
   // artifact refs must be name@version
   const badArtifacts = [...m.artifacts.produces, ...m.artifacts.consumes].filter((a) => !ARTIFACT_RE.test(a));
   if (m.artifacts.produces.length || m.artifacts.consumes.length) {
@@ -699,6 +739,33 @@ function remoteExecHits(body: string): string[] {
   const found = new Set<string>();
   for (const p of REMOTE_EXEC) if (p.re.test(body)) found.add(p.label);
   return [...found];
+}
+
+/**
+ * Run the three safety scanners over every non-binary file in a fetched skill
+ * EXCEPT SKILL.md (staticChecks already covers that). Returns failed Checks named
+ * from SAFETY_LINTS so the install hard-gate and the remote-exec exemption apply,
+ * with the offending file in the detail. A symlink is itself flagged — it can point
+ * anywhere and cpSync copies it verbatim.
+ */
+function scanSkillFiles(dir: string): Check[] {
+  const out: Check[] = [];
+  for (const { path: rel, symlink } of walk(dir, "")) {
+    if (rel === "SKILL.md") continue;
+    if (symlink) {
+      out.push({ name: "visible-text", ok: false, detail: `symlink at ${rel} — points outside the reviewed files` });
+      continue;
+    }
+    const buf = readFileSync(join(dir, rel));
+    if (buf.includes(0)) continue; // binary
+    const text = buf.toString("utf8");
+    const invisible = invisibleRuns(text);
+    if (invisible.length) out.push({ name: "visible-text", ok: false, detail: `${rel}: invisible characters (${invisible.join(", ")})` });
+    if (text.match(DYNAMIC_CONTEXT_RE)) out.push({ name: "dynamic-context", ok: false, detail: `${rel}: command substitution that runs at load time` });
+    const remote = remoteExecHits(text);
+    if (remote.length) out.push({ name: "remote-exec", ok: false, detail: `${rel}: download-and-execute pipeline (${remote.join(", ")})` });
+  }
+  return out;
 }
 
 export async function cmdTest(args: string[]): Promise<number> {
@@ -855,8 +922,14 @@ export async function cmdPreview(args: string[]): Promise<number> {
     const { name, version } = skill.manifest.skill;
     console.log(`preview: ${name}@${version}\n`);
 
+    // Mirror compile: a bad [project].targets is an error, not a silent fall back
+    // to every adapter (which would preview output the repo will never generate).
     const adaptersOrError = configuredAdapters(root);
-    const adapters = typeof adaptersOrError === "string" ? ADAPTERS : adaptersOrError;
+    if (typeof adaptersOrError === "string") {
+      console.error(adaptersOrError);
+      return 1;
+    }
+    const adapters = adaptersOrError;
 
     for (const adapter of adapters) {
       const out = adapter.emit(skill, body, root);
@@ -873,6 +946,23 @@ export async function cmdPreview(args: string[]): Promise<number> {
   } finally {
     if (cleanup) rmSync(cleanup, { recursive: true, force: true });
   }
+}
+
+/**
+ * A prose permissions block compiled into every target's output when a skill
+ * declares anything beyond the defaults (tools=[], network=false, write=false).
+ * Not native enforcement — the KSF tool grammar ("bash:git *") is provisional and
+ * differs from each agent's own syntax — but it travels with the compiled file so a
+ * reader who never ran install still sees the declared limits (spec §2).
+ */
+function permissionsNote(m: LoadedSkill["manifest"]): string {
+  const p = m.permissions;
+  if (!p.tools.length && !p.network && !p.write) return "";
+  const lines: string[] = [];
+  if (p.tools.length) lines.push(`Permitted tools: ${p.tools.join(", ")}.`);
+  lines.push(`Network access: ${p.network ? "allowed" : "denied"}.`);
+  lines.push(`File writes: ${p.write ? "allowed" : "denied"}.`);
+  return `\n\n---\n\n**Declared permissions (kitbash).** ${lines.join(" ")} Operate within these unless the user explicitly overrides.\n`;
 }
 
 function budgetViolations(skill: LoadedSkill, body: string): string[] {
@@ -927,8 +1017,16 @@ function pruneStaleOutputs(root: string, written: Set<string>): string[] {
       if (written.has(rel)) continue;
       const marker = join(root, rel);
       if (existsSync(marker) && readFileSync(marker, "utf8").includes(GENERATED_MARK)) {
-        rmSync(removeTarget, { recursive: true });
-        pruned.push(`removed ${loc.wholeDir ? `${loc.dir}/${e.name}/` : rel} (stale)`);
+        if (loc.wholeDir) {
+          // Remove only the generated SKILL.md, then the directory ONLY if it is now
+          // empty — never rmSync the whole dir, which would take a user file colocated
+          // there (a NOTES.md, a hand-added script) along with it.
+          rmSync(marker);
+          if (readdirSync(removeTarget).length === 0) rmSync(removeTarget, { recursive: true });
+        } else {
+          rmSync(removeTarget);
+        }
+        pruned.push(`removed ${loc.wholeDir ? rel : rel} (stale)`);
       }
     }
   }

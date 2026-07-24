@@ -129,7 +129,7 @@
 
       <h2 id="manifest">The manifest</h2>
       <p>Required tables are <code>[skill]</code> and <code>[context]</code>. Every other table is optional and defaults to the most restrictive value: no permissions, no network, no writes, no artifacts, no lore access.</p>
-      <p>The schema and the CLI enforce different amounts. The CLI hard-fails a load on five value constraints — name pattern, semver, description length, budget range, standing range. Enum values and unknown tables produce lint warnings, not errors. Constraints below marked <em>schema-only</em> are enforced when you validate against the JSON Schema; the CLI does not reject them. See <a href="#validation">what gets enforced</a>.</p>
+      <p>The schema and the CLI enforce different amounts. The CLI hard-fails a load on the value constraints for frozen fields — name pattern, semver, description length, budget presence and integer range, standing integer range, a scalar given where an array is required, and a <code>disclosure</code> that is not <code>lazy</code> or <code>eager</code>. Unknown tables and the forward-compatible enum values (<code>targets.requires</code>, <code>targets.mode</code>, <code>triggers.events</code>, <code>lore</code>) produce lint warnings, not errors. Constraints below marked <em>schema-only</em> are enforced when you validate against the JSON Schema; the CLI does not reject them. See <a href="#validation">what gets enforced</a>.</p>
 
       <h3 id="skill-table">[skill]</h3>
       <p>Identity. Required.</p>
@@ -154,9 +154,9 @@
         <table>
           <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Constraints</th></tr></thead>
           <tbody>
-            <tr><td><code>budget</code></td><td>integer</td><td>yes</td><td>—</td><td>50–20000</td></tr>
-            <tr><td><code>standing</code></td><td>integer</td><td>no</td><td><code>100</code></td><td>0–500</td></tr>
-            <tr><td><code>disclosure</code></td><td>string</td><td>no</td><td><code>"lazy"</code></td><td><code>lazy</code> | <code>eager</code>. The CLI reads any value other than <code>"eager"</code> as <code>"lazy"</code></td></tr>
+            <tr><td><code>budget</code></td><td>integer</td><td>yes</td><td>—</td><td>50–20000; a fractional value is rejected</td></tr>
+            <tr><td><code>standing</code></td><td>integer</td><td>no</td><td><code>100</code></td><td>0–500; a fractional value is rejected</td></tr>
+            <tr><td><code>disclosure</code></td><td>string</td><td>no</td><td><code>"lazy"</code></td><td><code>lazy</code> | <code>eager</code>. Any other value is a hard error; omit the field to default to <code>lazy</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -191,6 +191,7 @@
         </table>
       </div>
       <p>The table shape is stable; the tool-string grammar (<code>"bash:git *"</code>) is provisional and advisory today. Adapters enforce permissions natively where the platform supports it and compile them into the instructions where it does not — and an adapter must not claim enforcement it does not have. What the manifest reliably gives you is disclosure: this block is what <code>kitbash install</code> prints for your review before anything touches disk. See <a href="trust">trust &amp; review</a>.</p>
+      <p>When a skill's permissions are non-default — <code>tools</code> non-empty, or <code>network</code> or <code>write</code> set to <code>true</code> — <code>kitbash compile</code> appends a short <strong>Declared permissions (kitbash)</strong> block to every target's compiled body, listing the permitted tools and whether network access and file writes are allowed. It is prose in the body, not native frontmatter, and no target enforces it — but it travels with the generated file, so a teammate who pulls the compiled output without ever running <code>install</code> sees the same limits the installer reviewed.</p>
 
       <h3 id="artifacts-table">[artifacts]</h3>
       <p>Structured JSON the skill exchanges with other skills. Optional.</p>
@@ -211,13 +212,13 @@
         <table>
           <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Constraints</th></tr></thead>
           <tbody>
-            <tr><td><code>requires</code></td><td>array of strings</td><td>no</td><td><code>[]</code></td><td><code>scripts</code> | <code>hooks</code> | <code>subagents</code> | <code>network</code></td></tr>
-            <tr><td><code>mode</code></td><td>string</td><td>no</td><td><code>"skill"</code></td><td><code>skill</code> | <code>gate</code>. The CLI reads any value other than <code>"gate"</code> as <code>"skill"</code></td></tr>
+            <tr><td><code>requires</code></td><td>array of strings</td><td>no</td><td><code>[]</code></td><td><code>scripts</code> | <code>hooks</code> | <code>subagents</code> | <code>network</code>; an unrecognized value warns (forward-compatible)</td></tr>
+            <tr><td><code>mode</code></td><td>string</td><td>no</td><td><code>"skill"</code></td><td><code>skill</code> | <code>gate</code>. The CLI reads any value other than <code>"gate"</code> as <code>"skill"</code>, and warns at <code>test</code> when the value is unrecognized</td></tr>
           </tbody>
         </table>
       </div>
-      <p><code>requires</code> is the input to the compatibility matrix, which is derived and never hand-written: <code>targets.requires</code> crossed with each adapter's capability set yields <code>full</code>, <code>degraded</code>, or <code>unsupported</code> per assistant. A compiler missing a required capability must either emit a degraded variant with a visible warning or fail under <code>--strict</code>. Silent degradation is a conformance violation.</p>
-      <p><code>mode = "gate"</code> means the skill produces a verdict that can block — a pre-push check, a CI step. Gates must ground that verdict in a script exit code or a schema-validated artifact.</p>
+      <p><code>requires</code> is the input to the compatibility matrix, which is derived and never hand-written: <code>targets.requires</code> crossed with each adapter's capability set yields <code>full</code>, <code>degraded</code>, or <code>unsupported</code> per assistant. A compiler missing a required capability must either emit a degraded variant with a visible warning or fail under <code>--strict</code>. Silent degradation is a conformance violation. In the reference compiler today every adapter's capability set is empty — <code>emit()</code> writes instructions but does not yet copy <code>scripts/</code>, install a hook, or wire a subagent — so any value in <code>requires</code> degrades on every one of the nine targets, Claude Code included.</p>
+      <p><code>mode = "gate"</code> means the skill produces a verdict that can block — a pre-push check, a CI step. Gates must ground that verdict in a script exit code or a schema-validated artifact. A gate-mode skill with no <code>scripts/</code> directory and no <code>artifacts.produces</code> has nothing to produce a verdict from, and fails the <code>gate-verdict</code> check under <code>lint</code> and <code>test</code>.</p>
 
       <h3 id="lore-table">[lore]</h3>
       <p>Access to the project's accumulated knowledge. Optional, and experimental.</p>
@@ -335,14 +336,14 @@ and invariants before it ships.
 
       <h2 id="validation">What gets enforced, and when</h2>
       <p>Three tiers, and the distinction matters if you are writing a skill that has to work on more than one implementation.</p>
-      <p><b>Hard errors.</b> The manifest fails to load, and every command that touches the skill fails with it. There are exactly five: the name pattern, semver, description length, budget presence and range, standing range. All are value constraints on frozen fields.</p>
+      <p><b>Hard errors.</b> The manifest fails to load, and every command that touches the skill fails with it. The value constraints on frozen fields are all here: the name pattern, semver, description length, budget presence and range, standing range. So is a budget or standing that is fractional rather than an integer, a scalar given where the schema types an array (<code>commands = "/deploy"</code> would otherwise silently coerce to <code>[]</code> — a slash command that never registers), and a <code>disclosure</code> value that is neither <code>lazy</code> nor <code>eager</code> (a frozen enum must not silently fall back to <code>lazy</code>).</p>
       <pre><code>skill.toml: invalid manifest
   - skill.name "Bad_Name" must match /^[a-z][a-z0-9-]{1,40}$/
   - skill.version "1.0" is not semver
   - skill.description must be 10–200 characters
   - context.budget is required and must be 50–20000</code></pre>
       <p><b>Lint failures.</b> Surfaced by <code>kitbash lint</code> and <code>kitbash test</code> as failures with a nonzero exit: unresolvable template variables, missing prompt files, artifact refs that are not <code>name@version</code>, trigger commands without a leading slash, a body over its declared budget, and a stub over its declared standing limit.</p>
-      <p><b>Warnings.</b> Unknown tables and unrecognized enum values warn instead of failing — a newer skill running on an older compiler should not hard-error on a field that compiler has never heard of. Pass <code>--strict</code> to turn warnings into a nonzero exit.</p>
+      <p><b>Warnings.</b> Unknown tables and unrecognized values in the forward-compatible enums — <code>targets.requires</code>, <code>targets.mode</code>, <code>triggers.events</code>, and the <code>lore</code> collections — warn instead of failing, because a newer skill running on an older compiler should not hard-error on a field that compiler has never heard of. (<code>context.disclosure</code> is the exception: it is a frozen enum, so an unrecognized value there is a hard error, not a warning.) Pass <code>--strict</code> to turn warnings into a nonzero exit.</p>
       <pre><code><span class="warn">⚠</span> demo
     · manifest — demo@1.0.0
     <span class="warn">⚠</span> schema — unknown table [widgets] — typo or unsupported, ignored;

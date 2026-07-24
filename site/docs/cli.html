@@ -223,6 +223,7 @@ kitbash.toml already exists — nothing to do</code></pre>
         <p>Resolution order matters: a bare <code>owner/repo</code> is checked as a local path first, so a directory named <code>foo/bar</code> in your repo wins over the GitHub repo <code>foo/bar</code>. Subpaths are confined to the clone — a subpath that resolves outside it is rejected as escaping the repository. GitHub sources require <code>git</code> on <code>PATH</code>; without it the command tells you to install git or use <code>file:</code>. The temporary clone is removed whether the install succeeds or fails.</p>
         <p>Before anything is written, the review block prints what the skill declares: budget, standing limit, disclosure mode, target mode, tool permissions, network and write flags, and any required capabilities. A skill with only a <code>SKILL.md</code> and no <code>skill.toml</code> is flagged as unmanifested. Every failing or warning static check is printed too, so you see budget overruns and injection heuristics before you consent.</p>
         <p>A failed <strong>safety lint</strong> — <code>visible-text</code>, <code>dynamic-context</code>, or <code>remote-exec</code> — blocks the install outright: the command prints the reason, exits <code>1</code>, and writes nothing. This holds with no <code>kitbash.toml</code> present and is not bypassable by <code>--yes</code>. (Through 0.8.0 these were printed but did not stop the install; 0.8.1 fixed that.) Schema and quality checks do not block install — they surface at <a href="#test"><code>test</code></a>.</p>
+        <p>Because install copies the whole skill directory, the three safety lints scan <strong>every non-binary file in it</strong>, not just <code>SKILL.md</code>: a <code>curl … | sh</code> in <code>scripts/setup.sh</code> or hidden text in a sibling <code>.md</code> is caught the same way it is in the body. A symlink is itself flagged — it can point anywhere and the copy follows it verbatim. Each hit reports the offending file, and the block is enforced exactly like a body hit.</p>
         <ul class="flag-list">
           <li><code>--yes</code>, <code>-y</code> <span>Skip the confirmation prompt. Does not skip the review block, the safety lints, or <code>[policy]</code>.</span></li>
         </ul>
@@ -301,13 +302,13 @@ scratch@0.0.0  budget=6000  standing=250  mode=skill  [unmanifested]  — Import
 <span class="c">→</span> .cursor/rules/prereview.mdc
 <span class="c">→</span> AGENTS.md
 <span class="warn">✂</span> removed .claude/commands/old-review.md (stale)
-<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~464 tokens standing every session (declared limit: 60)
+<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~517 tokens standing every session (declared limit: 60)
 compiled 1 skill(s) for 3 agent target(s)</code></pre>
         <p>Warnings cover eager-target standing cost, capability degradation, unmanifested skills, and output-path conflicts where two skills write the same file. With <code>--strict</code> those same warnings end the run:</p>
         <pre><code><span class="c">$ kitbash compile --strict</span>
 <span class="c">→</span> .claude/skills/prereview/SKILL.md
 <span class="c">→</span> AGENTS.md
-<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~464 tokens standing every session (declared limit: 60)
+<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~517 tokens standing every session (declared limit: 60)
 compiled 1 skill(s) for 2 agent target(s)
 --strict: failing on 1 warning(s)</code></pre>
         <p>A budget violation stops the run outright:</p>
@@ -354,7 +355,8 @@ standing context cost: ~98 tokens (stubs); worst-case active: 3700 tokens (budge
       <div class="cmd-entry">
         <h3 id="test">test</h3>
         <p class="sig">kitbash test [skill-name] [--strict]</p>
-        <p>Runs the static-tier evals over installed skills: manifest presence, template and reference resolution, measured body tokens against <code>context.budget</code>, measured stub tokens against <code>context.standing</code>, artifact reference shape (<code>name@version</code>), slash-prefixed trigger commands, schema-conformance lints, prompt-injection heuristics, and three safety checks on the body itself — <code>visible-text</code>, <code>dynamic-context</code>, and <code>remote-exec</code>.</p>
+        <p>Runs the static-tier evals over installed skills: manifest presence, template and reference resolution, measured body tokens against <code>context.budget</code>, measured stub tokens against <code>context.standing</code>, artifact reference shape (<code>name@version</code>), slash-prefixed trigger commands, a <code>gate-verdict</code> check, schema-conformance lints, prompt-injection heuristics, and three safety checks on the body itself — <code>visible-text</code>, <code>dynamic-context</code>, and <code>remote-exec</code>.</p>
+        <p>The <code>gate-verdict</code> check applies only to <code>mode = "gate"</code> skills: a gate has to be able to produce a deterministic verdict, so it must carry a <code>scripts/</code> directory to run or a declared <code>artifacts.produces</code>. A gate with neither fails <code>lint</code> and <code>test</code> — nothing there can ground a pass/fail.</p>
         <p>No eval file is required — these checks always run. Failures print <code>✗</code>, warnings print <code>⚠</code>, passing checks print <code>·</code>. Injection heuristics and schema lints only ever warn: a security skill may legitimately quote the phrases it defends against, so the tool refuses to hard-fail on a pattern match.</p>
         <p>The three safety checks are the exception — each is a hard failure that exits <code>1</code> with or without <code>--strict</code>, and each also blocks <a href="#install"><code>install</code></a>:</p>
         <ul>
@@ -448,7 +450,7 @@ prereviw: not found as a path or installed skill name (or pass a source: gh:owne
         <pre><code><span class="c">$ kitbash explain prereview agentsmd</span>
 prereview → agentsmd: no capability degradation
   <span class="warn">⚠</span> loading: agentsmd is eager — skill costs ~464 tokens standing every session (declared limit: 60)</code></pre>
-        <p>Only <code>claude-code</code> (<code>scripts</code>, <code>hooks</code>, <code>subagents</code>) and the three skill-directory targets <code>agents</code>, <code>copilot</code> and <code>gemini</code> (<code>scripts</code>) declare capabilities at all, so a skill requiring any of them degrades on every other target:</p>
+        <p>No adapter declares a capability today — <code>emit()</code> writes instructions but does not copy <code>scripts/</code>, install a hook, or wire a subagent — so a skill that <code>requires</code> any of <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, or <code>network</code> reports degraded on every one of the nine targets, Claude Code included:</p>
         <pre><code><span class="c">$ kitbash explain prereview cursor</span>
 prereview → cursor: degraded
   <span class="warn">✗</span> requires "scripts" — not supported by cursor; compiled instruction-only</code></pre>
@@ -463,7 +465,7 @@ usage: kitbash explain &lt;skill-name-or-path-or-source&gt; &lt;adapter&gt;
         <h3 id="preview">preview</h3>
         <p class="sig">kitbash preview &lt;skill-name | path | source&gt;</p>
         <p>Renders, without writing anything, exactly what each adapter would emit — every output path, every byte of frontmatter, the full compiled body — plus that adapter's loading mode and what it costs in standing context. Target resolution is identical to <a href="#lint">lint</a> and <a href="#explain">explain</a>, so remote sources work.</p>
-        <p>Adapters come from <code>[project] targets</code> or autodetection, the same as <a href="#compile">compile</a>. If <code>kitbash.toml</code> names an unknown target, preview does not error out — it falls back to rendering all nine adapters, because the job here is to show you output, not to gate anything.</p>
+        <p>Adapters come from <code>[project] targets</code> or autodetection, the same as <a href="#compile">compile</a>. If <code>kitbash.toml</code> names an unknown target, preview errors out with the same message compile prints rather than falling back to every adapter — previewing output the repo will never generate would be its own kind of lie.</p>
         <p>Lazy adapters are labelled <code>lazy (0 tok standing)</code>. Eager adapters show the measured token count of their emitted files, because on those targets that is what every session carries.</p>
         <ul class="flag-list">
           <li><code>&lt;target&gt;</code> <span>Required. Path, installed name, or uninstalled source. The first argument not starting with <code>-</code>.</span></li>
@@ -492,7 +494,7 @@ Load the "prereview" skill: read .claude/skills/prereview/SKILL.md and follow it
 
 Arguments: $ARGUMENTS
 
-─── agentsmd [eager] ~487 tok standing ───
+─── agentsmd [eager] ~507 tok standing ───
 <span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~464 tokens standing every session (declared limit: 60)
 
   <span class="c">→</span> AGENTS.md
@@ -505,7 +507,7 @@ Arguments: $ARGUMENTS
 <span class="c">…</span>
 &lt;!-- kitbash:end prereview --&gt;</code></pre>
         <p>The shared-file adapters print only the skill's own marker-delimited section, not the merged file — that section is what <a href="#compile">compile</a> would splice in.</p>
-        <p><b>Exit codes:</b> <code>0</code> on a successful render, warnings included. <code>1</code> when no target was given, the target cannot be resolved or loaded, or the body's template references cannot be resolved.</p>
+        <p><b>Exit codes:</b> <code>0</code> on a successful render, warnings included. <code>1</code> when no target was given, the target cannot be resolved or loaded, <code>[project].targets</code> in <code>kitbash.toml</code> names an unknown adapter, or the body's template references cannot be resolved.</p>
       </div>
 
       <h2 id="exit-codes">Exit codes</h2>

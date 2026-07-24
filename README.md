@@ -19,7 +19,7 @@ If you've used npm for packages, Docker for containers, or ESLint for lint rules
 
 **Stable specification, experimental ecosystem.** The KSF core is stabilized through [RFC 0002](rfcs/0002-ksf-1.0-stabilization.md): the manifest fields are frozen and evolve additive-only within the major version, so you can author skills and write adapters against a contract that won't shift under you. The ecosystem around it — more adapters, the index, first-party skills — is still early.
 
-> **Compiler insight** — Kitbash measures a skill's *standing token cost* (what it adds to your context every session) at compile time, before you ever install it. On a lazy target that's ~40 tokens; compiled to an eager one it's ~490 — a [12× per-session tax](docs/benchmarks/README.md) no other format surfaces. Run `npm run bench` for the numbers.
+> **Compiler insight** — Kitbash measures a skill's *standing token cost* (what it adds to your context every session) at compile time, before you ever install it. On a lazy target that's ~40 tokens; compiled to an eager one it's ~540 — a [13× per-session tax](docs/benchmarks/README.md) no other format surfaces. Run `npm run bench` for the numbers.
 
 ## A quick look
 
@@ -29,7 +29,7 @@ If you've used npm for packages, Docker for containers, or ESLint for lint rules
 
 That's an actual session. A third-party skill from the [skills.sh](https://www.skills.sh) convention gets installed and compiled into three agent formats. The thing to notice is the last warning: during compile, Kitbash measured the skill and pointed out that it quietly costs about 5,044 tokens on every request for agents that can't lazy-load. A converter would just translate the format. The compiler reads it and tells you what it's going to cost you. I haven't found another tool that surfaces that number.
 
-That gap is measured, not asserted — see the [benchmark](docs/benchmarks/README.md). Kitbash compiles to the cheapest loading mode each target actually supports, so the same skill costs ~40 standing tokens on a lazy target; the tax is what it costs on the targets whose only mode is eager — ~490 tokens, a 12× per-session gap that a team running four agents pays four times over. Reproduce it with `npm run bench`.
+That gap is measured, not asserted — see the [benchmark](docs/benchmarks/README.md). Kitbash compiles to the cheapest loading mode each target actually supports, so the same skill costs ~40 standing tokens on a lazy target; the tax is what it costs on the targets whose only mode is eager — ~540 tokens, a 13× per-session gap that a team running four agents pays four times over. Reproduce it with `npm run bench`.
 
 Install it (npm or Homebrew — see [Installation](#installation)), then in a repo:
 
@@ -130,7 +130,7 @@ Installing a skill means letting someone else's instructions run with your agent
 
 - **Readable before install** — `kitbash preview gh:owner/repo` (also `lint`, `explain`) fetches and renders a skill *without installing it*: exact compiled output per agent, token costs, permissions, injection heuristics.
 - **Review at install** — `kitbash install` shows what the skill declares (permissions, network/write access, budget, lint warnings) and asks before writing anything. `--yes` skips the prompt in scripts; CI is non-interactive by default.
-- **Safety lints block install** — a skill with hidden instructions (zero-width/bidi/Unicode-Tags text), load-time command substitution, or a `curl … | sh`-style download-and-execute payload in its body is refused before anything is written. Non-bypassable by `--yes`, enforced with or without a `[policy]` file.
+- **Safety lints block install** — a skill with hidden instructions (zero-width/bidi/Unicode-Tags text), load-time command substitution, or a `curl … | sh`-style download-and-execute payload is refused before anything is written. The scan covers every non-binary file in the skill, not just `SKILL.md` — a payload in `scripts/setup.sh` or a sibling file is caught, and a symlink is flagged. Non-bypassable by `--yes`, enforced with or without a `[policy]` file.
 - **Pinned by content** — `kitbash.lock` records a content hash per skill; `doctor` flags any drift between what you reviewed and what's on disk.
 - **Org allowlists** — a `[policy]` table in `kitbash.toml` restricts which sources may be installed and what installed skills may declare. Policy is a hard gate: `--yes` doesn't bypass it, and `doctor` rechecks it against everything already installed.
 
