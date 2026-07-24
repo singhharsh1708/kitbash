@@ -4,7 +4,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, readlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseToml, type TomlTable } from "./toml.js";
 
@@ -59,10 +59,18 @@ export function dropLock(root: string, name: string): void {
  */
 export function integrityOf(dir: string): string {
   const hash = createHash("sha256");
-  for (const rel of walk(dir, "")) {
+  for (const { path: rel, symlink } of walk(dir, "")) {
     hash.update(rel); // NFC-normalized in walk()
     hash.update("\0");
-    hash.update(hashableContent(readFileSync(join(dir, rel))));
+    if (symlink) {
+      // Hash the link target itself, without following it — cpSync copies symlinks,
+      // so repointing one (e.g. an adapter-referenced script) would otherwise be
+      // invisible drift, and readFileSync would dereference and throw on a dangling link.
+      hash.update("\x01symlink\x01");
+      hash.update(readlinkSync(join(dir, rel)));
+    } else {
+      hash.update(hashableContent(readFileSync(join(dir, rel))));
+    }
     hash.update("\0");
   }
   return `sha256-${hash.digest("hex")}`;
@@ -74,15 +82,21 @@ function hashableContent(buf: Buffer): Buffer {
   return Buffer.from(buf.toString("utf8").replace(/\r\n/g, "\n"), "utf8");
 }
 
-function walk(base: string, rel: string): string[] {
-  const out: string[] = [];
+/**
+ * Every entry under a directory, NFC-normalized and binary-sorted. Exported so the
+ * install safety lints can scan the whole skill, not just SKILL.md. Symlinks are
+ * reported (symlink: true) but not followed.
+ */
+export function walk(base: string, rel: string): { path: string; symlink: boolean }[] {
+  const out: { path: string; symlink: boolean }[] = [];
   const entries = readdirSync(join(base, rel), { withFileTypes: true })
     .map((e) => ({ e, name: e.name.normalize("NFC") }))
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   for (const { e, name } of entries) {
     const r = rel ? `${rel}/${name}` : name;
-    if (e.isDirectory()) out.push(...walk(base, r));
-    else if (e.isFile()) out.push(r);
+    if (e.isSymbolicLink()) out.push({ path: r, symlink: true });
+    else if (e.isDirectory()) out.push(...walk(base, r));
+    else if (e.isFile()) out.push({ path: r, symlink: false });
   }
   return out;
 }

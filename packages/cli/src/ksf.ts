@@ -114,15 +114,39 @@ function parseFrontmatter(raw: string): Record<string, string> {
   return out;
 }
 
-export function loadInstalledSkills(root: string): LoadedSkill[] {
+export interface InstalledSkills {
+  skills: LoadedSkill[];
+  /** Directories that hold a SKILL.md but failed to load (e.g. a hand-edited, now-invalid skill.toml). */
+  failures: { name: string; message: string }[];
+}
+
+/**
+ * Load every installed skill, isolating failures. One malformed skill.toml must
+ * not brick list/compile/doctor for its valid siblings — and doctor's integrity
+ * check must still run to catch the tamper that broke it.
+ */
+export function loadInstalledSkillsSafe(root: string): InstalledSkills {
   const base = join(root, SKILLS_DIR);
-  if (!existsSync(base)) return [];
-  // Only load directories that actually contain a skill — skip aborted installs,
-  // backups, or stray folders (.git, empty dirs) instead of crashing every command.
-  return readdirSync(base, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && existsSync(join(base, e.name, "SKILL.md")))
-    .map((e) => loadSkill(join(base, e.name)))
-    .sort((a, b) => a.manifest.skill.name.localeCompare(b.manifest.skill.name));
+  if (!existsSync(base)) return { skills: [], failures: [] };
+  const skills: LoadedSkill[] = [];
+  const failures: { name: string; message: string }[] = [];
+  const dirs = readdirSync(base, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && existsSync(join(base, e.name, "SKILL.md")));
+  for (const e of dirs) {
+    try {
+      skills.push(loadSkill(join(base, e.name)));
+    } catch (err) {
+      failures.push({ name: e.name, message: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  // Binary comparison — locale-independent, matching the lockfile's ordering.
+  skills.sort((a, b) => (a.manifest.skill.name < b.manifest.skill.name ? -1 : a.manifest.skill.name > b.manifest.skill.name ? 1 : 0));
+  return { skills, failures };
+}
+
+/** Convenience wrapper: valid skills only. Callers that must surface load failures use loadInstalledSkillsSafe. */
+export function loadInstalledSkills(root: string): LoadedSkill[] {
+  return loadInstalledSkillsSafe(root).skills;
 }
 
 /**
@@ -154,6 +178,12 @@ export function resolveBody(skill: LoadedSkill): string {
 }
 
 const KNOWN_TABLES = ["skill", "context", "triggers", "permissions", "artifacts", "targets", "lore", "dependencies"];
+/** (table, key) pairs the schema types as arrays; validate() rejects a scalar there. */
+const ARRAY_FIELDS: [string, string][] = [
+  ["triggers", "commands"], ["triggers", "auto"], ["triggers", "events"],
+  ["permissions", "tools"], ["artifacts", "produces"], ["artifacts", "consumes"],
+  ["targets", "requires"], ["lore", "reads"], ["lore", "writes"],
+];
 const EVENTS_ENUM = ["pre-push", "pre-commit", "ci", "pr-open"];
 const REQUIRES_ENUM = ["scripts", "hooks", "subagents", "network"];
 const LORE_ENUM = ["decisions", "conventions", "invariants", "map"];
@@ -181,6 +211,10 @@ export function schemaLints(dir: string): string[] {
   enumCheck("targets", "requires", REQUIRES_ENUM);
   enumCheck("lore", "reads", LORE_ENUM);
   enumCheck("lore", "writes", LORE_ENUM);
+  // targets.mode is a scalar enum; a typo silently becomes "skill" in validate(),
+  // so warn here (targets is a forward-compatible table — RFC 0002 warn-not-fail).
+  const mode = str(table(raw, "targets"), "mode");
+  if (mode !== undefined && mode !== "skill" && mode !== "gate") out.push(`targets.mode "${mode}" is not one of skill, gate (treated as skill)`);
   return out;
 }
 
@@ -200,7 +234,19 @@ function validate(raw: TomlTable, source: string): SkillManifest {
   if (!/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(version)) errors.push(`skill.version "${version}" is not semver`);
   if (description.length < 10 || description.length > 200) errors.push("skill.description must be 10–200 characters");
   if (budget === undefined || budget < 50 || budget > 20000) errors.push("context.budget is required and must be 50–20000");
+  else if (!Number.isInteger(budget)) errors.push("context.budget must be an integer");
   if (standing !== undefined && (standing < 0 || standing > 500)) errors.push("context.standing must be 0–500");
+  else if (standing !== undefined && !Number.isInteger(standing)) errors.push("context.standing must be an integer");
+
+  // The schema types these as arrays; a scalar there would be silently coerced to []
+  // (a slash command that never registers, permissions that evaporate). Reject it.
+  for (const [tbl, key] of ARRAY_FIELDS) {
+    const v = table(raw, tbl)[key];
+    if (v !== undefined && !Array.isArray(v)) errors.push(`${tbl}.${key} must be an array (got a ${typeof v})`);
+  }
+  // disclosure is a frozen enum — an unrecognized value must not silently become "lazy".
+  const disc = str(context, "disclosure");
+  if (disc !== undefined && disc !== "lazy" && disc !== "eager") errors.push(`context.disclosure "${disc}" must be "lazy" or "eager"`);
 
   if (errors.length) throw new Error(`${source}: invalid manifest\n  - ${errors.join("\n  - ")}`);
 

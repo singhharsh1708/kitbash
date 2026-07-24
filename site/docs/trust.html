@@ -219,6 +219,7 @@ linted 1 skill(s) · 0 failure(s) · 2 warning(s)</code></pre>
 
 linted 1 skill(s) · 2 failure(s) · 0 warning(s)</code></pre>
       <p>The same checks run in <code>kitbash test</code> and, since 0.8.1, at <code>install</code> itself: a skill carrying any of the three cannot be installed or fanned out to nine agent files, <code>--yes</code> does not override it, and the block holds with no <code>kitbash.toml</code> present. (Before 0.8.1 these were printed at install but did not stop it — only a <a href="#org-allowlists"><code>[policy]</code></a> violation did, so a policy-less repo was unprotected.) Quality checks — a malformed artifact ref, a non-slash command — still only surface at <code>kitbash test</code> and never block an install.</p>
+      <p>At <code>install</code> the scan is no longer confined to <code>SKILL.md</code>. Because install copies the whole skill directory, all three lints now read <strong>every non-binary file in it</strong> — a <code>curl … | sh</code> tucked into <code>scripts/setup.sh</code>, or hidden text in a sibling <code>.md</code>, is caught exactly as it would be in the body, with the offending file named in the report. A symlink is itself flagged: it can point anywhere outside the reviewed files and the copy follows it verbatim.</p>
 
       <h3 id="preview-and-explain">Preview the compiled output</h3>
       <p><code>lint</code> tells you whether a skill is well-formed. <code>preview</code> tells you what your agents will actually receive, and what it costs them:</p>

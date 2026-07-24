@@ -2,6 +2,24 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.9.0] — 2026-07-24
+
+Conformance and honesty release. A codebase audit found a consistent pattern: the JSON schema was treated as the contract, but the loader enforced almost none of it, and several layers advertised enforcement they never delivered. This closes that gap.
+
+### Fixed
+- **Adapters no longer claim capabilities they don't deliver.** `claude-code` declared `scripts`/`hooks`/`subagents` and the skill-directory adapters declared `scripts`, but `emit()` only writes `SKILL.md` — no `scripts/` copied, no hook, no subagent. Because the capability was in the set, degradation was computed as empty and `explain`/`--strict` reported full support for output referencing files that were never produced — the exact silent capability loss spec §2 forbids. Capability sets are now empty until the emit code that delivers a capability exists; a skill that `requires` one now correctly reports degraded.
+- **The manifest loader enforces the schema instead of silently coercing.** A scalar where the schema types an array (`commands = "/deploy"`) became `[]` (a slash command that never registered, permissions that evaporated); a fractional `budget` passed the range check; an unknown `disclosure` silently became `lazy`. These are now hard errors, and an unknown `targets.mode` warns at `test` (forward-compatible table, per RFC 0002).
+- **Safety lints scan the whole skill, not just `SKILL.md`.** The three install-blocking lints read only the body while install copies the entire directory — a `curl … | sh` in `scripts/setup.sh`, or hidden text in a sibling file, sailed straight through. Every non-binary file is now scanned; a symlink is flagged (it points outside the reviewed files).
+- **A malformed installed manifest no longer bricks every command.** One hand-edited `skill.toml` made `list`/`compile`/`doctor` exit before processing valid siblings — and `doctor` threw before the integrity check that exists to catch exactly that tamper. `doctor` now reports the load failure, counts it, and still runs drift detection.
+- **`compile` refuses to run with zero resolved targets** (e.g. `targets = []`) rather than pruning every generated file while writing nothing back.
+- **Pruning removes only the generated file**, never a user file colocated in a generated skill directory (a `NOTES.md` beside `SKILL.md` survives).
+- **Integrity hashing is symlink-aware.** `walk()` skipped symlinks entirely, so repointing one inside an installed skill was invisible drift; the link target is now hashed without being followed.
+- **`preview` errors on a bad `[project].targets`** instead of silently falling back to every adapter.
+
+### Added
+- **Declared permissions are compiled into the instruction body.** Spec §2 requires permissions be enforced natively or compiled into the instructions; only the install-review third was done, so a teammate who pulled the generated file saw no restriction. Non-default permissions now render a block into every target's output (prose, not native frontmatter — the KSF tool grammar is provisional).
+- **`gate-verdict` check**: a `mode = "gate"` skill with no `scripts/` and no declared artifact — nothing to produce a deterministic verdict — now fails `lint`/`test`.
+
 ## [0.8.1] — 2026-07-23
 
 Security fix. The pre-install review gate did not actually block what it flagged.

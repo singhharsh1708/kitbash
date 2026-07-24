@@ -118,7 +118,13 @@ function fileAdapter(
 
 const claudeCode: Adapter = {
   id: "claude-code",
-  capabilities: ["scripts", "hooks", "subagents"],
+  // Only capabilities emit() actually delivers. The adapter writes SKILL.md and
+  // slash-command shims; it does not yet copy scripts/, install a hook, or wire a
+  // subagent — so it must NOT claim those, or degradationWarnings computes an empty
+  // missing-set and reports full support for output that references files it never
+  // produced (the exact silent capability loss spec §2 forbids). Re-add a capability
+  // only alongside the emit code that produces its primitive.
+  capabilities: [],
   loading: "lazy",
   detect: (root) => existsSync(join(root, ".claude")),
   emit(skill, body) {
@@ -167,7 +173,8 @@ const copilot = skillDirAdapter("copilot", ".github/skills", (root) => existsSyn
 function skillDirAdapter(id: string, dir: string, detect: (root: string) => boolean): Adapter {
   return {
     id,
-    capabilities: ["scripts"],
+    // Writes only SKILL.md — no scripts/ copied. Claim nothing emit() doesn't deliver.
+    capabilities: [],
     loading: "lazy",
     detect,
     emit(skill, body) {

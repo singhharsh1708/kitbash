@@ -151,7 +151,7 @@
       <circle cx="256" cy="256" r="238" fill="none" stroke="#ffb454" stroke-width="5"/>
     </svg>
     </div>
-    <p class="eyebrow">Open format for AI agent skills · <span data-version>v0.8.1</span> · stable spec (RFC 0002)</p>
+    <p class="eyebrow">Open format for AI agent skills · <span data-version>v0.9.0</span> · stable spec (RFC 0002)</p>
     <h1>Write an agent skill once. Run it <em>everywhere</em>.</h1>
     <div class="actions">
       <a class="button" href="docs/quickstart">Get started</a>
@@ -276,7 +276,7 @@ Review the working diff the way this repo's own reviewers do…
 
 <span class="c"># .claude/commands/prereview.md — compiled slash-command shim</span>
 Load the "prereview" skill: read .claude/skills/prereview/SKILL.md and follow it exactly.</pre>
-      <p class="pane-note">Native skills directory, plus declared trigger commands compiled to real slash commands. Scripts, hooks, and subagents all available — nothing degrades here.</p>
+      <p class="pane-note">Native skills directory, plus declared trigger commands compiled to real slash commands. The body loads only when the skill is invoked, so it costs nothing standing.</p>
     </div>
 
     <div class="target-pane" data-pane="cursor" hidden>

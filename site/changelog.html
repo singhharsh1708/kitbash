@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.8.1</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.9.0</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,22 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.9.0">
+  <div class="release-head">
+    <h2><a href="#v0.9.0">v0.9.0</a></h2>
+    <span class="release-date">2026-07-24</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">Conformance and honesty release. A codebase audit found a consistent pattern: the JSON schema was treated as the contract, but the loader enforced almost none of it, and several layers advertised enforcement they never delivered. This closes that gap.</p>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>Adapters no longer claim capabilities they don't deliver.</strong> <code>claude-code</code> declared <code>scripts</code>/<code>hooks</code>/<code>subagents</code> and the skill-directory adapters declared <code>scripts</code>, but <code>emit()</code> only writes <code>SKILL.md</code> — no <code>scripts/</code> copied, no hook, no subagent. Because the capability was in the set, degradation was computed as empty and <code>explain</code>/<code>--strict</code> reported full support for output referencing files that were never produced — the exact silent capability loss spec §2 forbids. Capability sets are now empty until the emit code that delivers a capability exists; a skill that <code>requires</code> one now correctly reports degraded.</li><li><strong>The manifest loader enforces the schema instead of silently coercing.</strong> A scalar where the schema types an array (<code>commands = "/deploy"</code>) became <code>[]</code> (a slash command that never registered, permissions that evaporated); a fractional <code>budget</code> passed the range check; an unknown <code>disclosure</code> silently became <code>lazy</code>. These are now hard errors, and an unknown <code>targets.mode</code> warns at <code>test</code> (forward-compatible table, per RFC 0002).</li><li><strong>Safety lints scan the whole skill, not just <code>SKILL.md</code>.</strong> The three install-blocking lints read only the body while install copies the entire directory — a <code>curl … | sh</code> in <code>scripts/setup.sh</code>, or hidden text in a sibling file, sailed straight through. Every non-binary file is now scanned; a symlink is flagged (it points outside the reviewed files).</li><li><strong>A malformed installed manifest no longer bricks every command.</strong> One hand-edited <code>skill.toml</code> made <code>list</code>/<code>compile</code>/<code>doctor</code> exit before processing valid siblings — and <code>doctor</code> threw before the integrity check that exists to catch exactly that tamper. <code>doctor</code> now reports the load failure, counts it, and still runs drift detection.</li><li><strong><code>compile</code> refuses to run with zero resolved targets</strong> (e.g. <code>targets = []</code>) rather than pruning every generated file while writing nothing back.</li><li><strong>Pruning removes only the generated file</strong>, never a user file colocated in a generated skill directory (a <code>NOTES.md</code> beside <code>SKILL.md</code> survives).</li><li><strong>Integrity hashing is symlink-aware.</strong> <code>walk()</code> skipped symlinks entirely, so repointing one inside an installed skill was invisible drift; the link target is now hashed without being followed.</li><li><strong><code>preview</code> errors on a bad <code>[project].targets</code></strong> instead of silently falling back to every adapter.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li><strong>Declared permissions are compiled into the instruction body.</strong> Spec §2 requires permissions be enforced natively or compiled into the instructions; only the install-review third was done, so a teammate who pulled the generated file saw no restriction. Non-default permissions now render a block into every target's output (prose, not native frontmatter — the KSF tool grammar is provisional).</li><li><strong><code>gate-verdict</code> check</strong>: a <code>mode = "gate"</code> skill with no <code>scripts/</code> and no declared artifact — nothing to produce a deterministic verdict — now fails <code>lint</code>/<code>test</code>.</li></ul>
+</article>
+
 <article class="release" id="v0.8.1">
   <div class="release-head">
     <h2><a href="#v0.8.1">v0.8.1</a></h2>
-    <span class="release-date">2026-07-23</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-07-23</span>
   </div>
 <p class="release-intro">Security fix. The pre-install review gate did not actually block what it flagged.</p>
 <h3 class="group">Fixed</h3>

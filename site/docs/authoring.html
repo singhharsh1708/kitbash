@@ -190,7 +190,7 @@ consumes = [<span class="s">"plan@1"</span>]</code></pre>
       <pre class="copyable"><code><span class="k">[targets]</span>
 requires = []
 mode = <span class="s">"skill"</span></code></pre>
-      <p><code>requires</code> declares capabilities the skill needs: <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, <code>network</code>. Of the nine adapters, only <code>claude-code</code> (<code>scripts</code>, <code>hooks</code>, <code>subagents</code>) and <code>agents</code> (<code>scripts</code>) declare capabilities today. Anything a target lacks produces a visible warning at compile:</p>
+      <p><code>requires</code> declares capabilities the skill needs: <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, <code>network</code>. No adapter delivers any of them today — <code>emit()</code> writes instructions but does not copy a skill's <code>scripts/</code>, install a hook, or wire a subagent — so any value here degrades on every one of the nine targets, and each produces a visible warning at compile:</p>
       <pre><code><span class="warn">⚠</span> test-gaps → cursor: target lacks "scripts"; compiled instruction-only (degraded)</code></pre>
       <p>Under <code>--strict</code> that warning becomes a build failure. Silent degradation is a conformance violation — leave <code>requires</code> empty unless the skill genuinely cannot function without the capability.</p>
       <p><code>mode</code> is <code>skill</code> or <code>gate</code>. A gate-mode skill must route its verdict through a script exit code or a schema-validated artifact. A bare model opinion is not a gate verdict.</p>
@@ -248,7 +248,7 @@ linted 1 skill(s) · 1 failure(s) · 0 warning(s)</code></pre>
       <h3 id="prompts-dir">prompts/</h3>
       <p>Named markdown fragments pulled into the body by <code>{{prompt.&lt;name&gt;}}</code>. Useful when several steps share a rubric and you want one copy of it. The inlined text counts against <code>context.budget</code> like any other body content.</p>
       <h3 id="scripts-dir">scripts/</h3>
-      <p>Deterministic helpers in any executable form. They are <b>never executed at install time</b> — only when the agent invokes the skill, and only within the declared permissions. Make them idempotent, or name them so the difference is obvious: <code>check-*</code> versus <code>apply-*</code>. If the skill cannot work without them, declare <code>requires = ["scripts"]</code> and accept the degradation warning on targets that lack the capability.</p>
+      <p>Deterministic helpers in any executable form. They are <b>never executed at install time</b> — only when the agent invokes the skill, and only within the declared permissions. Make them idempotent, or name them so the difference is obvious: <code>check-*</code> versus <code>apply-*</code>. If the skill cannot work without them, declare <code>requires = ["scripts"]</code> and accept the degradation warning — no target delivers <code>scripts</code> yet, so it degrades everywhere.</p>
       <h3 id="evals-dir">evals/</h3>
       <p>One <code>*.eval.yaml</code> per behavior worth defending. The static tier — schema, budgets, dead references, injection heuristics — needs no eval file and always runs under <code>kitbash lint</code> and <code>kitbash test</code>. Audit and behavioral tiers need a runner:</p>
       <pre><code><span class="k">tier</span>: behavioral
