@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.9.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.10.0</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,22 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.10.0">
+  <div class="release-head">
+    <h2><a href="#v0.10.0">v0.10.0</a></h2>
+    <span class="release-date">2026-07-26</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">Secrets and behavioral checks — adopted from the field-tested rule set of a dedicated agent-config scanner, but scoped to what Kitbash does: scan the skill being installed, statically, with no network. Kitbash does not audit your own agent config (settings.json, MCP servers, hooks) — that is a different tool's job.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>secrets</code> lint (hard-fail).</strong> A skill that ships a live credential — AWS, Anthropic, OpenAI, GitHub, Google, Stripe, Slack, or Linear keys, a database connection string with an inline password, or a private-key block — now blocks install, in the body or any file in the skill. Each pattern keys on a provider's real key shape (prefix + length + character class), and a placeholder guard drops documentation values, so a skill that teaches <code>sk-ant-...</code>, <code>${OPENAI_API_KEY}</code>, or AWS's own <code>AKIAIOSFODNN7EXAMPLE</code> installs fine. Not bypassable by <code>--yes</code>, enforced with or without a <code>[policy]</code> file.</li><li><strong>Behavioral warn heuristics</strong> in the injection check: output-suppression directives (<code>always report success</code>, <code>suppress the findings</code>), auto-run / no-consent directives (<code>without asking</code>, <code>automatically install</code>), bulk-credential harvesting (<code>collect all passwords</code>), and an injection directive hidden in an HTML comment (invisible in rendered markdown, read by the agent — while ordinary tooling comments like <code>&lt;!-- prettier-ignore --&gt;</code> do not trip it). These warn rather than block, since a defensive security skill may legitimately quote them; <code>--strict</code> fails on them.</li></ul>
+<h3 class="group">Notes</h3>
+<ul><li>This is a deliberate narrow adoption. Config-auditing (permissions in <code>settings.json</code>, MCP server risk, hook analysis) and harness-OS features (learned instincts, session memory, a skill marketplace) are out of scope by design — Kitbash is a compiler with a review gate, not an agent operating system.</li></ul>
+</article>
+
 <article class="release" id="v0.9.0">
   <div class="release-head">
     <h2><a href="#v0.9.0">v0.9.0</a></h2>
-    <span class="release-date">2026-07-24</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-07-24</span>
   </div>
 <p class="release-intro">Conformance and honesty release. A codebase audit found a consistent pattern: the JSON schema was treated as the contract, but the loader enforced almost none of it, and several layers advertised enforcement they never delivered. This closes that gap.</p>
 <h3 class="group">Fixed</h3>

@@ -120,7 +120,7 @@ assert:
   - files_unchanged: ["src/**"]
 ```
 
-Static-tier checks (schema, budgets, dead refs, injection heuristics, visible text, dynamic context) need no eval file; `kitbash test` always runs them.
+Static-tier checks (schema, budgets, dead refs, injection heuristics — including behavioral directives such as output-suppression, no-consent auto-run, credential harvesting, and directives hidden in HTML comments — visible text, dynamic context, download-and-execute pipelines, and hardcoded secrets) need no eval file; `kitbash test` always runs them. The visible-text, dynamic-context, remote-exec, and secrets checks are hard fails that also block `install`.
 
 ## 7. Compilation model
 

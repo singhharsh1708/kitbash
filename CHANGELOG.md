@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.10.0] — 2026-07-26
+
+Secrets and behavioral checks — adopted from the field-tested rule set of a dedicated agent-config scanner, but scoped to what Kitbash does: scan the skill being installed, statically, with no network. Kitbash does not audit your own agent config (settings.json, MCP servers, hooks) — that is a different tool's job.
+
+### Added
+- **`secrets` lint (hard-fail).** A skill that ships a live credential — AWS, Anthropic, OpenAI, GitHub, Google, Stripe, Slack, or Linear keys, a database connection string with an inline password, or a private-key block — now blocks install, in the body or any file in the skill. Each pattern keys on a provider's real key shape (prefix + length + character class), and a placeholder guard drops documentation values, so a skill that teaches `sk-ant-...`, `${OPENAI_API_KEY}`, or AWS's own `AKIAIOSFODNN7EXAMPLE` installs fine. Not bypassable by `--yes`, enforced with or without a `[policy]` file.
+- **Behavioral warn heuristics** in the injection check: output-suppression directives (`always report success`, `suppress the findings`), auto-run / no-consent directives (`without asking`, `automatically install`), bulk-credential harvesting (`collect all passwords`), and an injection directive hidden in an HTML comment (invisible in rendered markdown, read by the agent — while ordinary tooling comments like `<!-- prettier-ignore -->` do not trip it). These warn rather than block, since a defensive security skill may legitimately quote them; `--strict` fails on them.
+
+### Notes
+- This is a deliberate narrow adoption. Config-auditing (permissions in `settings.json`, MCP server risk, hook analysis) and harness-OS features (learned instincts, session memory, a skill marketplace) are out of scope by design — Kitbash is a compiler with a review gate, not an agent operating system.
+
 ## [0.9.0] — 2026-07-24
 
 Conformance and honesty release. A codebase audit found a consistent pattern: the JSON schema was treated as the contract, but the loader enforced almost none of it, and several layers advertised enforcement they never delivered. This closes that gap.
