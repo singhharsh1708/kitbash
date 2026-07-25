@@ -18,7 +18,7 @@ const CONFIG = "kitbash.toml";
  * else staticChecks reports — schema, budgets, dead refs — is quality, surfaced
  * at `kitbash test`, and never stops an install.
  */
-const SAFETY_LINTS = new Set(["visible-text", "dynamic-context", "remote-exec"]);
+const SAFETY_LINTS = new Set(["visible-text", "dynamic-context", "remote-exec", "secrets"]);
 
 const INIT_CONFIG = `# kitbash project configuration — https://github.com/singhharsh1708/kitbash
 [project]
@@ -587,6 +587,15 @@ const INJECTION_PATTERNS: { re: RegExp; label: string }[] = [
   { re: /you\s+are\s+now\s+(?:a|an|the)\b/i, label: "role reassignment" },
   { re: /do\s+not\s+(?:tell|inform|reveal\s+to)\s+the\s+user/i, label: "conceal-from-user" },
   { re: /exfiltrat|curl\s+[^|]*\|\s*(?:sh|bash)|send\s+.*\s+to\s+https?:\/\//i, label: "data-exfiltration shape" },
+  // Behavioral directives a distributed skill should not carry — a fan-out chokepoint
+  // surfaces them for review (warn, not block: a defensive skill may quote them).
+  { re: /(?:always|automatically)\s+(?:report|say|respond|mark)\s+(?:it\s+)?(?:ok|success|successful|passed|clean|as\s+safe)|(?:remove|suppress|hide)\s+(?:the\s+|all\s+)?(?:warnings|findings|errors)/i, label: "output-suppression directive" },
+  { re: /(?:automatically|silently)\s+(?:install|run|execute)|without\s+(?:asking|prompting|confirmation|the\s+user'?s?\s+(?:consent|approval|permission))/i, label: "auto-run / no-consent directive" },
+  { re: /(?:collect|gather|dump|harvest)\s+(?:all\s+)?(?:the\s+)?(?:passwords|credentials|secrets|api\s*keys|ssh\s+keys|the\s+database)/i, label: "bulk-credential harvesting" },
+  // An injection directive hidden in an HTML comment — invisible in rendered markdown,
+  // read by the agent. Requires the comment to actually carry an override phrase, so
+  // ordinary tooling comments (<!-- prettier-ignore -->) don't trip it.
+  { re: /<!--(?:(?!-->)[\s\S]){0,400}?(?:ignore\s+(?:all\s+|the\s+)?(?:previous|prior|above)\s+instructions|you\s+are\s+now\b|disregard\s+(?:the\s+)?(?:above|previous|system))(?:(?!-->)[\s\S])*?-->/i, label: "hidden directive in HTML comment" },
 ];
 
 function staticChecks(skill: LoadedSkill): Check[] {
@@ -689,6 +698,16 @@ function staticChecks(skill: LoadedSkill): Check[] {
         detail: `download-and-execute pipeline in the skill body: ${remoteExec.join(", ")}`,
       });
     }
+
+    // A live credential shipped inside a skill — never legitimate.
+    const secrets = secretHits(body);
+    if (secrets.length) {
+      checks.push({
+        name: "secrets",
+        ok: false,
+        detail: `hardcoded credential in the skill body: ${secrets.join(", ")}`,
+      });
+    }
   }
 
   return checks;
@@ -742,6 +761,44 @@ function remoteExecHits(body: string): string[] {
 }
 
 /**
+ * Live credentials that must never ship inside a distributed skill. Each pattern
+ * keys on a provider's exact key SHAPE (prefix + real length + character class),
+ * not the prefix alone, so a placeholder (`sk-ant-...`, `sk-ant-xxxx`) or an
+ * env-var reference (`${ANTHROPIC_API_KEY}`) doesn't match — those are too short
+ * or don't contain a key body. Adopted from the field-tested prefix set that
+ * agent-config scanners settled on. `secretsExcluded()` drops obvious example
+ * values so a skill that documents a fake key isn't blocked for teaching.
+ */
+const SECRET_PATTERNS: { re: RegExp; label: string }[] = [
+  { re: /\bAKIA[0-9A-Z]{16}\b/, label: "AWS access key" },
+  { re: /\bsk-ant-(?:api03-)?[A-Za-z0-9_-]{80,}/, label: "Anthropic API key" },
+  { re: /\bsk-proj-[A-Za-z0-9_-]{40,}/, label: "OpenAI project key" },
+  { re: /\bsk-[A-Za-z0-9]{48}\b/, label: "OpenAI key" },
+  { re: /\bghp_[A-Za-z0-9]{36}\b/, label: "GitHub token" },
+  { re: /\bgithub_pat_[A-Za-z0-9_]{60,}/, label: "GitHub fine-grained token" },
+  { re: /\bAIza[0-9A-Za-z_-]{35}\b/, label: "Google API key" },
+  { re: /\bsk_live_[A-Za-z0-9]{24,}/, label: "Stripe live key" },
+  { re: /\bxox[baprs]-[A-Za-z0-9-]{12,}/, label: "Slack token" },
+  { re: /\blin_api_[A-Za-z0-9]{40,}/, label: "Linear API key" },
+  // Connection string carrying an inline password (user:secret@host). An env-ref
+  // password (user:${DB_PASS}@) is excluded by the ${ guard in PLACEHOLDER_RE.
+  { re: /\b(?:postgres(?:ql)?|mongodb(?:\+srv)?|mysql|redis|amqp):\/\/[^:@\s/]+:[^@\s/]{6,}@/, label: "DB connection secret" },
+  { re: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/, label: "private key" },
+];
+
+/** Obvious non-secret example values — a matched string carrying one is documentation, not a leak. */
+const PLACEHOLDER_RE = /EXAMPLE|XXXX|YOUR[_-]?|PLACEHOLDER|REDACTED|\.\.\.|<[A-Za-z]|\$\{/i;
+
+function secretHits(text: string): string[] {
+  const found = new Set<string>();
+  for (const p of SECRET_PATTERNS) {
+    const m = p.re.exec(text);
+    if (m && !PLACEHOLDER_RE.test(m[0])) found.add(p.label);
+  }
+  return [...found];
+}
+
+/**
  * Run the three safety scanners over every non-binary file in a fetched skill
  * EXCEPT SKILL.md (staticChecks already covers that). Returns failed Checks named
  * from SAFETY_LINTS so the install hard-gate and the remote-exec exemption apply,
@@ -764,6 +821,8 @@ function scanSkillFiles(dir: string): Check[] {
     if (text.match(DYNAMIC_CONTEXT_RE)) out.push({ name: "dynamic-context", ok: false, detail: `${rel}: command substitution that runs at load time` });
     const remote = remoteExecHits(text);
     if (remote.length) out.push({ name: "remote-exec", ok: false, detail: `${rel}: download-and-execute pipeline (${remote.join(", ")})` });
+    const secrets = secretHits(text);
+    if (secrets.length) out.push({ name: "secrets", ok: false, detail: `${rel}: hardcoded credential (${secrets.join(", ")})` });
   }
   return out;
 }
