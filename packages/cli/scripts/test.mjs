@@ -49,7 +49,7 @@ try {
 
   const install = run(["install", `file:${fixture}`], tmp);
   check("install exits 0", install.status === 0, install.out);
-  check("install reports budget", install.out.includes("budget 1500 tokens"), install.out);
+  check("install reports budget", install.out.includes("budget 1500 tok"), install.out);
 
   const dup = run(["install", `file:${fixture}`], tmp);
   check("duplicate install rejected", dup.status === 1, dup.out);
@@ -59,7 +59,7 @@ try {
 
   const compile = run(["compile"], tmp);
   check("compile exits 0", compile.status === 0, compile.out);
-  check("compile summary", compile.out.includes("compiled 1 skill(s) for 9 agent target(s)"), compile.out);
+  check("compile summary", compile.out.includes("compiled 1 skill for 9 targets"), compile.out);
 
   const claude = join(tmp, ".claude/skills/prereview/SKILL.md");
   const cursor = join(tmp, ".cursor/rules/prereview.mdc");
@@ -103,7 +103,9 @@ try {
   check("recompile idempotent (single AGENTS.md section)", recompile.status === 0 && markerCount === 1, `markers=${markerCount}`);
 
   const strict = run(["compile", "--strict"], tmp);
-  check("--strict fails on warnings", strict.status === 1, strict.out);
+  // prereview's eager standing cost is an informational NOTE, not a warning, so --strict passes.
+  check("--strict passes when only the measurement note is present", strict.status === 0, strict.out);
+  check("eager standing surfaced as an informational note (not a warning)", compile.out.includes("ℹ") && compile.out.includes("adds ~") && !/⚠[^\n]*eager/.test(compile.out), compile.out);
 
   const doctor = run(["doctor"], tmp);
   check("doctor exits 0", doctor.status === 0, doctor.out);
@@ -137,6 +139,8 @@ try {
   const bareOut = readFileSync(join(tmp, ".claude/skills/tidy-commits/SKILL.md"), "utf8");
   check("bare skill frontmatter not doubled", bareOut.startsWith("---\nname: tidy-commits\n"), bareOut.slice(0, 120));
   check("bare warning surfaced at compile", bareCompile.out.includes("tidy-commits: unmanifested"), bareCompile.out);
+  // --strict still fails on a REAL warning (the unmanifested bare skill), just not on the measurement note.
+  check("--strict fails on a genuine warning (unmanifested)", run(["compile", "--strict"], tmp).status === 1);
 
   // static-tier evals: kitbash test
   const testClean = run(["test", "prereview"], tmp);
@@ -281,7 +285,7 @@ try {
   check("no command prints usage, exits 0", help.status === 0 && help.out.includes("Usage: kitbash"), help.out);
 
   const unknown = run(["bogus-command"], neg);
-  check("unknown command exits 1 with usage", unknown.status === 1 && unknown.out.includes('unknown command "bogus-command"'), unknown.out);
+  check("unknown command exits 2 with a hint", unknown.status === 2 && unknown.out.includes('unknown command "bogus-command"') && unknown.out.includes("kitbash help"), unknown.out);
 
   const installNoArg = run(["install"], neg);
   check("install with no source exits 1 with usage", installNoArg.status === 1 && installNoArg.out.includes("usage: kitbash install"), installNoArg.out);
@@ -295,13 +299,13 @@ try {
   check("install missing local path exits 1 with clear message", missingLocal.status === 1 && missingLocal.out.includes("local path not found"), missingLocal.out);
 
   const testEmpty = run(["test"], neg);
-  check("test with no skills exits 1", testEmpty.status === 1 && testEmpty.out.includes("no skills installed"), testEmpty.out);
+  check("test with no skills exits 0 (vacuous pass)", testEmpty.status === 0 && testEmpty.out.includes("nothing to test"), testEmpty.out);
 
   const testMissing = run(["test", "ghost"], neg);
   check("test on a non-installed skill exits 1", testMissing.status === 1 && testMissing.out.includes("ghost is not installed"), testMissing.out);
 
   const lintEmpty = run(["lint"], neg);
-  check("lint with no skills exits 1", lintEmpty.status === 1 && lintEmpty.out.includes("no skills installed"), lintEmpty.out);
+  check("lint with no skills exits 0 (vacuous pass)", lintEmpty.status === 0 && lintEmpty.out.includes("nothing to lint"), lintEmpty.out);
 
   const lintMissing = run(["lint", "ghost"], neg);
   check("lint on a non-installed skill exits 1", lintMissing.status === 1 && lintMissing.out.includes("not found"), lintMissing.out);

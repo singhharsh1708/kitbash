@@ -150,7 +150,7 @@ Usage: kitbash &lt;command&gt; [args]
   lore     Build, query, and curate repo intelligence
   run      Run a declared pipeline (e.g. kitbash run ship)
 
-Docs: https://github.com/singhharsh1708/kitbash</code></pre>
+Docs: https://kitbash.vercel.app/docs</code></pre>
       <p>Every command runs against the current working directory as the project root. Skills live in <code>.kitbash/skills/</code>, config in <code>kitbash.toml</code>, pins in <code>kitbash.lock</code>.</p>
 
       <h2 id="command-summary">Command summary</h2>
@@ -229,9 +229,9 @@ kitbash.toml already exists — nothing to do</code></pre>
         </ul>
         <p>The prompt only appears when both stdin and stdout are TTYs. In a pipe, a CI runner, or a non-interactive shell, install proceeds without asking — <code>--yes</code> is for readability, not for unblocking automation.</p>
         <pre><code><span class="c">$ kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview</span>
-review: prereview@0.1.0 — Reviews a diff against the team's actual standards
+review: prereview@0.1.0 — Review the working diff against this team's real standards before it ships
   budget 1500 tokens · standing 60 · lazy disclosure · mode skill
-  permissions: tools [read, grep, bash:git *] · network no · write no
+  permissions: tools [read, grep, bash:git diff *, bash:git log *] · network no · write no
 install prereview@0.1.0? [y/N] <span class="k">y</span>
 installed prereview@0.1.0
   pinned in kitbash.lock
@@ -278,7 +278,7 @@ prereviw is not installed.
           <li><code>(none)</code> <span>Takes no arguments and no flags.</span></li>
         </ul>
         <pre><code><span class="c">$ kitbash list</span>
-prereview@0.1.0  budget=1500  standing=60  mode=skill  — Reviews a diff against the team's actual standards
+prereview@0.1.0  budget=1500  standing=60  mode=skill  — Review the working diff against this team's real standards before it ships
 release-notes@0.2.0  budget=2200  standing=80  mode=skill  — Turns merged PRs into a release note
 scratch@0.0.0  budget=6000  standing=250  mode=skill  [unmanifested]  — Imported skill (no manifest)</code></pre>
         <p>An empty project says so instead of printing nothing:</p>
@@ -302,15 +302,15 @@ scratch@0.0.0  budget=6000  standing=250  mode=skill  [unmanifested]  — Import
 <span class="c">→</span> .cursor/rules/prereview.mdc
 <span class="c">→</span> AGENTS.md
 <span class="warn">✂</span> removed .claude/commands/old-review.md (stale)
-<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~517 tokens standing every session (declared limit: 60)
-compiled 1 skill(s) for 3 agent target(s)</code></pre>
+<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~560 tokens standing every session (declared limit: 60)
+compiled 1 skill for 3 targets</code></pre>
         <p>Warnings cover eager-target standing cost, capability degradation, unmanifested skills, and output-path conflicts where two skills write the same file. With <code>--strict</code> those same warnings end the run:</p>
         <pre><code><span class="c">$ kitbash compile --strict</span>
 <span class="c">→</span> .claude/skills/prereview/SKILL.md
 <span class="c">→</span> AGENTS.md
-<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~517 tokens standing every session (declared limit: 60)
-compiled 1 skill(s) for 2 agent target(s)
---strict: failing on 1 warning(s)</code></pre>
+<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~560 tokens standing every session (declared limit: 60)
+compiled 1 skill for 2 targets
+--strict: failing on 1 warning</code></pre>
         <p>A budget violation stops the run outright:</p>
         <pre><code><span class="warn">✗</span> prereview: compiled body is ~1712 tokens, over its budget of 1500</code></pre>
         <p>With nothing installed, compile still prunes stale output, then reports and succeeds:</p>
@@ -450,7 +450,7 @@ prereviw: not found as a path or installed skill name (or pass a source: gh:owne
         </ul>
         <pre><code><span class="c">$ kitbash explain prereview agentsmd</span>
 prereview → agentsmd: no capability degradation
-  <span class="warn">⚠</span> loading: agentsmd is eager — skill costs ~464 tokens standing every session (declared limit: 60)</code></pre>
+  <span class="warn">⚠</span> loading: agentsmd is eager — skill costs ~560 tokens standing every session (declared limit: 60)</code></pre>
         <p>No adapter declares a capability today — <code>emit()</code> writes instructions but does not copy <code>scripts/</code>, install a hook, or wire a subagent — so a skill that <code>requires</code> any of <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, or <code>network</code> reports degraded on every one of the nine targets, Claude Code included:</p>
         <pre><code><span class="c">$ kitbash explain prereview cursor</span>
 prereview → cursor: degraded
@@ -480,7 +480,7 @@ preview: prereview@0.1.0
 
 ---
 name: prereview
-description: "Reviews a diff against the team's actual standards"
+description: "Review the working diff against this team's real standards before it ships"
 ---
 &lt;!-- generated by kitbash — do not edit; source: .kitbash/skills/prereview @ 0.1.0 --&gt;
 
@@ -495,8 +495,8 @@ Load the "prereview" skill: read .claude/skills/prereview/SKILL.md and follow it
 
 Arguments: $ARGUMENTS
 
-─── agentsmd [eager] ~507 tok standing ───
-<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~464 tokens standing every session (declared limit: 60)
+─── agentsmd [eager] ~560 tok standing ───
+<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~560 tokens standing every session (declared limit: 60)
 
   <span class="c">→</span> AGENTS.md
 

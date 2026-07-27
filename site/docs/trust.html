@@ -231,8 +231,8 @@ linted 1 skill(s) · 2 failure(s) · 0 warning(s)</code></pre>
       <pre class="copyable"><code>kitbash preview gh:singhharsh1708/kitbash/examples/skills/prereview</code></pre>
       <pre><code>preview: prereview@0.1.0
 
-─── agentsmd [eager] ~507 tok standing ───
-<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~464 tokens standing every session (declared limit: 60)
+─── agentsmd [eager] ~560 tok standing ───
+<span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load; this skill costs ~560 tokens standing every session (declared limit: 60)
 
   → AGENTS.md
 
@@ -256,7 +256,7 @@ a pre-push gate.
       <h3 id="the-review-block">The block</h3>
       <pre class="copyable"><code>kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview</code></pre>
       <pre><code>review: prereview@0.1.0 — Review the working diff against this team's real standards before it ships
-  budget 1500 tokens · standing 60 · lazy disclosure · mode gate
+  budget 1500 tokens · standing 60 · lazy disclosure · mode skill
   permissions: tools [read, grep, bash:git diff *, bash:git log *] · network no · write no
 install prereview@0.1.0? [y/N] y
 installed prereview@0.1.0
@@ -376,7 +376,7 @@ standing context cost: ~40 tokens (stubs); worst-case active: 1500 tokens (budge
       <p>Policy is evaluated after the review block prints and before the prompt — and before anything is written. <code>--yes</code> does not bypass it. With <code>allow_sources = ["gh:your-org/*"]</code> and <code>max_budget = 1000</code> in effect:</p>
       <pre class="copyable"><code>kitbash install --yes file:./vendor/prereview</code></pre>
       <pre><code>review: prereview@0.1.0 — Review the working diff against this team's real standards before it ships
-  budget 1500 tokens · standing 60 · lazy disclosure · mode gate
+  budget 1500 tokens · standing 60 · lazy disclosure · mode skill
   permissions: tools [read, grep, bash:git diff *, bash:git log *] · network no · write no
   <span class="warn">✗</span> policy: source "file:./vendor/prereview" is not in allow_sources (gh:your-org/*)
   <span class="warn">✗</span> policy: prereview budget 1500 exceeds max_budget 1000

@@ -26,7 +26,7 @@ consumes = ["plan@1"]
 
 [targets]
 requires = []
-mode = "gate"
+mode = "skill"
 
 [lore]
 reads = ["conventions", "invariants"]

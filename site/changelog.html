@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.10.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.11.0</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,22 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.11.0">
+  <div class="release-head">
+    <h2><a href="#v0.11.0">v0.11.0</a></h2>
+    <span class="release-date">2026-07-28</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">Credibility pass. A staff-level review of the shipped product found the docs, site, and CLI contradicting each other — fatal for a tool whose whole pitch is honest measurement. Every fix here aligns the surface with reality; none is a new feature.</p>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>The flagship number was reported three ways.</strong> <code>compile</code> warned ~517, <code>preview</code> showed ~507, and the benchmark said 560 for the same skill on the same target — because the compiled permissions note and the adapter's own wrapper were counted inconsistently. All three now report the true cost of the emitted file (560), and <code>preview</code> renders exactly what <code>compile</code> writes.</li><li><strong>The measurement no longer fails <code>--strict</code>.</strong> The standing-cost report was pushed into the same <code>warnings</code> array as real problems, so <code>compile --strict</code> failed on the one bundled skill — the product punishing the one number it exists to surface. It is now an informational note (<code>ℹ</code>), not a warning; <code>--strict</code> still fails on genuine warnings (budget overruns, degradation, conflicts).</li><li><strong>Stub commands cited already-passed milestones.</strong> <code>kitbash update</code> said "lands in v0.2" on a 0.10 build. The eight unimplemented commands now point at the roadmap with no stale version, and <code>--help</code> lists them under a separate "Planned (not yet implemented)" section instead of mixing them with working commands.</li><li><strong>The bundled example advertised <code>mode = gate</code></strong> while <code>kitbash gate</code> is unimplemented; it now ships as <code>mode = skill</code>, runnable end to end with shipped commands.</li><li><strong>Exit codes are consistent and conventional:</strong> unknown command is <code>2</code> (usage) with a did-you-mean suggestion instead of <code>1</code> + a full help dump; an unbuilt command is <code>7</code>; <code>test</code>/<code>lint</code> on an empty repo return <code>0</code> (vacuous pass) to match <code>compile</code>/<code>list</code>, so CI scripting agrees across commands.</li><li><strong><code>doctor</code></strong> shows undetected targets with <code>·</code> (not present in this repo) instead of <code>✗</code> (which now means a real problem), with an "N of 9 in this repo" count.</li><li><strong><code>compile</code></strong> on a partial fan-out prints how many more targets are available and how to enable them, so "compiled for 2 targets" no longer reads as a shortfall against the "every agent" pitch.</li><li>Website and docs corrected: the interactive preview no longer shows a fictional 1,480-token cost, the quickstart review/compile blocks match the real CLI, the standing-tax figure is stated once, README marks which skills ship vs are planned, and "KSF" is expanded on first use.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li>Per-command help (<code>kitbash install --help</code>, <code>kitbash help &lt;command&gt;</code>), a did-you-mean suggestion on a mistyped command, and proper pluralization in count lines ("1 skill for 2 targets", not "1 skill(s) for 2 agent target(s)"). Token counts carry units (<code>standing 60 tok/session</code>). Removed the <code>-v</code> version alias (it collides with the near-universal <code>-v</code> = verbose).</li></ul>
+</article>
+
 <article class="release" id="v0.10.0">
   <div class="release-head">
     <h2><a href="#v0.10.0">v0.10.0</a></h2>
-    <span class="release-date">2026-07-26</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-07-26</span>
   </div>
 <p class="release-intro">Secrets and behavioral checks — adopted from the field-tested rule set of a dedicated agent-config scanner, but scoped to what Kitbash does: scan the skill being installed, statically, with no network. Kitbash does not audit your own agent config (settings.json, MCP servers, hooks) — that is a different tool's job.</p>
 <h3 class="group">Added</h3>

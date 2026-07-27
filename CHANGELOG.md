@@ -2,6 +2,23 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.11.0] — 2026-07-28
+
+Credibility pass. A staff-level review of the shipped product found the docs, site, and CLI contradicting each other — fatal for a tool whose whole pitch is honest measurement. Every fix here aligns the surface with reality; none is a new feature.
+
+### Fixed
+- **The flagship number was reported three ways.** `compile` warned ~517, `preview` showed ~507, and the benchmark said 560 for the same skill on the same target — because the compiled permissions note and the adapter's own wrapper were counted inconsistently. All three now report the true cost of the emitted file (560), and `preview` renders exactly what `compile` writes.
+- **The measurement no longer fails `--strict`.** The standing-cost report was pushed into the same `warnings` array as real problems, so `compile --strict` failed on the one bundled skill — the product punishing the one number it exists to surface. It is now an informational note (`ℹ`), not a warning; `--strict` still fails on genuine warnings (budget overruns, degradation, conflicts).
+- **Stub commands cited already-passed milestones.** `kitbash update` said "lands in v0.2" on a 0.10 build. The eight unimplemented commands now point at the roadmap with no stale version, and `--help` lists them under a separate "Planned (not yet implemented)" section instead of mixing them with working commands.
+- **The bundled example advertised `mode = gate`** while `kitbash gate` is unimplemented; it now ships as `mode = skill`, runnable end to end with shipped commands.
+- **Exit codes are consistent and conventional:** unknown command is `2` (usage) with a did-you-mean suggestion instead of `1` + a full help dump; an unbuilt command is `7`; `test`/`lint` on an empty repo return `0` (vacuous pass) to match `compile`/`list`, so CI scripting agrees across commands.
+- **`doctor`** shows undetected targets with `·` (not present in this repo) instead of `✗` (which now means a real problem), with an "N of 9 in this repo" count.
+- **`compile`** on a partial fan-out prints how many more targets are available and how to enable them, so "compiled for 2 targets" no longer reads as a shortfall against the "every agent" pitch.
+- Website and docs corrected: the interactive preview no longer shows a fictional 1,480-token cost, the quickstart review/compile blocks match the real CLI, the standing-tax figure is stated once, README marks which skills ship vs are planned, and "KSF" is expanded on first use.
+
+### Added
+- Per-command help (`kitbash install --help`, `kitbash help <command>`), a did-you-mean suggestion on a mistyped command, and proper pluralization in count lines ("1 skill for 2 targets", not "1 skill(s) for 2 agent target(s)"). Token counts carry units (`standing 60 tok/session`). Removed the `-v` version alias (it collides with the near-universal `-v` = verbose).
+
 ## [0.10.0] — 2026-07-26
 
 Secrets and behavioral checks — adopted from the field-tested rule set of a dedicated agent-config scanner, but scoped to what Kitbash does: scan the skill being installed, statically, with no network. Kitbash does not audit your own agent config (settings.json, MCP servers, hooks) — that is a different tool's job.

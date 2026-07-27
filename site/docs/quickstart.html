@@ -130,9 +130,9 @@ brew install singhharsh1708/tap/kitbash</code></pre>
       <p>Skills come from a GitHub repo, a subfolder of one, or a local path:</p>
       <pre class="copyable"><code>kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview</code></pre>
       <p>Before anything is written to disk, Kitbash shows you what the skill declares and asks for confirmation:</p>
-      <pre><code>review: prereview@0.1.0 — Reviews a diff against the team's actual standards
-  budget 1500 tokens · standing 60 · lazy disclosure · mode skill
-  permissions: tools [read, grep, bash:git *] · network no · write no
+      <pre><code>review: prereview@0.1.0 — Review the working diff against this team's real standards before it ships
+  budget 1500 tok · standing 60 tok/session · lazy disclosure · mode skill
+  permissions: tools [read, grep, bash:git diff *, bash:git log *] · network no · write no
 install prereview@0.1.0? [y/N]</code></pre>
       <div class="callout">
         <p><b>This is the point.</b> Installing a skill means letting someone else's instructions run with your agent's permissions. Read the review block before you answer. In scripts and CI, pass <code>--yes</code> to skip the prompt — see <a href="trust">trust &amp; review</a>.</p>
@@ -142,12 +142,12 @@ install prereview@0.1.0? [y/N]</code></pre>
       <h2 id="compile">4. Compile</h2>
       <pre class="copyable"><code>kitbash compile</code></pre>
       <p>Kitbash detects which agents your repo is set up for and writes each one's native format:</p>
-      <pre><code><span class="ok">✓</span> compiled 1 skill → 3 targets
+      <pre><code><span class="ok">✓</span> compiled 1 skill for 2 targets
 <span class="c">→</span> .claude/skills/prereview/SKILL.md
-<span class="c">→</span> .cursor/rules/prereview.mdc
+<span class="c">→</span> .claude/commands/prereview.md
 <span class="c">→</span> AGENTS.md §prereview
 <span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load;
-  this skill costs ~517 tokens standing every session</code></pre>
+  this skill costs ~560 tokens standing every session</code></pre>
       <p>That last warning is the part other tools don't give you. Kitbash compiles to the cheapest loading mode each target supports, so lazy targets (Claude Code, Cursor, Devin, the <code>.agents/skills/</code> path) load a skill only when it's invoked. Targets with no deferred mode carry the whole body in context every single session — a standing tax measured at 13×–45× in the <a href="../benchmark">benchmark</a>.</p>
 
       <h2 id="inspect">5. Inspect before you trust</h2>

@@ -2,6 +2,8 @@
 
 First-party skills, dogfooded on this repo before release. Each exists because it moves a real lever — fewer review cycles, faster onboarding, fewer bugs — not because a model *can* do it. Selection rule: if a frontier model already does it well from a bare prompt, it's not a skill; skills earn their place through project grounding (lore), enforcement (gates), or composition (artifacts).
 
+**Status:** one skill ships today — `/prereview`, in `examples/skills/`. The other six below are designed here in full but not yet built; see the [roadmap](roadmap.md).
+
 Pipeline they form:
 
 ```
