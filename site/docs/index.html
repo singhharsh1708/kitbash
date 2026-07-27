@@ -194,12 +194,13 @@ network = false
 write = false</code></pre>
       <p><code>kitbash compile</code> reads every installed skill, detects which assistants the repo is set up for, and writes each one's native format:</p>
       <pre class="copyable"><code>kitbash compile</code></pre>
-      <pre><code><span class="ok">✓</span> compiled 1 skill → 3 targets
+      <pre><code><span class="ok">✓</span> compiled 1 skill for 3 targets
 <span class="c">→</span> .claude/skills/prereview/SKILL.md
+<span class="c">→</span> .claude/commands/prereview.md
 <span class="c">→</span> .cursor/rules/prereview.mdc
 <span class="c">→</span> AGENTS.md §prereview
 <span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load;
-  this skill costs ~517 tokens standing every session</code></pre>
+  this skill costs ~560 tokens standing every session</code></pre>
       <p>Per-file targets get a file of their own. Shared-file targets — <code>AGENTS.md</code> and Aider's <code>CONVENTIONS.md</code> — get a marker-delimited section merged into whatever is already there, so hand-written content survives a recompile and removed skills get pruned on the next one. <code>AGENTS.md</code> is the floor: it is always emitted, because everything that reads it (Codex among them) then gets the skill for free.</p>
       <div class="callout">
         <p><b>Degradation is visible, never silent.</b> When a target cannot honor something a skill declared — lazy loading, a required capability — the compiler says so on stdout and <code>kitbash explain &lt;skill&gt; &lt;adapter&gt;</code> says why. <code>--strict</code> turns those warnings into a non-zero exit for CI.</p>

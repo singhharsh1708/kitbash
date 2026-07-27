@@ -20,7 +20,10 @@ export interface CompiledFile {
 
 export interface AdapterOutput {
   files: CompiledFile[];
+  /** Actionable problems (degradation, budget) — these fail `compile --strict`. */
   warnings: string[];
+  /** Informational (the measured standing cost) — surfaced, but not a --strict failure. */
+  notes?: string[];
 }
 
 export interface Adapter {
@@ -63,14 +66,17 @@ function markers(name: string): { begin: string; end: string } {
 
 /**
  * A skill authored to lazy-load (disclosure = "lazy") cannot lazy-load on an eager
- * target — the whole body sits in context every session. Surface that cost so the
- * warning matches reality on ALL eager targets, not just the shared-file ones.
+ * target — the whole emitted file sits in context every session. This is measured
+ * from the ACTUAL emitted files (not the pre-wrap body) so the number matches what
+ * `preview` and the benchmark report for the same skill. It is a NOTE, not a warning:
+ * it is the product's headline measurement, not a problem, so it never fails --strict.
  */
-function eagerStandingWarning(skill: LoadedSkill, adapter: Adapter, body: string): string[] {
+function eagerStandingNote(skill: LoadedSkill, adapter: Adapter, files: CompiledFile[]): string[] {
   if (adapter.loading !== "eager" || skill.manifest.context.disclosure !== "lazy") return [];
+  const cost = files.reduce((sum, f) => sum + estimateTokens(f.content), 0);
   const { name } = skill.manifest.skill;
   return [
-    `${name} → ${adapter.id}: ${adapter.id} is eager and cannot lazy-load; this skill costs ~${estimateTokens(body)} tokens standing every session (declared limit: ${skill.manifest.context.standing})`,
+    `${name} → ${adapter.id}: ${adapter.id} is eager and cannot lazy-load, so this skill adds ~${cost} tokens standing every session (a lazy target pays 0; declared limit ${skill.manifest.context.standing})`,
   ];
 }
 
@@ -85,8 +91,8 @@ function mergedFileAdapter(id: string, file: string, detect: (root: string) => b
       const { name } = skill.manifest.skill;
       const { begin, end } = markers(name);
       const section = `${begin}\n${header(skill)}\n\n## Skill: ${name}\n\n${body.trim()}\n${end}`;
-      const warnings = [...degradationWarnings(skill, this), ...eagerStandingWarning(skill, this, body)];
-      return { files: [{ path: file, content: section, merge: true }], warnings };
+      const files = [{ path: file, content: section, merge: true }];
+      return { files, warnings: degradationWarnings(skill, this), notes: eagerStandingNote(skill, this, files) };
     },
   };
 }
@@ -108,10 +114,8 @@ function fileAdapter(
     emit(skill, body, root) {
       const { name } = skill.manifest.skill;
       const content = `${frontmatter(skill)}${header(skill)}\n\n${body}`;
-      return {
-        files: [{ path: pathFor(name, root), content }],
-        warnings: [...degradationWarnings(skill, this), ...eagerStandingWarning(skill, this, body)],
-      };
+      const files = [{ path: pathFor(name, root), content }];
+      return { files, warnings: degradationWarnings(skill, this), notes: eagerStandingNote(skill, this, files) };
     },
   };
 }

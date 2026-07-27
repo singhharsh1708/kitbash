@@ -177,7 +177,7 @@ export async function cmdInstall(args: string[]): Promise<number> {
     // Review before install (spec §2: permissions are surfaced at install review).
     const m = skill.manifest;
     console.log(`review: ${name}@${version} — ${description}`);
-    console.log(`  budget ${m.context.budget} tokens · standing ${m.context.standing} · ${m.context.disclosure} disclosure · mode ${m.targets.mode}`);
+    console.log(`  budget ${m.context.budget} tok · standing ${m.context.standing} tok/session · ${m.context.disclosure} disclosure · mode ${m.targets.mode}`);
     console.log(`  permissions: tools [${m.permissions.tools.join(", ") || "none"}] · network ${m.permissions.network ? "YES" : "no"} · write ${m.permissions.write ? "YES" : "no"}`);
     if (m.targets.requires.length) console.log(`  requires: ${m.targets.requires.join(", ")}`);
     if (skill.bare) console.log(`  ⚠ unmanifested (SKILL.md only) — defaults applied, no permissions or budget declared by the author`);
@@ -276,18 +276,20 @@ export async function cmdList(): Promise<number> {
   for (const s of skills) {
     const m = s.manifest;
     const bare = s.bare ? "  [unmanifested]" : "";
-    console.log(`${m.skill.name}@${m.skill.version}  budget=${m.context.budget}  standing=${m.context.standing}  mode=${m.targets.mode}${bare}  — ${m.skill.description}`);
+    console.log(`${m.skill.name}@${m.skill.version}  budget=${m.context.budget}tok  standing=${m.context.standing}tok/session  mode=${m.targets.mode}${bare}  — ${m.skill.description}`);
   }
   return 0;
 }
 
 export async function cmdDoctor(): Promise<number> {
   const root = process.cwd();
-  console.log("detected targets:");
+  const detected = ADAPTERS.filter((a) => a.detect(root)).length;
+  console.log(`detected targets (${detected} of ${ADAPTERS.length} in this repo):`);
   for (const a of ADAPTERS) {
     const found = a.detect(root);
     const note = a.id === "agentsmd" ? " (floor: Codex, Gemini CLI, anything reading AGENTS.md)" : "";
-    console.log(`  ${found ? "✓" : "✗"} ${a.id}${note}`);
+    // `·` = not present in this repo (not a failure); `✗` is reserved for real problems below.
+    console.log(`  ${found ? "✓" : "·"} ${a.id}${note}`);
   }
 
   const { skills, failures } = loadInstalledSkillsSafe(root);
@@ -497,7 +499,8 @@ export async function cmdCompile(args: string[]): Promise<number> {
 
   const files = new Map<string, string>();
   const owners = new Map<string, string>(); // non-merge path → skill that wrote it, for conflict detection
-  const warnings: string[] = [];
+  const warnings: string[] = []; // actionable — fail --strict
+  const notes: string[] = []; // informational (measured standing cost) — never fail --strict
   // shared marker-merged files (AGENTS.md, GEMINI.md): start from pruned on-disk content
   const mergedFiles = new Map<string, string>();
 
@@ -521,6 +524,7 @@ export async function cmdCompile(args: string[]): Promise<number> {
     for (const adapter of adapters) {
       const out = adapter.emit(skill, emitBody, root);
       warnings.push(...out.warnings);
+      if (out.notes) notes.push(...out.notes);
       for (const f of out.files) {
         if (f.merge) {
           const current = mergedFiles.get(f.path) ?? pruneSections(readFileIfExists(root, f.path), installedNames);
@@ -562,16 +566,36 @@ export async function cmdCompile(args: string[]): Promise<number> {
   }
   for (const pruned of pruneStaleOutputs(root, new Set(files.keys()))) console.log(`✂ ${pruned}`);
   for (const w of warnings) console.log(`⚠ ${w}`);
+  for (const n of notes) console.log(`ℹ ${n}`); // the measurement — informational, not a failure
   if (!skills.length) {
     console.log("no skills installed — kitbash install <source> to add one");
     return 0;
   }
-  console.log(`compiled ${skills.length} skill(s) for ${adapters.length} agent target(s)`);
+  console.log(`compiled ${plural(skills.length, "skill")} for ${plural(adapters.length, "target")}`);
+  // The pitch is "every agent" — a partial fan-out on a fresh repo looks like a shortfall.
+  if (adapters.length < ADAPTERS.length && !hasExplicitTargets(root)) {
+    const missing = ADAPTERS.filter((a) => !adapters.includes(a)).map((a) => a.id);
+    console.log(`  ${ADAPTERS.length - adapters.length} more target(s) available — add ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? ", …" : ""} under [project].targets in ${CONFIG}, or create their agent dirs.`);
+  }
   if (strict && warnings.length) {
-    console.error(`--strict: failing on ${warnings.length} warning(s)`);
+    console.error(`--strict: failing on ${plural(warnings.length, "warning")}`);
     return 1;
   }
   return 0;
+}
+
+/** English pluralization for count lines — replaces the terse "1 skill(s)". */
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
+/** True when kitbash.toml explicitly sets [project].targets (so a partial set is intentional). */
+function hasExplicitTargets(root: string): boolean {
+  const p = join(root, CONFIG);
+  if (!existsSync(p)) return false;
+  const raw = parseToml(readFileSync(p, "utf8"));
+  const project = raw["project"];
+  return !!(project && typeof project === "object" && !Array.isArray(project) && Array.isArray((project as Record<string, unknown>)["targets"]));
 }
 
 /** Static-tier evals (SPEC §6): schema, dead refs, budgets, artifact/trigger shape, injection heuristics.
@@ -840,8 +864,9 @@ export async function cmdTest(args: string[]): Promise<number> {
     }
   }
   if (!skills.length) {
-    console.error("no skills installed — kitbash install <source> first");
-    return 1;
+    // An empty set vacuously passes — matches compile/list, so CI scripting is consistent.
+    console.log("no skills installed — nothing to test.");
+    return 0;
   }
 
   const { failed, warned } = reportChecks(skills);
@@ -873,8 +898,9 @@ export async function cmdLint(args: string[]): Promise<number> {
   } else {
     skills = loadInstalledSkills(root);
     if (!skills.length) {
-      console.error("no skills installed — kitbash install <source> or pass a path: kitbash lint <path/to/skill>");
-      return 1;
+      // Empty set vacuously passes (matches compile/test); pass a path to lint an uninstalled skill.
+      console.log("no skills installed — nothing to lint (pass a path to lint an uninstalled skill).");
+      return 0;
     }
   }
 
@@ -980,6 +1006,9 @@ export async function cmdPreview(args: string[]): Promise<number> {
 
     const { name, version } = skill.manifest.skill;
     console.log(`preview: ${name}@${version}\n`);
+    // Preview must show what compile emits, incl. the compiled permissions note,
+    // so its token numbers match `compile` and the benchmark for the same skill.
+    body = body + permissionsNote(skill.manifest);
 
     // Mirror compile: a bad [project].targets is an error, not a silent fall back
     // to every adapter (which would preview output the repo will never generate).
@@ -996,6 +1025,7 @@ export async function cmdPreview(args: string[]): Promise<number> {
       const standingLabel = adapter.loading === "eager" ? `~${bodyTokens} tok standing` : `lazy (0 tok standing)`;
       console.log(`─── ${adapter.id} [${adapter.loading}] ${standingLabel} ───`);
       for (const w of out.warnings) console.log(`⚠ ${w}`);
+      for (const n of out.notes ?? []) console.log(`ℹ ${n}`);
       for (const f of out.files) {
         console.log(`\n  → ${f.path}\n`);
         console.log(f.content);
