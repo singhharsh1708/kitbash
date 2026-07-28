@@ -28,7 +28,7 @@ R=$(mktemp -d); cd "$R"; mkdir .claude .cursor
 K=<path-to>/packages/cli/dist/index.js   # from `npm test`/`npm run build`
 
 node "$K" --version                      # prints version
-node "$K" bogus-cmd; echo $?             # unknown command → exit 1
+node "$K" bogus-cmd; echo $?             # unknown command → exit 2 (usage), with a did-you-mean
 node "$K" init                           # creates kitbash.toml + .kitbash/skills/
 ```
 
