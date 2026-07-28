@@ -321,7 +321,7 @@ compiled 1 skill for 2 targets
       <div class="cmd-entry">
         <h3 id="doctor">doctor</h3>
         <p class="sig">kitbash doctor</p>
-        <p>The repo health check. It reports which of the nine adapters were detected, how many skills are installed, the total standing context cost of their stubs, the worst-case active cost if every skill fired in one session, and then verifies the lockfile.</p>
+        <p>The repo health check. It reports which of the ten adapters were detected, how many skills are installed, the total standing context cost of their stubs, the worst-case active cost if every skill fired in one session, and then verifies the lockfile.</p>
         <p>Three integrity conditions are checked: skills installed with no <code>kitbash.lock</code> at all, a locked skill whose files on disk no longer match their recorded hash, and a skill present on disk but absent from the lockfile. All three mean the code your agents load is not the code somebody reviewed.</p>
         <p>If <code>[policy]</code> is configured, doctor rechecks it against everything already installed — using each skill's recorded source from the lockfile. That catches skills that predate the policy or were copied in without going through <code>kitbash install</code>.</p>
         <ul class="flag-list">
@@ -446,12 +446,12 @@ prereviw: not found as a path or installed skill name (or pass a source: gh:owne
         <p>Explain reports two independent kinds of loss. Capability degradation: each entry in the skill's <code>targets.requires</code> that the adapter does not support, which compiles down to instruction-only. And loading degradation: a skill authored for lazy disclosure on an eager adapter, which pays its full body as standing context in every session.</p>
         <ul class="flag-list">
           <li><code>&lt;target&gt;</code> <span>Required, first positional. Path, installed name, or uninstalled source.</span></li>
-          <li><code>&lt;adapter&gt;</code> <span>Required, second positional. One of the nine adapter ids.</span></li>
+          <li><code>&lt;adapter&gt;</code> <span>Required, second positional. One of the ten adapter ids.</span></li>
         </ul>
         <pre><code><span class="c">$ kitbash explain prereview agentsmd</span>
 prereview → agentsmd: no capability degradation
   <span class="warn">⚠</span> loading: agentsmd is eager — skill costs ~560 tokens standing every session (declared limit: 60)</code></pre>
-        <p>No adapter declares a capability today — <code>emit()</code> writes instructions but does not copy <code>scripts/</code>, install a hook, or wire a subagent — so a skill that <code>requires</code> any of <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, or <code>network</code> reports degraded on every one of the nine targets, Claude Code included:</p>
+        <p>No adapter declares a capability today — <code>emit()</code> writes instructions but does not copy <code>scripts/</code>, install a hook, or wire a subagent — so a skill that <code>requires</code> any of <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, or <code>network</code> reports degraded on every one of the ten targets, Claude Code included:</p>
         <pre><code><span class="c">$ kitbash explain prereview cursor</span>
 prereview → cursor: degraded
   <span class="warn">✗</span> requires "scripts" — not supported by cursor; compiled instruction-only</code></pre>

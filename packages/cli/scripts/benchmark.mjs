@@ -1,5 +1,5 @@
 /**
- * Measured benchmark: one source skill → 8 targets, real token cost per target.
+ * Measured benchmark: one source skill → every target, real token cost per target.
  *
  * Runs the actual compile pipeline on committed fixtures (no network), then
  * measures the emitted output the way an agent pays for it: standing cost
@@ -44,7 +44,11 @@ function measure(tmp, target, skillName) {
       return estimateTokens(read(`.claude/skills/${skillName}/SKILL.md`));
     case "cursor":
       return estimateTokens(read(`.cursor/rules/${skillName}.mdc`));
+    // zed reads the same vendor-neutral path and emits the same bytes, so it
+    // measures identically — listed rather than folded in, because a reader
+    // looking up "what does Zed cost" must find a row.
     case "agents":
+    case "zed":
       return estimateTokens(read(`.agents/skills/${skillName}/SKILL.md`));
     case "copilot":
       return estimateTokens(read(`.github/skills/${skillName}/SKILL.md`));
@@ -68,8 +72,8 @@ function measure(tmp, target, skillName) {
 const tmp = mkdtempSync(join(tmpdir(), "kitbash-bench-"));
 const skills = [];
 try {
-  // Every target present so all eight adapters fire.
-  for (const d of [".claude", ".cursor", ".agents", ".clinerules", ".windsurf", ".github"]) mkdirSync(join(tmp, d));
+  // Every target present so every adapter fires.
+  for (const d of [".claude", ".cursor", ".agents", ".zed", ".clinerules", ".windsurf", ".github"]) mkdirSync(join(tmp, d));
   writeFileSync(join(tmp, "GEMINI.md"), "");
   writeFileSync(join(tmp, "CONVENTIONS.md"), "");
 

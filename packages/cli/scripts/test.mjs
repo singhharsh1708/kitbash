@@ -699,6 +699,53 @@ try {
   rmSync(devin, { recursive: true, force: true });
 }
 
+// --- zed: .zed detection, and the frontmatter constraints Zed enforces silently ---
+
+const zed = mkdtempSync(join(tmpdir(), "kitbash-zed-"));
+try {
+  mkdirSync(join(zed, ".zed"));
+  run(["init"], zed);
+  run(["install", `file:${fixture}`, "--yes"], zed);
+  const c = run(["compile"], zed);
+
+  // The gap this target closes: before it, a Zed-only repo compiled to nothing
+  // but the eager AGENTS.md floor and paid the whole body every session.
+  const zedSkill = join(zed, ".agents/skills/prereview/SKILL.md");
+  check("zed: .zed alone emits the vendor-neutral skills path", existsSync(zedSkill), c.out);
+  check("zed: emits Zed's frontmatter", /^---\nname: prereview\ndescription: "/.test(readFileSync(zedSkill, "utf8")), c.out);
+  check("zed: a conforming skill draws no constraint warning", !c.out.includes("→ zed:"), c.out);
+
+  // zed and agents write the same path; a repo with both must compile it once.
+  const both = run(["compile"], zed); // .agents/ now exists, so the agents adapter fires too
+  const writes = (both.out.match(/→ \.agents\/skills\/prereview\/SKILL\.md/g) ?? []).length;
+  check("zed + agents write the shared path once, no conflict", writes === 1 && !both.out.includes("conflict:"), both.out);
+
+  // Zed's own loader is stricter than KSF and rejects without a diagnostic, so
+  // an unmanifested SKILL.md — frontmatter copied through unvalidated — is the
+  // one input that can reach it malformed.
+  const badZed = (name, description) => {
+    const d = join(zed, `${name}-src`);
+    mkdirSync(d);
+    writeFileSync(join(d, "SKILL.md"), `---\nname: ${name}\ndescription: ${description}\n---\n\nBody one.\n\nBody two.\n`);
+    run(["install", `file:${d}`, "--yes"], zed);
+  };
+  badZed("tidy--commits", "Doubled hyphen is legal KSF, illegal in Zed");
+  badZed("empty-desc", '""');
+  badZed("wide-desc", "é".repeat(600)); // 600 chars, 1200 bytes — the byte-vs-char trap
+
+  const bad = run(["compile"], zed);
+  check("zed: doubled hyphen in name warned", bad.out.includes("tidy--commits → zed: name must match"), bad.out);
+  check("zed: empty description warned", bad.out.includes("empty-desc → zed: description is empty"), bad.out);
+  check("zed: description measured in bytes, not characters", bad.out.includes("wide-desc → zed: description is 1200 bytes"), bad.out);
+  check("zed: constraint breaches are warnings, so --strict fails", run(["compile", "--strict"], zed).status === 1);
+
+  // explain must not answer "no capability degradation" about a skill the target discards
+  const ex = run(["explain", "tidy--commits", "zed"], zed);
+  check("zed: explain surfaces the rejection", ex.status === 0 && ex.out.includes("✗ tidy--commits → zed: name must match"), ex.out);
+} finally {
+  rmSync(zed, { recursive: true, force: true });
+}
+
 // --- trust & review: pre-install review, --yes, [policy] allowlists ---
 
 const trust = mkdtempSync(join(tmpdir(), "kitbash-trust-"));
