@@ -44,18 +44,17 @@ function measure(tmp, target, skillName) {
       return estimateTokens(read(`.claude/skills/${skillName}/SKILL.md`));
     case "cursor":
       return estimateTokens(read(`.cursor/rules/${skillName}.mdc`));
-    // zed reads the same vendor-neutral path and emits the same bytes, so it
-    // measures identically — listed rather than folded in, because a reader
-    // looking up "what does Zed cost" must find a row.
+    // zed and cline read the same vendor-neutral path and emit the same bytes,
+    // so they measure identically — listed rather than folded in, because a
+    // reader looking up "what does Zed cost" must find a row.
     case "agents":
     case "zed":
+    case "cline":
       return estimateTokens(read(`.agents/skills/${skillName}/SKILL.md`));
     case "copilot":
       return estimateTokens(read(`.github/skills/${skillName}/SKILL.md`));
     case "gemini":
       return estimateTokens(read(`.gemini/skills/${skillName}/SKILL.md`));
-    case "cline":
-      return estimateTokens(read(`.clinerules/${skillName}.md`));
     case "windsurf":
       return estimateTokens(read(`.windsurf/rules/${skillName}.md`));
     case "aider":

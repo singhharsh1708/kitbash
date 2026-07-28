@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.12.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.13.0</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,21 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.13.0">
+  <div class="release-head">
+    <h2><a href="#v0.13.0">v0.13.0</a></h2>
+    <span class="release-date">2026-07-29</span><span class="release-tag">latest</span>
+  </div>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>Cline was being charged a standing tax it stopped owing, and served the same skill twice.</strong> The <code>cline</code> adapter compiled to <code>.clinerules/&lt;name&gt;.md</code> — a <em>rule</em>, always active, whole body in context every session — and declared the target eager. Cline reads Agent Skills (<code>apps/vscode/src/core/storage/skill-directories.ts</code> scans <code>.cline/skills</code>, <code>.clinerules/skills</code>, <code>.claude/skills</code> and <code>.agents/skills</code>) and loads them progressively: name and description at startup, the body only when <code>use_skill</code> fires. So the target was billed ~539 standing tokens for a skill Cline was willing to lazy-load for ~40. Worse, in any repo that also had <code>.agents/</code>, Kitbash emitted the identical body to both paths and Cline scanned both — the always-on copy defeating the lazy one, and a tool whose entire pitch is measuring standing cost silently adding ~539 tokens of it. <code>cline</code> now compiles to <code>.agents/skills/&lt;name&gt;/SKILL.md</code>, the same vendor-neutral file <code>agents</code> and <code>zed</code> emit, which makes the duplicate structurally impossible: one file serves Cline, Codex, Cursor, Copilot and Zed at once. Detection gains <code>.cline/</code>. Stale <code>.clinerules/&lt;name&gt;.md</code> output is pruned on the next compile; your own rule files there are untouched.</li><li><strong>The measured tax moved with it</strong>, because the numbers are read from the adapters rather than restated: <strong>14×</strong> for a manifested skill (~40 lazy vs ~560 eager) and <strong>47×</strong> for an unmanifested one, up from 13× and 45×. Cline leaving the eager set costs a row in a table, not the argument — <code>aider</code> and <code>agentsmd</code> still carry the whole body every session. Eight of the ten targets are now lazy.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li><strong>A skill authored <code>disclosure = "eager"</code> now warns on <code>cline</code>.</strong> Cline loads every skill on demand, so an eager-authored skill does not get the always-resident body it asked for. Compiling that silently would fix one spec §2 conformance violation by introducing its mirror image; it warns instead, and fails <code>--strict</code>.</li></ul>
+</article>
+
 <article class="release" id="v0.12.0">
   <div class="release-head">
     <h2><a href="#v0.12.0">v0.12.0</a></h2>
-    <span class="release-date">2026-07-28</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-07-28</span>
   </div>
 <h3 class="group">Added</h3>
 <ul><li><strong><code>zed</code> adapter — the tenth target.</strong> Zed reads the vendor-neutral <code>.agents/skills/&lt;name&gt;/SKILL.md</code> path, but nothing in a Zed-only repo announces that: the <code>agents</code> adapter probes <code>.agents/</code> and <code>.codex/</code>, neither of which Zed creates. A repo whose only agent marker was <code>.zed/</code> therefore compiled to nothing but the eager <code>AGENTS.md</code> floor — paying a skill's whole body every session on an agent that can lazy-load it for free. The new target detects <code>.zed/</code> and emits the byte-identical file <code>agents</code> does, so a repo with both compiles that skill once, not twice. <strong>Ten targets, nine output files.</strong></li><li><strong>Zed's silent frontmatter rejections are now visible.</strong> Zed's skill loader is stricter than KSF and drops a non-conforming skill at load with no diagnostic in the UI — the silent capability loss spec §2 forbids. Two constraints are checked and warned about at <code>compile</code> (so <code>--strict</code> fails on them) and in <code>explain</code>: <code>name</code> must match <code>^[a-z0-9]+(-[a-z0-9]+)*$</code>, which rejects the doubled and trailing hyphens KSF's own name rule permits (<code>tidy--commits</code> is a legal skill name Zed will not load); and <code>description</code> must be non-empty and at most <strong>1024 UTF-8 bytes, not characters</strong> — a trap for any non-ASCII description, where 600 characters can be 1,200 bytes. A manifested skill is bounded at 200 characters, so only an unmanifested <code>SKILL.md</code>, whose frontmatter is copied through unvalidated, can breach either bound. No <code>disable-model-invocation</code> key is emitted: KSF has no field meaning "never auto-invoke", so synthesizing one would guess at the author's intent.</li></ul>

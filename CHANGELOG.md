@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.13.0] — 2026-07-29
+
+### Fixed
+- **Cline was being charged a standing tax it stopped owing, and served the same skill twice.** The `cline` adapter compiled to `.clinerules/<name>.md` — a *rule*, always active, whole body in context every session — and declared the target eager. Cline reads Agent Skills (`apps/vscode/src/core/storage/skill-directories.ts` scans `.cline/skills`, `.clinerules/skills`, `.claude/skills` and `.agents/skills`) and loads them progressively: name and description at startup, the body only when `use_skill` fires. So the target was billed ~539 standing tokens for a skill Cline was willing to lazy-load for ~40. Worse, in any repo that also had `.agents/`, Kitbash emitted the identical body to both paths and Cline scanned both — the always-on copy defeating the lazy one, and a tool whose entire pitch is measuring standing cost silently adding ~539 tokens of it. `cline` now compiles to `.agents/skills/<name>/SKILL.md`, the same vendor-neutral file `agents` and `zed` emit, which makes the duplicate structurally impossible: one file serves Cline, Codex, Cursor, Copilot and Zed at once. Detection gains `.cline/`. Stale `.clinerules/<name>.md` output is pruned on the next compile; your own rule files there are untouched.
+- **The measured tax moved with it**, because the numbers are read from the adapters rather than restated: **14×** for a manifested skill (~40 lazy vs ~560 eager) and **47×** for an unmanifested one, up from 13× and 45×. Cline leaving the eager set costs a row in a table, not the argument — `aider` and `agentsmd` still carry the whole body every session. Eight of the ten targets are now lazy.
+
+### Added
+- **A skill authored `disclosure = "eager"` now warns on `cline`.** Cline loads every skill on demand, so an eager-authored skill does not get the always-resident body it asked for. Compiling that silently would fix one spec §2 conformance violation by introducing its mirror image; it warns instead, and fails `--strict`.
+
 ## [0.12.0] — 2026-07-28
 
 ### Added

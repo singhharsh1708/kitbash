@@ -278,15 +278,53 @@ function zedConstraints(skill: LoadedSkill): string[] {
  */
 const zed = skillDirAdapter("zed", ".agents/skills", (root) => existsSync(join(root, ".zed")), zedConstraints);
 
-// Cline rule files are always loaded — eager.
-const cline = fileAdapter(
+/**
+ * Cline reads Agent Skills, and has since it grew a skills loader
+ * (`apps/vscode/src/core/storage/skill-directories.ts`): `.cline/skills`,
+ * `.clinerules/skills`, `.claude/skills` and `.agents/skills` are all scanned.
+ * Loading is progressive — name and description at startup, the body only when
+ * `use_skill` fires.
+ *
+ * Until 0.13.0 this adapter wrote `.clinerules/<name>.md`, which is a *rule*:
+ * always active, whole body in context, every session. That was wrong twice
+ * over. It billed Cline ~539 standing tokens for a skill Cline was willing to
+ * lazy-load for ~40, and in a repo that also had `.agents/` it emitted the same
+ * body to both paths — so Cline loaded the skill twice, and the always-on copy
+ * defeated the lazy one. A compiler whose entire claim is "cheapest loading
+ * mode the target actually supports" was picking the most expensive mode
+ * available and charging for it.
+ *
+ * Of the four scanned directories this emits to `.agents/skills`, the same
+ * vendor-neutral path `agents` and `zed` use, rather than the `.cline/skills`
+ * their docs nominate. Cline scans both equally, and sharing the path is what
+ * makes the duplicate structurally impossible: one file serves Cline, Codex,
+ * Cursor, Copilot and Zed at once, and a repo with several of their marker
+ * directories still compiles that skill exactly once.
+ */
+const cline = skillDirAdapter(
   "cline",
-  [],
-  "eager",
-  (root) => existsSync(join(root, ".clinerules")),
-  (name) => `.clinerules/${name}.md`,
-  () => "",
+  ".agents/skills",
+  (root) => existsSync(join(root, ".clinerules")) || existsSync(join(root, ".cline")),
+  clineConstraints,
 );
+
+/**
+ * The mirror of the bug above: Cline loads every skill on demand, so a skill
+ * authored `disclosure = "eager"` does not get the always-resident body its
+ * author asked for. Compiling that silently would trade one conformance
+ * violation (spec §2) for its reflection, so say it out loud.
+ *
+ * `.clinerules/<name>.md` would still deliver eager loading, and a
+ * disclosure-aware two-path adapter is the obvious extension — but nobody has
+ * asked for it, and a warning is the honest minimum in the meantime.
+ */
+function clineConstraints(skill: LoadedSkill): string[] {
+  if (skill.manifest.context.disclosure !== "eager") return [];
+  const { name } = skill.manifest.skill;
+  return [
+    `${name} → cline: authored disclosure = "eager", but Cline loads skills on demand — the body stays out of context until the model invokes it`,
+  ];
+}
 
 /**
  * Windsurf became Devin Desktop on 2026-06-02; `.devin/rules/` is the preferred

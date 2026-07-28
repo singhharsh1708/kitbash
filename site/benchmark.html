@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width">
 <title>The standing token tax, measured — Kitbash</title>
-<meta name="description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 13x to 45x, across ten targets.">
+<meta name="description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 14x to 47x, across ten targets.">
 <link rel="canonical" href="https://kitbash.vercel.app/benchmark">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="kitbash">
 <meta property="og:url" content="https://kitbash.vercel.app/benchmark">
 <meta property="og:title" content="The standing token tax, measured — Kitbash">
-<meta property="og:description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 13x to 45x, across ten targets.">
+<meta property="og:description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 14x to 47x, across ten targets.">
 <meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="The standing token tax, measured — Kitbash">
-<meta name="twitter:description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 13x to 45x, across ten targets.">
+<meta name="twitter:description" content="Every agent that cannot lazy-load carries a skill's whole body every session. Kitbash measures that cost at compile time — 14x to 47x, across ten targets.">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
 <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
@@ -113,8 +113,8 @@
     </div>
 
     <div class="stat-row">
-      <div class="stat"><b>13&times;</b><span>Standing cost of a manifested skill on an eager target vs a lazy one</span></div>
-      <div class="stat"><b>45&times;</b><span>Same comparison for an unmanifested SKILL.md-only skill</span></div>
+      <div class="stat"><b>14&times;</b><span>Standing cost of a manifested skill on an eager target vs a lazy one</span></div>
+      <div class="stat"><b>47&times;</b><span>Same comparison for an unmanifested SKILL.md-only skill</span></div>
       <div class="stat"><b>9</b><span>Targets measured, every one through <code>kitbash compile</code></span></div>
       <div class="stat"><b>0</b><span>Hand-entered numbers — the table is generated and CI fails if it drifts</span></div>
     </div>
@@ -148,7 +148,7 @@
           <tr><td><code>agents</code></td><td>567</td><td><b>40</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>zed</code></td><td>567</td><td><b>40</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>copilot</code></td><td>567</td><td><b>40</b></td><td><span class="badge lazy">lazy</span></td></tr>
-          <tr><td><code>cline</code></td><td>539</td><td><b>539</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>cline</code></td><td>567</td><td><b>40</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>windsurf</code></td><td>569</td><td><b>40</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>gemini</code></td><td>567</td><td><b>40</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>aider</code></td><td>560</td><td><b>560</b></td><td><span class="badge eager">eager</span></td></tr>
@@ -156,7 +156,7 @@
       </table>
     </div>
     <div class="prose" style="margin-top: 1.2rem">
-      <p><b>Standing tax:</b> about 40 tokens on a lazy target against about 539 on an eager one — roughly <b>13&times; per session</b> for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.</p>
+      <p><b>Standing tax:</b> about 40 tokens on a lazy target against about 560 on an eager one — roughly <b>14&times; per session</b> for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.</p>
     </div>
   </section>
 
@@ -173,7 +173,7 @@
           <tr><td><code>agents</code></td><td>880</td><td><b>19</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>zed</code></td><td>880</td><td><b>19</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>copilot</code></td><td>880</td><td><b>19</b></td><td><span class="badge lazy">lazy</span></td></tr>
-          <tr><td><code>cline</code></td><td>859</td><td><b>859</b></td><td><span class="badge eager">eager</span></td></tr>
+          <tr><td><code>cline</code></td><td>880</td><td><b>19</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>windsurf</code></td><td>881</td><td><b>19</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>gemini</code></td><td>880</td><td><b>19</b></td><td><span class="badge lazy">lazy</span></td></tr>
           <tr><td><code>aider</code></td><td>885</td><td><b>885</b></td><td><span class="badge eager">eager</span></td></tr>
@@ -181,7 +181,7 @@
       </table>
     </div>
     <div class="prose" style="margin-top: 1.2rem">
-      <p><b>Standing tax:</b> about 19 tokens on a lazy target against about 859 on an eager one — roughly <b>45&times; per session</b>. The longer the skill, the worse the ratio, because the lazy stub stays small while the eager copy grows with the body.</p>
+      <p><b>Standing tax:</b> about 19 tokens on a lazy target against about 885 on an eager one — roughly <b>47&times; per session</b>. The longer the skill, the worse the ratio, because the lazy stub stays small while the eager copy grows with the body.</p>
     </div>
   </section>
 

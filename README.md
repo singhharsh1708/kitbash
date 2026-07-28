@@ -19,7 +19,7 @@ If you've used npm for packages, Docker for containers, or ESLint for lint rules
 
 **Stable specification, experimental ecosystem.** The Kitbash Skill Format (KSF) core is stabilized through [RFC 0002](rfcs/0002-ksf-1.0-stabilization.md): the manifest fields are frozen and evolve additive-only within the major version, so you can author skills and write adapters against a contract that won't shift under you. The ecosystem around it — more adapters, the index, first-party skills — is still early.
 
-> **Compiler insight** — Kitbash measures a skill's *standing token cost* (what it adds to your context every session) at compile time, before you ever install it. For prereview that's ~40 tokens on a lazy target; compiled to an eager one it's ~540 — a [13× per-session tax](docs/benchmarks/README.md) no other format surfaces. Run `npm run bench` for the numbers.
+> **Compiler insight** — Kitbash measures a skill's *standing token cost* (what it adds to your context every session) at compile time, before you ever install it. For prereview that's ~40 tokens on a lazy target; compiled to an eager one it's ~560 — a [14× per-session tax](docs/benchmarks/README.md) no other format surfaces. Run `npm run bench` for the numbers.
 
 ## A quick look
 
@@ -29,7 +29,7 @@ If you've used npm for packages, Docker for containers, or ESLint for lint rules
 
 That's an actual session. A third-party skill from the [skills.sh](https://www.skills.sh) convention gets installed and compiled into three agent formats. The thing to notice is the last warning: during compile, Kitbash measured the skill and pointed out that it quietly costs about 5,044 tokens on every request for agents that can't lazy-load. A converter would just translate the format. The compiler reads it and tells you what it's going to cost you. I haven't found another tool that surfaces that number.
 
-That gap is measured, not asserted — see the [benchmark](docs/benchmarks/README.md). Kitbash compiles to the cheapest loading mode each target actually supports, so prereview costs ~40 standing tokens on a lazy target; the tax is what it costs on the targets whose only mode is eager — ~540 tokens, a 13× per-session gap that a team running four agents pays four times over. Reproduce it with `npm run bench`.
+That gap is measured, not asserted — see the [benchmark](docs/benchmarks/README.md). Kitbash compiles to the cheapest loading mode each target actually supports, so prereview costs ~40 standing tokens on a lazy target; the tax is what it costs on the targets whose only mode is eager — ~560 tokens, a 14× per-session gap that a team running four agents pays four times over. Reproduce it with `npm run bench`.
 
 Install it (npm or Homebrew — see [Installation](#installation)), then in a repo:
 
