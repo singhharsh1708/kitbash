@@ -959,6 +959,11 @@ export async function cmdExplain(args: string[]): Promise<number> {
     }
 
     const skillName = skill.manifest.skill.name;
+    // Target-specific constraints first: a skill the target refuses to load at all
+    // makes "no capability degradation" a true statement that reads as a false one.
+    const rejected = adapter.lint?.(skill) ?? [];
+    for (const r of rejected) console.log(`✗ ${r}`);
+
     const missing = skill.manifest.targets.requires.filter((r) => !adapter.capabilities.includes(r));
     if (!missing.length) {
       console.log(`${skillName} → ${adapterName}: no capability degradation`);

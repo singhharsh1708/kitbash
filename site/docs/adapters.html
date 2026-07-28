@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width">
 <title>Adapters &amp; targets — Kitbash docs</title>
-<meta name="description" content="Reference for all nine Kitbash compile targets: output paths, detection, lazy vs eager loading, capabilities, and how degradation is surfaced.">
+<meta name="description" content="Reference for all ten Kitbash compile targets: output paths, detection, lazy vs eager loading, capabilities, and how degradation is surfaced.">
 <link rel="canonical" href="https://kitbash.vercel.app/docs/adapters">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="kitbash">
 <meta property="og:title" content="Adapters &amp; targets — Kitbash docs">
-<meta property="og:description" content="All nine compile targets: output paths, detection, lazy vs eager loading, capabilities, and degradation.">
+<meta property="og:description" content="All ten compile targets: output paths, detection, lazy vs eager loading, capabilities, and degradation.">
 <meta property="og:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Adapters &amp; targets — Kitbash docs">
-<meta name="twitter:description" content="All nine compile targets: output paths, detection, lazy vs eager loading, capabilities, and degradation.">
+<meta name="twitter:description" content="All ten compile targets: output paths, detection, lazy vs eager loading, capabilities, and degradation.">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/singhharsh1708/kitbash/main/assets/social-preview.png">
 <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
@@ -105,7 +105,7 @@
     <p class="crumb"><a href="../">kitbash</a> / <a href="./">docs</a> / adapters</p>
     <div class="page-head">
       <h1>Adapters &amp; targets</h1>
-      <p>Nine compile targets, each with its own output path, detection rule, loading mode, and capability set. This page is the reference for what every one of them actually writes.</p>
+      <p>Ten compile targets, each with its own output path, detection rule, loading mode, and capability set. This page is the reference for what every one of them actually writes.</p>
     </div>
 
     <div class="prose">
@@ -118,7 +118,7 @@
         <li><span class="badge lazy">lazy</span> The target keeps the skill out of the context window until it is invoked. Only a standing stub — a name and description the agent can match against — is resident. Claude Code SKILL.md files, Cursor agent-requested rules, the vendor-neutral <code>.agents/skills/</code> path, the <code>.github/skills/</code> and <code>.gemini/skills/</code> directories Copilot and Gemini CLI read, and Devin rules with a <code>model_decision</code> trigger all work this way.</li>
         <li><span class="badge eager">eager</span> The target has no mechanism for deferred loading, so the entire compiled body sits in context every session. AGENTS.md, CONVENTIONS.md, and Cline rule files all work this way.</li>
       </ul>
-      <p>Kitbash compiles to the cheapest loading mode each target actually supports, so six of the nine carry only a stub. The standing token tax is what a skill costs on the targets whose only mode is eager: a skill authored with <code>disclosure = "lazy"</code> cannot lazy-load there — the target simply has nowhere to put a stub. Kitbash refuses to let that happen quietly: on every eager target, a lazy-authored skill produces a warning that names the real cost and the limit the author declared.</p>
+      <p>Kitbash compiles to the cheapest loading mode each target actually supports, so seven of the ten carry only a stub. The standing token tax is what a skill costs on the targets whose only mode is eager: a skill authored with <code>disclosure = "lazy"</code> cannot lazy-load there — the target simply has nowhere to put a stub. Kitbash refuses to let that happen quietly: on every eager target, a lazy-authored skill produces a warning that names the real cost and the limit the author declared.</p>
       <pre><code><span class="warn">⚠</span> prereview → agentsmd: agentsmd is eager and cannot lazy-load;
   this skill costs ~560 tokens standing every session (declared limit: 60)</code></pre>
       <p>Multiply that by the number of installed skills and it is the whole context budget problem. The <a href="../benchmark">benchmark page</a> quantifies the gap between lazy and eager delivery of the same skill.</p>
@@ -147,6 +147,13 @@
               <td><code>agents</code></td>
               <td><code>.agents/skills/&lt;name&gt;/SKILL.md</code></td>
               <td><code>.agents/</code> or <code>.codex/</code> exists</td>
+              <td><span class="badge lazy">lazy</span></td>
+              <td>none</td>
+            </tr>
+            <tr>
+              <td><code>zed</code></td>
+              <td><code>.agents/skills/&lt;name&gt;/SKILL.md</code></td>
+              <td><code>.zed/</code> exists</td>
               <td><span class="badge lazy">lazy</span></td>
               <td>none</td>
             </tr>
@@ -195,10 +202,10 @@
           </tbody>
         </table>
       </div>
-      <p>No adapter declares any capability today. <code>emit()</code> writes a <code>SKILL.md</code> — plus slash-command shims on Claude Code — but it does not copy a skill's <code>scripts/</code>, install a hook, or wire a subagent, so claiming any of those would report full support for output referencing files the compiler never produced. Because every capability set is empty, any non-empty <code>targets.requires</code> — <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, or <code>network</code> — degrades on every one of the nine targets, Claude Code included. A capability will be re-added only alongside the emit code that delivers its primitive.</p>
+      <p>No adapter declares any capability today. <code>emit()</code> writes a <code>SKILL.md</code> — plus slash-command shims on Claude Code — but it does not copy a skill's <code>scripts/</code>, install a hook, or wire a subagent, so claiming any of those would report full support for output referencing files the compiler never produced. Because every capability set is empty, any non-empty <code>targets.requires</code> — <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, or <code>network</code> — degrades on every one of the ten targets, Claude Code included. A capability will be re-added only alongside the emit code that delivers its primitive.</p>
       <p>Detection can be overridden. Set <code>targets</code> under <code>[project]</code> in <code>kitbash.toml</code> and Kitbash compiles exactly that list instead of probing the filesystem; an unknown id there is a hard error. See <a href="config">project config</a>.</p>
 
-      <h2 id="the-adapters">The nine adapters</h2>
+      <h2 id="the-adapters">The ten adapters</h2>
       <p>Every emitted file carries a generated-file header naming the source skill and version, which is what makes stale output safe to delete on the next compile:</p>
       <pre><code>&lt;!-- generated by kitbash — do not edit; source: .kitbash/skills/prereview @ 0.1.0 --&gt;</code></pre>
 
@@ -213,6 +220,18 @@
       <h3 id="agents">agents</h3>
       <p>Writes <code>.agents/skills/&lt;name&gt;/SKILL.md</code> with the same <code>name</code> and quoted <code>description</code> frontmatter as Claude Code. This is the vendor-neutral Agent Skills path: Codex reads it as its only repo path, and Cursor, Copilot, Gemini CLI, Roo, Amp, OpenCode, Zed and Antigravity read it too — one target instead of nine adapters. Only the metadata is preloaded, so it is lazy.</p>
       <p>Detection is deliberately narrow: <code>.agents/</code> or <code>.codex/</code>. Agents that also have a native path already get their own adapter, and emitting both would duplicate the skill for no benefit. It writes only <code>SKILL.md</code> and declares no capabilities.</p>
+
+      <h3 id="zed">zed</h3>
+      <p>Zed reads the same vendor-neutral path, so this target writes the byte-identical file <code>agents</code> does — a repo with both <code>.zed/</code> and <code>.agents/</code> compiles that skill once, not twice. Ten targets, nine output files.</p>
+      <p>What makes it its own target is detection and a constraint check. <code>.zed/</code> is the only marker a Zed-only repo carries, and without this adapter such a repo compiled to nothing but the eager <code>AGENTS.md</code> floor — paying a skill's whole body every session on an agent that can lazy-load it for free.</p>
+      <p>Zed's skill loader is stricter about frontmatter than KSF is, and it <strong>fails silently</strong>: a skill that breaches either rule is dropped at load with no diagnostic in the UI. Kitbash says what Zed will not, at compile and in <code>explain</code>:</p>
+      <ul>
+        <li><code>name</code> must match <code>^[a-z0-9]+(-[a-z0-9]+)*$</code>. KSF's own name rule is looser and permits a doubled or trailing hyphen — <code>tidy--commits</code> is a legal skill name that Zed will not load. Its 64-character cap is unreachable from here: KSF caps names at 41.</li>
+        <li><code>description</code> must be non-empty and at most <strong>1024 UTF-8 bytes, not characters</strong> — a trap for any non-ASCII description, where 600 characters can be 1,200 bytes. A manifested skill is bounded at 200 characters, so only an unmanifested <code>SKILL.md</code>, whose frontmatter is copied through unvalidated, can breach either bound.</li>
+      </ul>
+      <pre><code><span class="warn">⚠</span> tidy--commits → zed: name must match ^[a-z0-9]+(-[a-z0-9]+)*$ — no leading,
+  trailing or doubled hyphen; Zed drops the skill at load with no diagnostic</code></pre>
+      <p>Both are warnings, so <code>compile --strict</code> fails on them. Zed also accepts a <code>disable-model-invocation</code> key, which Kitbash does not emit: KSF has no field meaning "never auto-invoke" — <code>triggers.auto</code> is a hint <em>for</em> auto-invocation — so synthesizing a value would guess at the author's intent and could suppress a skill they expect to fire.</p>
 
       <h3 id="copilot">copilot</h3>
       <p>Writes <code>.github/skills/&lt;name&gt;/SKILL.md</code> with <code>name</code> and a quoted <code>description</code> in frontmatter — the agentskills.io layout. Copilot loads only that frontmatter until the skill is needed, so the target is lazy. Detection is the presence of <code>.github/</code>, which most repositories have — expect this target to fire more often than the others.</p>
@@ -257,7 +276,7 @@ requires = [<span class="s">"scripts"</span>]   <span class="c"># "scripts" | "h
 mode = <span class="s">"skill"</span></code></pre>
       <p>At compile time each required capability is checked against the adapter's capability list. Anything missing produces a warning naming the skill, the target, and the capability:</p>
       <pre><code><span class="warn">⚠</span> verify → cursor: target lacks "scripts"; compiled instruction-only (degraded)</code></pre>
-      <p>Because every adapter's capability set is currently empty, this is not a per-target quirk: <em>any</em> value in <code>requires</code> degrades on <em>every</em> one of the nine targets. Kitbash's <code>emit()</code> writes instructions — a <code>SKILL.md</code>, and slash-command shims on Claude Code — but it does not yet deliver the underlying primitives: it does not copy a skill's <code>scripts/</code>, install a hook, or wire a subagent, and no adapter reaches the network. Declaring the capability the compiler cannot honor would report full support for output that references files it never produced, which is exactly the silent capability loss the spec forbids.</p>
+      <p>Because every adapter's capability set is currently empty, this is not a per-target quirk: <em>any</em> value in <code>requires</code> degrades on <em>every</em> one of the ten targets. Kitbash's <code>emit()</code> writes instructions — a <code>SKILL.md</code>, and slash-command shims on Claude Code — but it does not yet deliver the underlying primitives: it does not copy a skill's <code>scripts/</code>, install a hook, or wire a subagent, and no adapter reaches the network. Declaring the capability the compiler cannot honor would report full support for output that references files it never produced, which is exactly the silent capability loss the spec forbids.</p>
       <p>Degraded means the instructions still compile and still ship — the agent gets the prose, it just does not get the deterministic helper the skill wanted to run. That is often acceptable. What is never acceptable is not being told.</p>
       <div class="callout warn">
         <p><b>Spec §2.</b> A compiler lacking a required capability MUST either emit a degraded variant with a visible warning, or fail under <code>--strict</code>. Silent degradation is a conformance violation.</p>

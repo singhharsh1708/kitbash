@@ -18,6 +18,7 @@ Token counts are estimates (~4 chars/token), the same estimator the compiler enf
 | claude-code | 567 | 40 | lazy |
 | cursor | 568 | 40 | lazy |
 | agents | 567 | 40 | lazy |
+| zed | 567 | 40 | lazy |
 | copilot | 567 | 40 | lazy |
 | cline | 539 | 539 | eager |
 | windsurf | 569 | 40 | lazy |
@@ -34,6 +35,7 @@ Token counts are estimates (~4 chars/token), the same estimator the compiler enf
 | claude-code | 880 | 19 | lazy |
 | cursor | 879 | 19 | lazy |
 | agents | 880 | 19 | lazy |
+| zed | 880 | 19 | lazy |
 | copilot | 880 | 19 | lazy |
 | cline | 859 | 859 | eager |
 | windsurf | 881 | 19 | lazy |

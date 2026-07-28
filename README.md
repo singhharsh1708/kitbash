@@ -9,7 +9,7 @@
   <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/v/kitbash?color=ffb454" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/dm/kitbash?color=ffb454" alt="npm downloads"></a>
   <a href="https://github.com/singhharsh1708/kitbash/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/singhharsh1708/kitbash/ci.yml?branch=main" alt="CI"></a>
-  <img src="https://img.shields.io/badge/agent_targets-9-ffb454" alt="9 agent targets">
+  <img src="https://img.shields.io/badge/agent_targets-10-ffb454" alt="10 agent targets">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/singhharsh1708/kitbash?color=8b96ab" alt="Apache-2.0"></a>
 </p>
 
@@ -39,7 +39,7 @@ kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview
 kitbash compile
 ```
 
-What's working right now: `init`, `install` (via `gh:`, `owner/repo`, or `file:`), and `compile` to nine targets — Claude Code, Cursor, the vendor-neutral `.agents/skills/` path, Copilot, Cline, Devin (ex-Windsurf), Gemini CLI, Aider's CONVENTIONS.md, and the AGENTS.md floor. Declared `/commands` compile down to native slash commands. You also get `doctor`, `list`, `remove`, budget enforcement, a content-hash lockfile with drift detection, stale-output pruning, and `--strict`. Evals, update diffs, and everything else are on the [roadmap](docs/roadmap.md).
+What's working right now: `init`, `install` (via `gh:`, `owner/repo`, or `file:`), and `compile` to ten targets — Claude Code, Cursor, the vendor-neutral `.agents/skills/` path, Zed, Copilot, Cline, Devin (ex-Windsurf), Gemini CLI, Aider's CONVENTIONS.md, and the AGENTS.md floor. Declared `/commands` compile down to native slash commands. You also get `doctor`, `list`, `remove`, budget enforcement, a content-hash lockfile with drift detection, stale-output pruning, and `--strict`. Evals, update diffs, and everything else are on the [roadmap](docs/roadmap.md).
 
 Already have skills? A plain SKILL.md folder — the [skills.sh](https://www.skills.sh) / Claude Skills convention — installs directly with `kitbash install owner/repo`. It's basically KSF without the manifest, so Kitbash fills in defaults and marks it `unmanifested` since nobody declared a budget or permissions for it. skills.sh is good at distributing skills; Kitbash is about treating them like real engineering artifacts.
 
@@ -172,7 +172,7 @@ v0.1 is intentionally a thin slice: KSF, `compile`, three adapters, and one skil
 No. It's a compiler, a package manager, and a format spec. Prompt collections are the thing that gets compiled.
 
 **I already use skills.sh / Claude skills.**
-Keep them. They install directly with `kitbash install owner/repo`. You pick up nine targets, a lockfile, and a token-cost report, and you don't give anything up.
+Keep them. They install directly with `kitbash install owner/repo`. You pick up ten targets, a lockfile, and a token-cost report, and you don't give anything up.
 
 **What if I stop using Kitbash?**
 Nothing breaks. The compiled output is plain files in your repo. Delete `kitbash.toml` and everything keeps working the way it does now.

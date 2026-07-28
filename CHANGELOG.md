@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.12.0] — 2026-07-28
+
+### Added
+- **`zed` adapter — the tenth target.** Zed reads the vendor-neutral `.agents/skills/<name>/SKILL.md` path, but nothing in a Zed-only repo announces that: the `agents` adapter probes `.agents/` and `.codex/`, neither of which Zed creates. A repo whose only agent marker was `.zed/` therefore compiled to nothing but the eager `AGENTS.md` floor — paying a skill's whole body every session on an agent that can lazy-load it for free. The new target detects `.zed/` and emits the byte-identical file `agents` does, so a repo with both compiles that skill once, not twice. **Ten targets, nine output files.**
+- **Zed's silent frontmatter rejections are now visible.** Zed's skill loader is stricter than KSF and drops a non-conforming skill at load with no diagnostic in the UI — the silent capability loss spec §2 forbids. Two constraints are checked and warned about at `compile` (so `--strict` fails on them) and in `explain`: `name` must match `^[a-z0-9]+(-[a-z0-9]+)*$`, which rejects the doubled and trailing hyphens KSF's own name rule permits (`tidy--commits` is a legal skill name Zed will not load); and `description` must be non-empty and at most **1024 UTF-8 bytes, not characters** — a trap for any non-ASCII description, where 600 characters can be 1,200 bytes. A manifested skill is bounded at 200 characters, so only an unmanifested `SKILL.md`, whose frontmatter is copied through unvalidated, can breach either bound. No `disable-model-invocation` key is emitted: KSF has no field meaning "never auto-invoke", so synthesizing one would guess at the author's intent.
+
+### Fixed
+- **`explain` no longer answers "no capability degradation" about a skill the target refuses to load.** Adapters can now declare target-specific constraints separately from `emit()`, and `explain` reads them directly — a true statement that read as a false one.
+
 ## [0.11.0] — 2026-07-28
 
 Credibility pass. A staff-level review of the shipped product found the docs, site, and CLI contradicting each other — fatal for a tool whose whole pitch is honest measurement. Every fix here aligns the surface with reality; none is a new feature.
