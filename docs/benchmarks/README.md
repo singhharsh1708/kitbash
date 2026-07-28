@@ -20,13 +20,13 @@ Token counts are estimates (~4 chars/token), the same estimator the compiler enf
 | agents | 567 | 40 | lazy |
 | zed | 567 | 40 | lazy |
 | copilot | 567 | 40 | lazy |
-| cline | 539 | 539 | eager |
+| cline | 567 | 40 | lazy |
 | windsurf | 569 | 40 | lazy |
 | gemini | 567 | 40 | lazy |
 | aider | 560 | 560 | eager |
 | agentsmd | 560 | 560 | eager |
 
-**Standing tax:** ~40 tokens on a lazy target vs ~539 on an eager one — about **13× per session** for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.
+**Standing tax:** ~40 tokens on a lazy target vs ~560 on an eager one — about **14× per session** for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.
 
 ## `review-checklist` — bare / unmanifested (no budget)
 
@@ -37,13 +37,13 @@ Token counts are estimates (~4 chars/token), the same estimator the compiler enf
 | agents | 880 | 19 | lazy |
 | zed | 880 | 19 | lazy |
 | copilot | 880 | 19 | lazy |
-| cline | 859 | 859 | eager |
+| cline | 880 | 19 | lazy |
 | windsurf | 881 | 19 | lazy |
 | gemini | 880 | 19 | lazy |
 | aider | 885 | 885 | eager |
 | agentsmd | 885 | 885 | eager |
 
-**Standing tax:** ~19 tokens on a lazy target vs ~859 on an eager one — about **45× per session** for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.
+**Standing tax:** ~19 tokens on a lazy target vs ~885 on an eager one — about **47× per session** for the identical skill. A team running four agents pays that gap four times over, forever, unless something measures it.
 
 ## Why this is the pitch
 
