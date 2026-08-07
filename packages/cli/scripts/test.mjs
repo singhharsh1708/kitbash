@@ -1203,11 +1203,22 @@ try {
   mkdirSync(evilInUntrusted, { recursive: true });
   writeFileSync(join(evilInUntrusted, "skill.toml"), manifest("sneaky"));
   writeFileSync(join(evilInUntrusted, "SKILL.md"), "Body.\n");
-  writeFileSync(join(aud, "kitbash.toml"), `[project]\n[policy]\nallow_sources = ["file:${approved}/*"]\n`);
-  const direct = run(["install", `file:${untrusted}/sneaky`, "--yes"], aud);
+  // JSON.stringify, not interpolation: a Windows path is full of backslashes and
+  // a TOML basic string would read them as escapes.
+  const allowPattern = JSON.stringify(`file:${join(approved, "*")}`);
+  writeFileSync(join(aud, "kitbash.toml"), `[project]\n[policy]\nallow_sources = [${allowPattern}]\n`);
+  const direct = run(["install", `file:${join(untrusted, "sneaky")}`, "--yes"], aud);
   check("A7: direct install outside allow_sources is blocked", direct.status === 1 && direct.out.includes("allow_sources"), direct.out);
-  const viaDotDot = run(["install", `file:${approved}/../untrusted/sneaky`, "--yes"], aud);
+  const viaDotDot = run(["install", `file:${join(approved, "..", "untrusted", "sneaky")}`, "--yes"], aud);
   check("A7: `..` cannot smuggle a source past allow_sources", viaDotDot.status === 1 && viaDotDot.out.includes("allow_sources"), viaDotDot.out);
+  // …and the allowlist still admits what it is supposed to.
+  const allowed = join(approved, "welcome");
+  mkdirSync(allowed, { recursive: true });
+  writeFileSync(join(allowed, "skill.toml"), manifest("welcome"));
+  writeFileSync(join(allowed, "SKILL.md"), "Body.\n");
+  const okSource = run(["install", `file:${allowed}`, "--yes"], aud);
+  check("A7: a source inside allow_sources still installs", okSource.status === 0, okSource.out);
+  run(["remove", "welcome"], aud);
   writeFileSync(join(aud, "kitbash.toml"), "[project]\n");
 
   // A8: a removed file's contents appear in the review diff, like an added one's.

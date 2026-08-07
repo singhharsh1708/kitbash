@@ -88,7 +88,11 @@ const clPath = join(site, "changelog.html");
 const page = readFileSync(clPath, "utf8");
 const re = /(<!-- changelog:begin -->)[\s\S]*?(<!-- changelog:end -->)/;
 if (!re.test(page)) throw new Error("changelog.html is missing the changelog:begin/end markers");
-const nextChangelog = page.replace(re, `$1\n${html}\n$2`);
+// Replacer function, not a replacement string: the generated HTML is arbitrary
+// changelog prose, and an entry mentioning `$$`, `$&`, or `$'` would otherwise be
+// reinterpreted as a substitution pattern — silently mangling the page and
+// leaving `--check` permanently stale because the write never converges.
+const nextChangelog = page.replace(re, (_m, begin, end) => `${begin}\n${html}\n${end}`);
 if (nextChangelog !== page) {
   if (checkOnly) stale.push("site/changelog.html (CHANGELOG.md has changed)");
   else writeFileSync(clPath, nextChangelog);
