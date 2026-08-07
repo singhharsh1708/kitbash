@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { ADAPTERS, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, type CompiledFile } from "./adapters.js";
 import { dropLock, integrityOf, readLock, upsertLock, walk, LOCK_FILE } from "./lock.js";
+import { fileChanges, manifestDelta, textOf, unifiedDiff } from "./diff.js";
 import { estimateTokens, loadInstalledSkills, loadInstalledSkillsSafe, loadSkill, resolveBody, schemaLints, standingStub, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
 import { parseToml } from "./toml.js";
 
@@ -202,10 +203,7 @@ export async function cmdInstall(args: string[]): Promise<number> {
     // command) are NOT gated here — they surface at `kitbash test`. A policy may
     // opt out of the remote-exec block for a trusted internal skill; the
     // visibility checks are never optional.
-    const remoteExecExempt = policy && !policy.denyRemoteExec;
-    const hardFails = checks.filter(
-      (c) => !c.ok && SAFETY_LINTS.has(c.name) && !(c.name === "remote-exec" && remoteExecExempt),
-    );
+    const hardFails = filterHardFails(checks, policy);
     if (hardFails.length) {
       for (const c of hardFails) console.error(`  ✗ lint: ${c.name}${c.detail ? ` — ${c.detail}` : ""}`);
       console.error("blocked — this skill fails a non-bypassable safety lint. Read it before installing (kitbash lint <source>).");
@@ -244,6 +242,226 @@ export async function cmdInstall(args: string[]): Promise<number> {
   } finally {
     if (fetched.cleanup) rmSync(fetched.cleanup, { recursive: true, force: true });
   }
+}
+
+/**
+ * The non-bypassable subset of failed checks: the SAFETY_LINTS, minus
+ * remote-exec when a [policy] consciously exempts it. Shared by install and
+ * update — a skill must clear the same gate to change on disk as to arrive.
+ */
+function filterHardFails(checks: Check[], policy: Policy | null): Check[] {
+  const remoteExecExempt = policy && !policy.denyRemoteExec;
+  return checks.filter((c) => !c.ok && SAFETY_LINTS.has(c.name) && !(c.name === "remote-exec" && remoteExecExempt));
+}
+
+/**
+ * Print the full review diff between an installed skill directory and its
+ * replacement: manifest field deltas (escalations flagged), the changed file
+ * list, then a unified diff per readable file. Returns true when anything
+ * differs. `aSkill` is null when the installed copy no longer loads — the
+ * file-level diff still prints, so even repairing a broken skill shows what
+ * changes on disk.
+ */
+function printSkillDiff(aDir: string, aSkill: LoadedSkill | null, bSkill: LoadedSkill): boolean {
+  const delta = aSkill ? manifestDelta(aSkill.manifest, bSkill.manifest) : [];
+  const changes = fileChanges(aDir, bSkill.dir);
+  if (!delta.length && !changes.length) return false;
+
+  const from = aSkill ? `${aSkill.manifest.skill.name}@${aSkill.manifest.skill.version}` : "(unloadable)";
+  console.log(`diff: ${from} → ${bSkill.manifest.skill.name}@${bSkill.manifest.skill.version}`);
+  if (!aSkill) console.log("  ⚠ installed copy no longer loads — manifest delta unavailable, file diff below");
+  if (delta.length) {
+    console.log("manifest:");
+    for (const d of delta) console.log(`  ${d}`);
+  }
+  if (changes.length) {
+    console.log("files:");
+    for (const c of changes) {
+      const sym = c.kind === "added" ? "+" : c.kind === "removed" ? "-" : "~";
+      console.log(`  ${sym} ${c.path}${c.opaque ? " (binary or symlink — not line-diffed)" : ""}`);
+    }
+    for (const c of changes) {
+      if (c.opaque || c.kind === "removed") continue;
+      const before = c.kind === "added" ? "" : textOf(aDir, c.path);
+      const d = unifiedDiff(before, textOf(bSkill.dir, c.path), `a/${c.path}`, `b/${c.path}`);
+      if (d) console.log(`\n${d}`);
+    }
+  }
+  return true;
+}
+
+export async function cmdDiff(args: string[]): Promise<number> {
+  const targets = args.filter((a) => !a.startsWith("-"));
+  const [aTarget, bTarget] = targets;
+  if (!aTarget) {
+    console.error("usage: kitbash diff <skill-name> [<skill-name | path | source>]");
+    console.error("  one argument: diff the installed skill against a fresh fetch of its pinned source");
+    console.error("  two arguments: diff any two skills (installed name, path, or gh:/file: source)");
+    return 2;
+  }
+  const root = process.cwd();
+  const cleanups: string[] = [];
+  try {
+    const a = loadSkillTarget(aTarget, root);
+    if (!a) return 2;
+    if (a.cleanup) cleanups.push(a.cleanup);
+
+    let bSkill: LoadedSkill;
+    if (bTarget) {
+      const b = loadSkillTarget(bTarget, root);
+      if (!b) return 2;
+      if (b.cleanup) cleanups.push(b.cleanup);
+      bSkill = b.skill;
+    } else {
+      const entry = readLock(root).find((e) => e.name === aTarget);
+      if (!entry) {
+        console.error(`${aTarget} is not pinned in ${LOCK_FILE} — install it first, or pass two targets to compare.`);
+        return 2;
+      }
+      const fetched = fetchSource(entry.source, root);
+      if (!fetched) return 2;
+      if (fetched.cleanup) cleanups.push(fetched.cleanup);
+      try {
+        bSkill = loadSkill(fetched.dir);
+      } catch (e) {
+        console.error(e instanceof Error ? e.message : String(e));
+        return 2;
+      }
+    }
+
+    if (!printSkillDiff(a.skill.dir, a.skill, bSkill)) {
+      console.log(`no differences: ${a.skill.manifest.skill.name}@${a.skill.manifest.skill.version}`);
+      return 0;
+    }
+    return 1; // diff(1) semantics: 0 identical, 1 different, 2 trouble
+  } finally {
+    for (const c of cleanups) rmSync(c, { recursive: true, force: true });
+  }
+}
+
+export async function cmdUpdate(args: string[]): Promise<number> {
+  const only = args.find((a) => !a.startsWith("-"));
+  const yes = args.includes("--yes") || args.includes("-y");
+  const root = process.cwd();
+  let lock = readLock(root);
+  if (only) {
+    const all = lock;
+    lock = lock.filter((e) => e.name === only);
+    if (!lock.length) {
+      console.error(`${only} is not pinned in ${LOCK_FILE}.`);
+      console.error(all.length ? `  pinned: ${all.map((e) => e.name).join(", ")}` : "  no skills installed yet.");
+      return 1;
+    }
+  }
+  if (!lock.length) {
+    console.log("no skills installed — nothing to update.");
+    return 0;
+  }
+
+  const policy = loadPolicy(root);
+  let updated = 0;
+  let current = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const entry of lock) {
+    const dest = join(root, SKILLS_DIR, entry.name);
+    if (!existsSync(dest)) {
+      console.error(`✗ ${entry.name}: pinned in ${LOCK_FILE} but not installed — kitbash install ${entry.source}`);
+      failed++;
+      continue;
+    }
+    const fetched = fetchSource(entry.source, root);
+    if (!fetched) {
+      failed++;
+      continue;
+    }
+    try {
+      let next: LoadedSkill;
+      try {
+        next = loadSkill(fetched.dir);
+      } catch (e) {
+        console.error(`✗ ${entry.name}: source no longer loads — ${(e instanceof Error ? e.message : String(e)).split("\n")[0]}`);
+        failed++;
+        continue;
+      }
+      if (next.manifest.skill.name !== entry.name) {
+        console.error(`✗ ${entry.name}: the source now names itself "${next.manifest.skill.name}" — kitbash remove ${entry.name} && kitbash install ${entry.source}`);
+        failed++;
+        continue;
+      }
+
+      const installedIntegrity = integrityOf(dest);
+      if (installedIntegrity === integrityOf(fetched.dir)) {
+        console.log(`${entry.name}@${entry.version} is up to date`);
+        current++;
+        continue;
+      }
+
+      // The review. Local drift means the baseline being diffed is the edited
+      // copy — say so, since applying will overwrite those edits.
+      let installedSkill: LoadedSkill | null = null;
+      try {
+        installedSkill = loadSkill(dest);
+      } catch {
+        // unloadable installed copy: printSkillDiff handles the null
+      }
+      if (installedIntegrity !== entry.integrity) {
+        console.log(`⚠ ${entry.name}: local edits detected (integrity drift) — updating overwrites them; the diff below starts from the edited files`);
+      }
+      printSkillDiff(dest, installedSkill, next);
+
+      // Same non-bypassable gate as install: a skill must clear it to change on disk.
+      const hardFails = filterHardFails([...staticChecks(next), ...scanSkillFiles(fetched.dir)], policy);
+      if (hardFails.length) {
+        for (const c of hardFails) console.error(`  ✗ lint: ${c.name}${c.detail ? ` — ${c.detail}` : ""}`);
+        console.error(`✗ ${entry.name}: blocked — the update fails a non-bypassable safety lint; nothing was changed.`);
+        failed++;
+        continue;
+      }
+      if (policy) {
+        const violations = [...sourceViolations(policy, entry.source, root), ...manifestViolations(policy, next)];
+        if (violations.length) {
+          for (const v of violations) console.error(`  ✗ policy: ${v}`);
+          console.error(`✗ ${entry.name}: blocked by [policy] in ${CONFIG}; nothing was changed.`);
+          failed++;
+          continue;
+        }
+      }
+
+      if (!yes) {
+        if (!(process.stdin.isTTY && process.stdout.isTTY)) {
+          // Unlike install, update never auto-applies in a pipe: its whole
+          // contract is that a human saw the diff above and said yes.
+          console.error(`${entry.name}: not applied — non-interactive session; rerun with --yes to apply.`);
+          skipped++;
+          continue;
+        }
+        const ok = await confirm(`update ${entry.name} to ${next.manifest.skill.version}? [y/N] `);
+        if (!ok) {
+          console.log(`skipped ${entry.name} — nothing changed.`);
+          skipped++;
+          continue;
+        }
+      }
+
+      rmSync(dest, { recursive: true });
+      cpSync(fetched.dir, dest, { recursive: true });
+      upsertLock(root, { name: entry.name, version: next.manifest.skill.version, source: entry.source, integrity: integrityOf(dest) });
+      console.log(`updated ${entry.name}@${next.manifest.skill.version}`);
+      console.log(`  re-pinned in ${LOCK_FILE}`);
+      updated++;
+    } finally {
+      if (fetched.cleanup) rmSync(fetched.cleanup, { recursive: true, force: true });
+    }
+  }
+
+  const parts = [`${updated} updated`, `${current} up to date`];
+  if (skipped) parts.push(`${skipped} not applied`);
+  if (failed) parts.push(`${failed} failed`);
+  console.log(parts.join(" · "));
+  if (updated) console.log("next: kitbash compile");
+  return failed || skipped ? 1 : 0;
 }
 
 export async function cmdRemove(args: string[]): Promise<number> {

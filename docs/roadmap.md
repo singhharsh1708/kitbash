@@ -22,11 +22,11 @@ Deferred out of v0.1 on purpose: more adapters, more skills, index, evals tier 2
 - ✅ SKILL.md-only interop (skills.sh / Claude Skills convention): installs directly, flagged unmanifested.
 - ✅ Stale-output pruning on `compile` after `remove`.
 - Dependency resolution: skill-to-skill `[dependencies]`, transitive closure pinned in the lockfile, cycle detection.
-- `kitbash update` with instruction-level diff review; `kitbash diff <skill> <v1> <v2>` for instruction/permission/budget diffs between any two versions.
-- `kitbash lint`: schema, context budgets (measured against compiled output), dead references, injection heuristics.
+- ✅ `kitbash update` with instruction-level diff review: the full manifest/permission/file diff prints before anything applies, install's safety lints and `[policy]` are re-enforced, and a non-interactive run never applies without `--yes`. ✅ `kitbash diff` compares an installed skill against a fresh fetch of its pinned source, or any two skills (installed name, path, or `source@ref`).
+- ✅ `kitbash lint`: schema, context budgets (measured against compiled output), dead references, injection heuristics.
 - `kitbash audit`: scan *installed* skills — permission drift since install, unsigned sources, injection heuristics. `npm audit` for skills.
-- `kitbash preview <skill>`: the playground — render exactly what each adapter will emit, with per-agent token counts, before installing.
-- `kitbash explain <skill> <adapter>`: why a compilation degraded — which required capability the adapter lacks, what got rewritten.
+- ✅ `kitbash preview <skill>`: the playground — render exactly what each adapter will emit, with per-agent token counts, before installing.
+- ✅ `kitbash explain <skill> <adapter>`: why a compilation degraded — which required capability the adapter lacks, what got rewritten.
 - Permissions manifest compiled to Claude Code permission rules; advisory elsewhere, honestly labeled.
 - ✅ Adapter sprint: `copilot`, `cline`, `windsurf`, `gemini` — 7 targets total.
 - ✅ Declared trigger commands compiled to native slash commands (Claude Code shims; more hosts as they support commands).

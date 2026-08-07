@@ -8,7 +8,7 @@
  */
 
 import { createRequire } from "node:module";
-import { cmdCompile, cmdDoctor, cmdInit, cmdInstall, cmdList, cmdRemove, cmdTest, cmdLint, cmdExplain, cmdPreview } from "./commands.js";
+import { cmdCompile, cmdDiff, cmdDoctor, cmdInit, cmdInstall, cmdList, cmdRemove, cmdTest, cmdLint, cmdExplain, cmdPreview, cmdUpdate } from "./commands.js";
 
 const VERSION: string = createRequire(import.meta.url)("../package.json").version;
 
@@ -35,12 +35,12 @@ const commands: Command[] = [
   { name: "list", summary: "List installed skills with versions and context cost", run: cmdList },
   { name: "compile", summary: "Emit native formats for every detected assistant (--strict)", run: cmdCompile },
   { name: "doctor", summary: "Detect assistants, report total standing context cost", run: cmdDoctor },
+  { name: "update", summary: "Refetch each skill's pinned source and apply changes after a full review diff (--yes; safety lints and [policy] re-enforced)", run: cmdUpdate },
+  { name: "diff", summary: "Manifest/permission/file diff between a skill and its source, or any two skills (exit: 0 same, 1 differs, 2 trouble)", run: cmdDiff },
   { name: "lint", summary: "Static checks: schema, budgets, dead refs, safety lints (--strict; name, path, or uninstalled source)", run: cmdLint },
   { name: "preview", summary: "Render each target's output with per-agent token counts — works on uninstalled sources", run: cmdPreview },
   { name: "explain", summary: "Why a compilation degraded on a given target (name, path, or uninstalled source)", run: cmdExplain },
   { name: "test", summary: "Run a skill's static evals (schema, budgets, dead refs, safety lints; --strict)", run: cmdTest },
-  { name: "update", summary: "Update skills, showing instruction diffs before applying", run: todo("update"), planned: true },
-  { name: "diff", summary: "Instruction/permission/budget diff between two skill versions", run: todo("diff"), planned: true },
   { name: "audit", summary: "Scan installed skills: permission drift, unsigned sources", run: todo("audit"), planned: true },
   { name: "gate", summary: "Run a gate-mode skill with a deterministic exit code", run: todo("gate"), planned: true },
   { name: "search", summary: "Search the community index", run: todo("search"), planned: true },
