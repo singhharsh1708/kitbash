@@ -1,47 +1,69 @@
-<p align="center">
-  <img src="assets/mascot.svg" width="240" alt="The Kitbasher, the tinkerer who builds from parts">
-</p>
+<img src="assets/mascot.svg" align="right" width="130" alt="The Kitbasher, the tinkerer who builds from parts">
 
 # Kitbash
 
-<p align="center">
-  <a href="https://github.com/singhharsh1708/kitbash/stargazers"><img src="https://img.shields.io/github/stars/singhharsh1708/kitbash?style=flat&color=ffb454" alt="GitHub stars"></a>
-  <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/v/kitbash?color=ffb454" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/dm/kitbash?color=ffb454" alt="npm downloads"></a>
-  <a href="https://github.com/singhharsh1708/kitbash/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/singhharsh1708/kitbash/ci.yml?branch=main" alt="CI"></a>
-  <img src="https://img.shields.io/badge/agent_targets-10-ffb454" alt="10 agent targets">
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/singhharsh1708/kitbash?color=8b96ab" alt="Apache-2.0"></a>
-</p>
+Kitbash is a compiler for AI agent skills that measures what a skill costs your context window every session — before you install it.
 
-Kitbash is an open format for AI agent skills, plus a compiler that turns one skill into whatever your agent actually reads. You write the skill once and run it in Claude Code, Cursor, Copilot, and the rest, instead of maintaining a separate copy for each one.
-
-If you've used npm for packages, Docker for containers, or ESLint for lint rules, it's the same idea for agent skills.
-
-**Stable specification, experimental ecosystem.** The Kitbash Skill Format (KSF) core is stabilized through [RFC 0002](rfcs/0002-ksf-1.0-stabilization.md): the manifest fields are frozen and evolve additive-only within the major version, so you can author skills and write adapters against a contract that won't shift under you. The ecosystem around it — more adapters, the index, first-party skills — is still early.
-
-> **Compiler insight** — Kitbash measures a skill's *standing token cost* (what it adds to your context every session) at compile time, before you ever install it. For prereview that's ~40 tokens on a lazy target; compiled to an eager one it's ~560 — a [14× per-session tax](docs/benchmarks/README.md) no other format surfaces. Run `npm run bench` for the numbers.
-
-## A quick look
-
-<p align="center">
-  <img src="assets/demo.svg" width="740" alt="Real session: kitbash init, install a third-party skills.sh skill, compile to Claude Code, Cursor, and AGENTS.md — with a standing token cost warning">
-</p>
-
-That's an actual session. A third-party skill from the [skills.sh](https://www.skills.sh) convention gets installed and compiled into three agent formats. The thing to notice is the last warning: during compile, Kitbash measured the skill and pointed out that it quietly costs about 5,044 tokens on every request for agents that can't lazy-load. A converter would just translate the format. The compiler reads it and tells you what it's going to cost you. I haven't found another tool that surfaces that number.
-
-That gap is measured, not asserted — see the [benchmark](docs/benchmarks/README.md). Kitbash compiles to the cheapest loading mode each target actually supports, so prereview costs ~40 standing tokens on a lazy target; the tax is what it costs on the targets whose only mode is eager — ~560 tokens, a 14× per-session gap that a team running four agents pays four times over. Reproduce it with `npm run bench`.
-
-Install it (npm or Homebrew — see [Installation](#installation)), then in a repo:
+You write the skill once in one open format ([KSF](spec/SPEC.md)) and compile it to the native format of ten coding agents — Claude Code, Cursor, Copilot, Zed, Cline, Devin, Gemini CLI, Aider, the vendor-neutral `.agents/skills/` path, and the `AGENTS.md` floor. While compiling, it measures each output's **standing** cost: the tokens the skill parks in context on every request, whether or not it ever gets used.
 
 ```bash
+npm install -g kitbash      # or: brew install singhharsh1708/tap/kitbash
 kitbash init
+kitbash preview gh:singhharsh1708/kitbash/examples/skills/prereview   # read it first — nothing is written
 kitbash install gh:singhharsh1708/kitbash/examples/skills/prereview
 kitbash compile
 ```
 
-What's working right now: `init`, `install` (via `gh:`, `owner/repo`, or `file:`), and `compile` to ten targets — Claude Code, Cursor, the vendor-neutral `.agents/skills/` path, Zed, Copilot, Cline, Devin (ex-Windsurf), Gemini CLI, Aider's CONVENTIONS.md, and the AGENTS.md floor. Declared `/commands` compile down to native slash commands. You also get `doctor`, `list`, `remove`, `update` — which shows the full manifest/permission/file diff and re-runs every install safety gate before anything changes on disk — `diff` between a skill and its pinned source (or any two skills), budget enforcement, a content-hash lockfile with drift detection, stale-output pruning, and `--strict`. Evals, dependency resolution, and everything else are on the [roadmap](docs/roadmap.md).
+In a repo that already has `.claude/` and `.cursor/`, that last command prints:
 
-Already have skills? A plain SKILL.md folder — the [skills.sh](https://www.skills.sh) / Claude Skills convention — installs directly with `kitbash install owner/repo`. It's basically KSF without the manifest, so Kitbash fills in defaults and marks it `unmanifested` since nobody declared a budget or permissions for it. skills.sh is good at distributing skills; Kitbash is about treating them like real engineering artifacts.
+```
+→ .claude/skills/prereview/SKILL.md
+→ .claude/commands/prereview.md
+→ .cursor/rules/prereview.mdc
+→ AGENTS.md
+ℹ prereview → agentsmd: agentsmd is eager and cannot lazy-load, so this skill adds ~560 tokens standing every session (a lazy target pays 0; declared limit 60)
+compiled 1 skill for 3 targets
+  7 more target(s) available — add agents, zed, copilot, … under [project].targets in kitbash.toml, or create their agent dirs.
+```
+
+### The `ℹ` line is why this is a compiler, not a converter
+
+The identical instructions cost ~40 standing tokens on a target that lazy-loads and ~560 on one that can't — a **14× per-session tax**, charged before the skill is ever invoked, on every agent that has no lazy mode. A separate unmanifested fixture measures 19 against 885, a 47× gap. One real third-party skill from the [skills.sh](https://www.skills.sh) convention carries ~5,044 tokens of instructions, which compile to ~5,101 standing tokens on an eager target.
+
+Those numbers are measured, not asserted: the method and the full per-target table are in [docs/benchmarks/README.md](docs/benchmarks/README.md), and `npm run bench` inside `packages/cli` regenerates them. A converter would translate the format and stop. Kitbash reads the skill and tells you what it will cost you. I have not found another tool that surfaces that number.
+
+Kitbash always compiles to the cheapest loading mode a target actually supports — eight of the ten lazy-load; Aider's `CONVENTIONS.md` and the `AGENTS.md` floor cannot, and carry the whole body every session. `--strict` turns budget overruns and degradation warnings into build failures.
+
+### Why not a sync script?
+
+Because the copies are the problem. The usual fix for "my skill only works in my agent" is to maintain one hand-written file per agent, plus CI to check they haven't drifted apart:
+
+```
+        the status quo                     kitbash
+  ─────────────────────────        ───────────────────────
+  .cursor/rules/skill.mdc           skill/
+  .clinerules/skill.md                skill.toml
+  .kiro/steering/skill.md             SKILL.md
+  .github/copilot-instructions.md
+  .windsurf/rules/skill.md          $ kitbash compile
+  AGENTS.md, GEMINI.md, …           → each detected target
+  + a sync-check script             budgets enforced,
+  × every update, forever           hashes pinned
+```
+
+A syncer multiplies your review surface; a compiler divides it. You review one skill instead of the generated copies — and installing a skill means letting someone else's instructions run with your agent's permissions, so that division is the whole point. Four safety lints block an install outright, a content-hash lockfile pins what you reviewed, `doctor` flags drift, `update` shows a full review diff before anything changes, and `[policy]` allowlists gate what may be installed at all — none of it bypassable with `--yes`. Details in [Trust & review](#trust--review).
+
+Already have skills? A plain SKILL.md folder — the skills.sh / Claude Skills convention — installs directly with `kitbash install owner/repo`. It is basically KSF without the manifest, so Kitbash fills in defaults and marks it `unmanifested`, since nobody declared a budget or permissions for it.
+
+**Status.** v0.15.0, on npm and Homebrew, zero runtime dependencies, Node 20+. The KSF core is frozen and additive-only within the major version ([RFC 0002](rfcs/0002-ksf-1.0-stabilization.md)). Everything around it is early and labeled as such: `init`, `install`, `remove`, `list`, `compile`, `doctor`, `update`, `diff`, `lint`, `preview`, `explain`, and `test` work today; `audit`, `gate`, `search`, `publish`, `lore`, and `run` exit `7` and are on the [roadmap](docs/roadmap.md). One first-party skill ships (`prereview`); six more are specified but not built. Adoption is single-digit stars — if the measurement above is what you want, you are early.
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/v/kitbash?color=ffb454" alt="npm version"></a>
+  <a href="https://github.com/singhharsh1708/kitbash/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/singhharsh1708/kitbash/ci.yml?branch=main" alt="CI"></a>
+  <img src="https://img.shields.io/badge/agent_targets-10-ffb454" alt="10 agent targets">
+  <img src="https://img.shields.io/badge/runtime_deps-0-ffb454" alt="zero runtime dependencies">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/singhharsh1708/kitbash?color=8b96ab" alt="Apache-2.0"></a>
+</p>
 
 ## Installation
 
@@ -84,20 +106,7 @@ Uninstalling the CLI never touches your repo: compiled output is plain files you
 
 Every assistant rolled its own extension format: `.claude/skills/`, `.cursor/rules/*.mdc`, `copilot-instructions.md`, `AGENTS.md`, `.windsurfrules`, `.clinerules`, `CONVENTIONS.md`, `GEMINI.md`. So a skill someone wrote for one agent does nothing for the rest of the team, and the skills people do share tend to be unversioned, untested prompt files nobody can really review.
 
-This isn't a made-up problem. The most-starred skill on GitHub ships its single ruleset as twenty hand-maintained copies — `.cursor/rules/`, `.clinerules/`, `.kiro/steering/`, `.github/copilot-instructions.md`, six plugin manifests, and so on — along with a CI script that exists only to check the copies haven't drifted apart. Here's the difference:
-
-```
-        the status quo                     kitbash
-  ─────────────────────────        ───────────────────────
-  .cursor/rules/skill.mdc           skill/
-  .clinerules/skill.md                skill.toml
-  .kiro/steering/skill.md             SKILL.md
-  .github/copilot-instructions.md
-  .windsurf/rules/skill.md          $ kitbash compile
-  AGENTS.md, GEMINI.md, …           → 9 native outputs
-  + a sync-check script             budgets enforced,
-  × every update, forever           hashes pinned
-```
+This isn't a made-up problem: widely-used skills ship their single ruleset as a folder of hand-maintained per-agent copies, with a CI script whose only job is checking the copies haven't drifted apart. That is the shape [the diagram above](#why-not-a-sync-script) contrasts.
 
 Prompts are code, and almost nobody treats them that way. The longer version of this argument is in [MANIFESTO.md](MANIFESTO.md).
 
@@ -130,7 +139,18 @@ Installing a skill means letting someone else's instructions run with your agent
 
 - **Readable before install** — `kitbash preview gh:owner/repo` (also `lint`, `explain`) fetches and renders a skill *without installing it*: exact compiled output per agent, token costs, permissions, injection heuristics.
 - **Review at install** — `kitbash install` shows what the skill declares (permissions, network/write access, budget, lint warnings) and asks before writing anything. `--yes` skips the prompt in scripts; CI is non-interactive by default.
-- **Safety lints block install** — a skill with hidden instructions (zero-width/bidi/Unicode-Tags text), load-time command substitution, a `curl … | sh`-style download-and-execute payload, or a live credential (an API key, a database password, a private-key block) is refused before anything is written. The scan covers every non-binary file in the skill, not just `SKILL.md` — a payload in `scripts/setup.sh` or a sibling file is caught, and a symlink is flagged. A placeholder guard keeps a skill that only *documents* a key format from being blocked. Non-bypassable by `--yes`, enforced with or without a `[policy]` file.
+- **Safety lints block install** — four hard gates, non-bypassable by `--yes`, enforced with or without a `[policy]` file:
+
+  | Lint | Refuses |
+  |---|---|
+  | `visible-text` | Instructions a reviewer cannot see — zero-width characters, bidi overrides, the Unicode Tags block, NUL bytes in text |
+  | `dynamic-context` | Command substitution that executes when the file loads, before the model reads anything |
+  | `remote-exec` | Download-and-execute payloads — `curl … \| sh` and its family, buried in prose or a code fence |
+  | `secrets` | A live credential shipped inside the skill — API key, database password, private-key block |
+
+  The scan covers every non-binary file in the skill, not just `SKILL.md` — a payload in `scripts/setup.sh` or a sibling file is caught, and a symlink is flagged. A placeholder guard keeps a skill that only *documents* a key format from being blocked. These are heuristics over text plus hard gates on the result, not proof: `c=curl; $c url | sh` defeats a regex on prose. They raise the cost of the copy-paste attack classes at the one chokepoint where a skill fans out to nine files. Read the skill.
+
+  In 0.15.0 a self-audit of these gates found four ways past them — a broken `{{template}}` silently disabled all four body lints, one NUL byte exempted a whole file, `[__proto__.policy]` in a manifest switched off the `remote-exec` gate before the policy loader ran, and `..` escaped an `allow_sources` allowlist. Each is fixed with a regression test that reproduces the original exploit ([CHANGELOG](CHANGELOG.md), tests `A1`–`A10` in [`packages/cli/scripts/test.mjs`](packages/cli/scripts/test.mjs)).
 - **Pinned by content** — `kitbash.lock` records a content hash per skill; `doctor` flags any drift between what you reviewed and what's on disk.
 - **Org allowlists** — a `[policy]` table in `kitbash.toml` restricts which sources may be installed and what installed skills may declare. Policy is a hard gate: `--yes` doesn't bypass it, and `doctor` rechecks it against everything already installed.
 
