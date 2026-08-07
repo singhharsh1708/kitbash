@@ -8,7 +8,7 @@ import { basename, dirname, join, resolve, sep } from "node:path";
 import { ADAPTERS, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, type CompiledFile } from "./adapters.js";
 import { dropLock, integrityOf, readLock, upsertLock, walk, LOCK_FILE } from "./lock.js";
 import { fileChanges, manifestDelta, textOf, unifiedDiff } from "./diff.js";
-import { estimateTokens, loadInstalledSkills, loadInstalledSkillsSafe, loadSkill, resolveBody, schemaLints, standingStub, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
+import { estimateTokens, loadInstalledSkills, loadInstalledSkillsSafe, loadSkill, resolveBody, schemaLints, standingStub, COMMAND_RE, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
 import { parseToml } from "./toml.js";
 
 const CONFIG = "kitbash.toml";
@@ -81,14 +81,14 @@ function normalizeSource(source: string, root: string): { kind: "gh" | "local"; 
  * errors and returns null on failure. When `cleanup` is set the caller must
  * rmSync it after use (it is a temp clone).
  */
-function fetchSource(source: string, root: string): { dir: string; cleanup?: string } | null {
+function fetchSource(source: string, root: string): { dir: string; cleanup?: string; nameHint?: string | undefined } | null {
   const normalized = normalizeSource(source, root);
   if (normalized.kind === "local") {
     if (!existsSync(normalized.value)) {
       console.error(`local path not found: ${normalized.value}`);
       return null;
     }
-    return { dir: normalized.value };
+    return { dir: normalized.value, nameHint: basename(normalized.value) };
   }
 
   const m = normalized.value.match(/^([^/@]+)\/([^/@]+)(?:\/([^@]+))?(?:@(.+))?$/);
@@ -143,7 +143,12 @@ function fetchSource(source: string, root: string): { dir: string; cleanup?: str
     }
     dir = resolved;
   }
-  return { dir, cleanup };
+  // The clone's own .git is never part of the skill. Left in place it gets copied
+  // into .kitbash/skills/ for a repo-root install, and since git's index and reflog
+  // differ between two clones of the same commit, every later update would see
+  // permanent drift and dump .git/… entries into the review diff.
+  rmSync(join(cleanup, ".git"), { recursive: true, force: true });
+  return { dir, cleanup, nameHint: subpath ? basename(subpath) : repo };
 }
 
 function confirm(question: string): Promise<boolean> {
@@ -167,7 +172,7 @@ export async function cmdInstall(args: string[]): Promise<number> {
   const fetched = fetchSource(source, root);
   if (!fetched) return 1;
   try {
-    const skill = loadSkill(fetched.dir);
+    const skill = loadSkill(fetched.dir, fetched.nameHint);
     const { name, version, description } = skill.manifest.skill;
     const dest = join(root, SKILLS_DIR, name);
     if (existsSync(dest)) {
@@ -232,7 +237,7 @@ export async function cmdInstall(args: string[]): Promise<number> {
     }
 
     mkdirSync(dirname(dest), { recursive: true });
-    cpSync(fetched.dir, dest, { recursive: true });
+    cpSync(fetched.dir, dest, { recursive: true, filter: notGitDir });
     upsertLock(root, { name, version, source, integrity: integrityOf(dest) });
 
     console.log(`installed ${name}@${version}`);
@@ -281,9 +286,13 @@ function printSkillDiff(aDir: string, aSkill: LoadedSkill | null, bSkill: Loaded
       console.log(`  ${sym} ${c.path}${c.opaque ? " (binary or symlink — not line-diffed)" : ""}`);
     }
     for (const c of changes) {
-      if (c.opaque || c.kind === "removed") continue;
+      if (c.opaque) continue;
+      // A removed file is diffed against "" like an added one is: deleting the
+      // script a SKILL.md points at changes behavior as much as adding one, and
+      // the reviewer has to see what left.
       const before = c.kind === "added" ? "" : textOf(aDir, c.path);
-      const d = unifiedDiff(before, textOf(bSkill.dir, c.path), `a/${c.path}`, `b/${c.path}`);
+      const after = c.kind === "removed" ? "" : textOf(bSkill.dir, c.path);
+      const d = unifiedDiff(before, after, `a/${c.path}`, `b/${c.path}`);
       if (d) console.log(`\n${d}`);
     }
   }
@@ -322,7 +331,7 @@ export async function cmdDiff(args: string[]): Promise<number> {
       if (!fetched) return 2;
       if (fetched.cleanup) cleanups.push(fetched.cleanup);
       try {
-        bSkill = loadSkill(fetched.dir);
+        bSkill = loadSkill(fetched.dir, fetched.nameHint);
       } catch (e) {
         console.error(e instanceof Error ? e.message : String(e));
         return 2;
@@ -379,7 +388,7 @@ export async function cmdUpdate(args: string[]): Promise<number> {
     try {
       let next: LoadedSkill;
       try {
-        next = loadSkill(fetched.dir);
+        next = loadSkill(fetched.dir, fetched.nameHint);
       } catch (e) {
         console.error(`✗ ${entry.name}: source no longer loads — ${(e instanceof Error ? e.message : String(e)).split("\n")[0]}`);
         failed++;
@@ -446,7 +455,7 @@ export async function cmdUpdate(args: string[]): Promise<number> {
       }
 
       rmSync(dest, { recursive: true });
-      cpSync(fetched.dir, dest, { recursive: true });
+      cpSync(fetched.dir, dest, { recursive: true, filter: notGitDir });
       upsertLock(root, { name: entry.name, version: next.manifest.skill.version, source: entry.source, integrity: integrityOf(dest) });
       console.log(`updated ${entry.name}@${next.manifest.skill.version}`);
       console.log(`  re-pinned in ${LOCK_FILE}`);
@@ -621,13 +630,21 @@ function sourceMatches(pattern: string, value: string): boolean {
   return re.test(value);
 }
 
-/** Patterns are matched against both the raw source and its canonical form (gh:owner/repo..., file:/abs/path). */
+/**
+ * Patterns are matched against the CANONICAL source only (gh:owner/repo…,
+ * file:/abs/path). Matching the raw string too was an escape hatch: `*` spans
+ * `/`, so `file:/srv/approved/../untrusted/evil` matched an allowlist of
+ * `file:/srv/approved/*` while resolving somewhere else entirely — and the
+ * un-normalized string was then persisted as the lockfile source, so doctor kept
+ * reporting "policy: ok" and update kept refetching from outside the allowlist.
+ */
 function sourceViolations(policy: Policy, rawSource: string, root: string): string[] {
   if (!policy.allowSources.length) return [];
   const n = normalizeSource(rawSource, root);
   const canonical = n.kind === "gh" ? `gh:${n.value}` : `file:${n.value}`;
-  const allowed = policy.allowSources.some((p) => sourceMatches(p, canonical) || sourceMatches(p, rawSource));
-  return allowed ? [] : [`source "${rawSource}" is not in allow_sources (${policy.allowSources.join(", ")})`];
+  const allowed = policy.allowSources.some((p) => sourceMatches(p, canonical));
+  const shown = canonical === rawSource ? `"${rawSource}"` : `"${rawSource}" (${canonical})`;
+  return allowed ? [] : [`source ${shown} is not in allow_sources (${policy.allowSources.join(", ")})`];
 }
 
 function manifestViolations(policy: Policy, skill: LoadedSkill): string[] {
@@ -652,7 +669,7 @@ function loadSkillTarget(target: string, root: string): { skill: LoadedSkill; cl
   const asPath = resolve(root, target);
   if (existsSync(asPath)) {
     try {
-      return { skill: loadSkill(asPath) };
+      return { skill: loadSkill(asPath, basename(asPath)) };
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
       return null;
@@ -666,7 +683,7 @@ function loadSkillTarget(target: string, root: string): { skill: LoadedSkill; cl
     const fetched = fetchSource(target, root);
     if (!fetched) return null;
     try {
-      return { skill: loadSkill(fetched.dir), cleanup: fetched.cleanup };
+      return { skill: loadSkill(fetched.dir, fetched.nameHint), cleanup: fetched.cleanup };
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
       if (fetched.cleanup) rmSync(fetched.cleanup, { recursive: true, force: true });
@@ -697,7 +714,7 @@ function configuredAdapters(root: string): typeof ADAPTERS | string {
 export async function cmdCompile(args: string[]): Promise<number> {
   const strict = args.includes("--strict");
   const root = process.cwd();
-  const skills = loadInstalledSkills(root);
+  const { skills, failures } = loadInstalledSkillsSafe(root);
 
   const adaptersOrError = configuredAdapters(root);
   if (typeof adaptersOrError === "string") {
@@ -713,7 +730,14 @@ export async function cmdCompile(args: string[]): Promise<number> {
     console.error(`  add a detectable agent dir (.claude/, .cursor/, …) or set [project].targets in ${CONFIG}.`);
     return 1;
   }
-  const installedNames = new Set(skills.map((s) => s.manifest.skill.name));
+  // A skill whose manifest no longer loads is still installed. Compiling around it
+  // silently — dropping it from the count and pruning its AGENTS.md section while
+  // it sits on disk, still pinned — is how an agent loses instructions with nobody
+  // told. Its directory name counts as installed so nothing of its is pruned, its
+  // existing output is left exactly as it was, and the command exits non-zero.
+  for (const f of failures) console.error(`✗ ${f.name}: failed to load — ${f.message.split("\n")[0]}`);
+  const installedNames = new Set([...skills.map((s) => s.manifest.skill.name), ...failures.map((f) => f.name)]);
+  const keepPaths = new Set(failures.flatMap((f) => managedPathsFor(f.name)));
 
   const files = new Map<string, string>();
   const owners = new Map<string, string>(); // non-merge path → skill that wrote it, for conflict detection
@@ -762,6 +786,15 @@ export async function cmdCompile(args: string[]): Promise<number> {
   }
 
   const written: CompiledFile[] = [...files.entries()].map(([path, content]) => ({ path, content }));
+  // Every emitted path must land inside the project. Adapters build filenames from
+  // manifest values, so a containment check here is the last line before a write:
+  // nothing a skill declares may address a file outside the repo it was installed in.
+  const escaping = written.filter((f) => !resolveSubpath(root, f.path));
+  if (escaping.length) {
+    for (const f of escaping) console.error(`✗ refusing to write outside the project: ${f.path}`);
+    console.error("  a skill's declared name or trigger command produced an escaping path — nothing was written.");
+    return 1;
+  }
   for (const f of written) {
     const abs = join(root, f.path);
     mkdirSync(dirname(abs), { recursive: true });
@@ -782,14 +815,18 @@ export async function cmdCompile(args: string[]): Promise<number> {
       console.log(`✂ pruned stale section(s) from ${rel}`);
     }
   }
-  for (const pruned of pruneStaleOutputs(root, new Set(files.keys()))) console.log(`✂ ${pruned}`);
+  for (const pruned of pruneStaleOutputs(root, new Set([...files.keys(), ...keepPaths]))) console.log(`✂ ${pruned}`);
   for (const w of warnings) console.log(`⚠ ${w}`);
   for (const n of notes) console.log(`ℹ ${n}`); // the measurement — informational, not a failure
-  if (!skills.length) {
+  if (!skills.length && !failures.length) {
     console.log("no skills installed — kitbash install <source> to add one");
     return 0;
   }
   console.log(`compiled ${plural(skills.length, "skill")} for ${plural(adapters.length, "target")}`);
+  if (failures.length) {
+    console.error(`${plural(failures.length, "installed skill")} could not be loaded and ${failures.length === 1 ? "was" : "were"} skipped — their existing output is untouched. Fix the manifest or reinstall.`);
+    return 1;
+  }
   // The pitch is "every agent" — a partial fan-out on a fresh repo looks like a shortfall.
   if (adapters.length < ADAPTERS.length && !hasExplicitTargets(root)) {
     const missing = ADAPTERS.filter((a) => !adapters.includes(a)).map((a) => a.id);
@@ -854,6 +891,13 @@ function staticChecks(skill: LoadedSkill): Check[] {
   } catch (e) {
     checks.push({ name: "references", ok: false, detail: e instanceof Error ? e.message : String(e) });
   }
+  // The safety scanners run on the raw source when resolution failed. Gating them
+  // on a resolved body made every one of them optional: a single unresolvable
+  // {{token}} anywhere in SKILL.md made resolveBody throw, and a curl|sh pipeline
+  // in the same file then installed cleanly. Budget checks stay gated — measuring
+  // an unresolved body would report a number the compiler never emits — but
+  // "can a reviewer see this, and does it execute on load" never gets a pass.
+  const safetyBody = body ?? skill.body;
 
   // budgets — the measured claim
   if (body !== undefined) {
@@ -894,62 +938,61 @@ function staticChecks(skill: LoadedSkill): Check[] {
     checks.push({ name: "artifacts", ok: badArtifacts.length === 0, detail: badArtifacts.length ? `malformed: ${badArtifacts.join(", ")} (want name@version)` : `produces ${m.artifacts.produces.length}, consumes ${m.artifacts.consumes.length}` });
   }
 
-  // command triggers must be slash-prefixed
-  const badCommands = m.triggers.commands.filter((c) => !c.startsWith("/"));
-  if (badCommands.length) checks.push({ name: "triggers", ok: false, detail: `commands must start with '/': ${badCommands.join(", ")}` });
+  // Command triggers become filenames (.claude/commands/<cmd>.md), so the shape is
+  // load-bearing: anything with a path in it would compile outside the repo.
+  const badCommands = m.triggers.commands.filter((c) => !COMMAND_RE.test(c));
+  if (badCommands.length) checks.push({ name: "triggers", ok: false, detail: `commands must match ${COMMAND_RE} — a slash and a lowercase name, no paths: ${badCommands.join(", ")}` });
 
   // schema-conformance lints: unknown tables, unrecognized enum values (warn, per RFC 0002)
   const lints = schemaLints(skill.dir);
   if (lints.length) checks.push({ name: "schema", ok: true, warn: true, detail: lints.join("; ") });
 
   // injection heuristics (warn only)
-  if (body !== undefined) {
-    const hits = INJECTION_PATTERNS.filter((p) => p.re.test(body!)).map((p) => p.label);
-    if (hits.length) checks.push({ name: "injection", ok: true, warn: true, detail: `heuristic match — review: ${hits.join(", ")}` });
+  const hits = INJECTION_PATTERNS.filter((p) => p.re.test(safetyBody)).map((p) => p.label);
+  if (hits.length) checks.push({ name: "injection", ok: true, warn: true, detail: `heuristic match — review: ${hits.join(", ")}` });
 
-    // Hard failures: instructions a human reviewer cannot see, or that execute
-    // before the model reads anything. Kitbash fans one skill out to nine files,
-    // several of them always in context, so these never get a pass.
-    const invisible = invisibleRuns(body);
+  // Hard failures: instructions a human reviewer cannot see, or that execute
+  // before the model reads anything. Kitbash fans one skill out to nine files,
+  // several of them always in context, so these never get a pass.
+  const invisible = invisibleRuns(safetyBody);
+  checks.push({
+    name: "visible-text",
+    ok: invisible.length === 0,
+    detail: invisible.length
+      ? `${invisible.length} run(s) of invisible characters (${invisible.join(", ")}) — instructions a reviewer cannot see`
+      : "no hidden characters",
+  });
+
+  const escapes = [...safetyBody.matchAll(DYNAMIC_CONTEXT_RE)].map((m) => m[0].slice(0, 40));
+  if (escapes.length) {
     checks.push({
-      name: "visible-text",
-      ok: invisible.length === 0,
-      detail: invisible.length
-        ? `${invisible.length} run(s) of invisible characters (${invisible.join(", ")}) — instructions a reviewer cannot see`
-        : "no hidden characters",
+      name: "dynamic-context",
+      ok: false,
+      detail: `command substitution in the skill body executes before the model sees it: ${escapes.join(", ")}`,
     });
+  }
 
-    const escapes = [...body.matchAll(DYNAMIC_CONTEXT_RE)].map((m) => m[0].slice(0, 40));
-    if (escapes.length) {
-      checks.push({
-        name: "dynamic-context",
-        ok: false,
-        detail: `command substitution in the skill body executes before the model sees it: ${escapes.join(", ")}`,
-      });
-    }
+  // Download-and-execute pipelines hidden in skill prose (a "Prerequisites"
+  // section, a code fence) — the ClawHavoc / ClickFix pattern. The fuzzy
+  // curl|sh entry in INJECTION_PATTERNS stays a warning (a defensive skill may
+  // quote it); the literal download→execute family below is a hard line.
+  const remoteExec = remoteExecHits(safetyBody);
+  if (remoteExec.length) {
+    checks.push({
+      name: "remote-exec",
+      ok: false,
+      detail: `download-and-execute pipeline in the skill body: ${remoteExec.join(", ")}`,
+    });
+  }
 
-    // Download-and-execute pipelines hidden in skill prose (a "Prerequisites"
-    // section, a code fence) — the ClawHavoc / ClickFix pattern. The fuzzy
-    // curl|sh entry in INJECTION_PATTERNS stays a warning (a defensive skill may
-    // quote it); the literal download→execute family below is a hard line.
-    const remoteExec = remoteExecHits(body);
-    if (remoteExec.length) {
-      checks.push({
-        name: "remote-exec",
-        ok: false,
-        detail: `download-and-execute pipeline in the skill body: ${remoteExec.join(", ")}`,
-      });
-    }
-
-    // A live credential shipped inside a skill — never legitimate.
-    const secrets = secretHits(body);
-    if (secrets.length) {
-      checks.push({
-        name: "secrets",
-        ok: false,
-        detail: `hardcoded credential in the skill body: ${secrets.join(", ")}`,
-      });
-    }
+  // A live credential shipped inside a skill — never legitimate.
+  const secrets = secretHits(safetyBody);
+  if (secrets.length) {
+    checks.push({
+      name: "secrets",
+      ok: false,
+      detail: `hardcoded credential in the skill body: ${secrets.join(", ")}`,
+    });
   }
 
   return checks;
@@ -1040,6 +1083,29 @@ function secretHits(text: string): string[] {
   return [...found];
 }
 
+/** cpSync filter: a source's own .git is never part of the skill. */
+function notGitDir(src: string): boolean {
+  return basename(src) !== ".git";
+}
+
+/**
+ * Is this a real binary (an image, a compiled artifact) rather than text an agent
+ * will read? Decided by the density of control characters, not by the presence of
+ * a single NUL: `buf.includes(0)` let one stray NUL byte — invisible in a terminal,
+ * in a markdown renderer, and to the model — exempt an entire file from every
+ * safety scanner while it stayed perfectly readable prose.
+ */
+function looksBinary(buf: Buffer): boolean {
+  const sample = buf.subarray(0, 8192);
+  if (!sample.length) return false;
+  let control = 0;
+  for (const byte of sample) {
+    const printable = byte === 9 || byte === 10 || byte === 13 || (byte >= 32 && byte !== 127);
+    if (!printable) control++;
+  }
+  return control / sample.length > 0.1;
+}
+
 /**
  * Run the three safety scanners over every non-binary file in a fetched skill
  * EXCEPT SKILL.md (staticChecks already covers that). Returns failed Checks named
@@ -1056,8 +1122,13 @@ function scanSkillFiles(dir: string): Check[] {
       continue;
     }
     const buf = readFileSync(join(dir, rel));
-    if (buf.includes(0)) continue; // binary
-    const text = buf.toString("utf8");
+    if (looksBinary(buf)) continue;
+    // NULs are stripped rather than honored: they render as nothing, so
+    // `cu\0rl … | sh` reads as curl|sh to everything downstream and must to the
+    // scanners too. A NUL in an otherwise-textual file is itself hidden text.
+    const raw = buf.toString("utf8");
+    const text = raw.replace(/\0/g, "");
+    if (text !== raw) out.push({ name: "visible-text", ok: false, detail: `${rel}: NUL byte(s) inside a text file — characters a reviewer cannot see` });
     const invisible = invisibleRuns(text);
     if (invisible.length) out.push({ name: "visible-text", ok: false, detail: `${rel}: invisible characters (${invisible.join(", ")})` });
     if (text.match(DYNAMIC_CONTEXT_RE)) out.push({ name: "dynamic-context", ok: false, detail: `${rel}: command substitution that runs at load time` });
@@ -1308,6 +1379,15 @@ const MANAGED_DIRS: { dir: string; suffix: string; wholeDir?: boolean }[] = [
   { dir: ".devin/rules", suffix: ".md" },
   { dir: ".github/instructions", suffix: ".instructions.md" },
 ];
+
+/**
+ * The managed paths a skill of this name would own. Used to protect the output of
+ * a skill that failed to load this run: it is still installed, so its generated
+ * files are current, not stale.
+ */
+function managedPathsFor(name: string): string[] {
+  return MANAGED_DIRS.map((loc) => `${loc.dir}/${name}${loc.suffix}`);
+}
 
 function pruneStaleOutputs(root: string, written: Set<string>): string[] {
   const pruned: string[] = [];

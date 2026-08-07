@@ -372,7 +372,11 @@ export const ADAPTERS: Adapter[] = [claudeCode, cursor, agents, zed, copilot, cl
 export function mergeSection(existing: string, name: string, section: string): string {
   const { begin, end } = markers(name);
   const re = new RegExp(`${escapeRe(begin)}[\\s\\S]*?${escapeRe(end)}`);
-  if (re.test(existing)) return existing.replace(re, section);
+  // Replacer function, not a replacement string: a skill body documenting `$$`
+  // (Make), `$&` (sed), or `$'` would otherwise be reinterpreted as replacement
+  // patterns — halving the `$$`, splicing the old section into itself, and
+  // leaving doubled markers that break pruning on the next compile.
+  if (re.test(existing)) return existing.replace(re, () => section);
   const sep = existing.trim().length ? `${existing.replace(/\s*$/, "")}\n\n` : "";
   return `${sep}${section}\n`;
 }
