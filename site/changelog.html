@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.14.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.15.0</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,420 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.15.0">
+  <div class="release-head">
+    <h2><a href="#v0.15.0">v0.15.0</a></h2>
+    <span class="release-date">2026-08-07</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">Security and integrity pass. A multi-agent audit of the shipped code — five independent review passes, every finding independently reproduced before it was accepted — turned up four ways to walk a hostile skill straight past the install gate, plus five ways the tool corrupted or silently discarded its own output. Everything here was reachable in 0.13.0. Nothing here is a new feature.</p>
+<h3 class="group">Fixed — the install gate</h3>
+<ul><li><strong>One broken template disabled every body safety scanner.</strong> The four non-bypassable lints (<code>visible-text</code>, <code>dynamic-context</code>, <code>remote-exec</code>, <code>secrets</code>) ran only when <code>resolveBody()</code> succeeded, and it throws on any unresolved <code>{{token}}</code> or missing <code>prompts/*.md</code>. So a <code>SKILL.md</code> carrying <code>curl … | sh</code> plus a trailing <code>{{ broken }}</code> installed cleanly with exit 0 — the same file without the broken token was correctly blocked. The whole-directory scan skips <code>SKILL.md</code> (the body check was supposed to own it), so nothing else looked. The scanners now run against the raw source whenever resolution fails; only the budget measurement stays gated on a resolved body, since measuring an unresolved one would report a number the compiler never emits.</li><li><strong>A single NUL byte exempted any file from the scanners.</strong> <code>scanSkillFiles</code> treated "contains a NUL" as "is binary" and skipped the file entirely — while the file stayed perfectly readable prose for the agent, and the NUL stayed invisible in a terminal and in every markdown renderer. Binary is now decided by control-character density over the first 8 KB, NULs are stripped before scanning (so <code>cu\0rl … | sh</code> reads as what it is), and a NUL inside an otherwise-textual file is itself reported as hidden text.</li><li><strong>A skill.toml could switch off the gate that was about to inspect it.</strong> The TOML parser's <code>ensureTable</code> walked <code>node[part]</code> with no guard, so <code>[__proto__.policy]</code> wrote onto <code>Object.prototype</code> — and because the untrusted manifest is parsed <em>before</em> <code>loadPolicy()</code> reads <code>raw["policy"]</code>, a skill could hand itself <code>deny_remote_exec = false</code> in a repo whose <code>kitbash.toml</code> declares no <code>[policy]</code> at all, then ship a <code>curl … | sh</code> body. Tables are now created with a null prototype, and <code>__proto__</code> / <code>constructor</code> / <code>prototype</code> are refused outright as table or key names.</li><li><strong><code>allow_sources</code> was matched against the un-normalized source string.</strong> A pattern's <code>*</code> spans <code>/</code>, and the raw string keeps its <code>..</code>, so with <code>allow_sources = ["file:/srv/approved/*"]</code> the source <code>file:/srv/approved/../untrusted/evil</code> passed while the byte-identical <code>file:/srv/untrusted/evil</code> was blocked. The un-normalized string was then persisted as the lockfile source, so <code>doctor</code> reported <code>policy: ok</code> forever and <code>update</code> kept refetching from outside the allowlist. Matching is now against the canonical form only; the error message shows both when they differ.</li><li><strong>A trigger command could name a path.</strong> <code>triggers.commands</code> was only checked for a leading <code>/</code>, and the claude-code adapter builds <code>.claude/commands/&lt;cmd&gt;.md</code> from it verbatim, so <code>commands = ["/../../../../../../tmp/x"]</code> made <code>compile</code> write six levels above the project — <code>mkdirSync(…, {recursive:true})</code> happily creating the intermediate directories. The schema has always specified <code>^/[a-z][a-z0-9-]*$</code>; the CLI now enforces it at manifest load, and <code>compile</code> additionally refuses to write any path that resolves outside the project root.</li></ul>
+<h3 class="group">Fixed — output integrity</h3>
+<ul><li><strong>A skill documenting <code>$</code>, <code><!-- changelog:begin -->
 <article class="release" id="v0.14.0">
   <div class="release-head">
     <h2><a href="#v0.14.0">v0.14.0</a></h2>
     <span class="release-date">2026-08-07</span><span class="release-tag">latest</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>kitbash update</code> — the v0.2 exit criterion, closed.</strong> Updating a skill was the one lifecycle step with no tooling: you ran <code>remove</code> + <code>install</code> and reviewed nothing, or edited files by hand and tripped doctor's drift check. <code>update</code> refetches each skill's pinned source and prints the complete review before touching a byte: manifest field deltas with permission escalations flagged (<code>permissions.network: no → YES  ⚠ escalation</code>), the changed-file list, then a unified diff of every readable file — instructions, prompts, scripts. Only then does it ask. Three properties are deliberate. The four safety lints that gate install (<code>visible-text</code>, <code>dynamic-context</code>, <code>remote-exec</code>, <code>secrets</code>) re-run against the new version and block the update regardless of <code>--yes</code> — a skill must clear the same gate to change on disk as to arrive. <code>[policy]</code> is re-enforced, so a new version that declares a permission your policy denies cannot arrive by update. And unlike <code>install</code>, a non-interactive run <strong>never</strong> auto-applies: no TTY plus no <code>--yes</code> means the diff prints, nothing changes, and the exit code says so — the command's whole contract is that a human saw the diff and said yes. Local edits to an installed skill are detected via the lockfile hash and called out before being overwritten; a source that renames its skill is refused rather than silently replacing another.</li><li><strong><code>kitbash diff</code> — the same review, read-only.</strong> One argument diffs an installed skill against a fresh fetch of its pinned source ("what would update do?"); two arguments diff any two skills — installed names, local paths, or fetchable sources, so <code>kitbash diff prereview gh:owner/repo/skills/prereview@v2</code> works before anything is installed. Exit codes follow diff(1): <code>0</code> identical, <code>1</code> different, <code>2</code> trouble — scriptable as a cheap "is my skill stale?" probe in CI. Both commands share one diff engine: an LCS line diff with hunk headers, binary and symlink entries listed but never line-diffed, CRLF normalized so a Windows checkout doesn't read as a wall of changes.</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li>The CLI docs page still described the 0.6.0 command surface: a flat help listing with no planned/working split, an unknown command exiting <code>1</code> with a help dump (it exits <code>2</code> with a did-you-mean), planned commands exiting <code>2</code> (they exit <code>7</code>), and a <code>-v</code> alias that was removed in 0.11.0. The synopsis, command summary, and exit-code table now match the shipped binary, and the docs index gained the tenth adapter (<code>zed</code>) its own list had dropped.</li></ul>
+</article>
+
+<article class="release" id="v0.13.0">
+  <div class="release-head">
+    <h2><a href="#v0.13.0">v0.13.0</a></h2>
+    <span class="release-date">2026-07-29</span>
+  </div>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>Cline was being charged a standing tax it stopped owing, and served the same skill twice.</strong> The <code>cline</code> adapter compiled to <code>.clinerules/&lt;name&gt;.md</code> — a <em>rule</em>, always active, whole body in context every session — and declared the target eager. Cline reads Agent Skills (<code>apps/vscode/src/core/storage/skill-directories.ts</code> scans <code>.cline/skills</code>, <code>.clinerules/skills</code>, <code>.claude/skills</code> and <code>.agents/skills</code>) and loads them progressively: name and description at startup, the body only when <code>use_skill</code> fires. So the target was billed ~539 standing tokens for a skill Cline was willing to lazy-load for ~40. Worse, in any repo that also had <code>.agents/</code>, Kitbash emitted the identical body to both paths and Cline scanned both — the always-on copy defeating the lazy one, and a tool whose entire pitch is measuring standing cost silently adding ~539 tokens of it. <code>cline</code> now compiles to <code>.agents/skills/&lt;name&gt;/SKILL.md</code>, the same vendor-neutral file <code>agents</code> and <code>zed</code> emit, which makes the duplicate structurally impossible: one file serves Cline, Codex, Cursor, Copilot and Zed at once. Detection gains <code>.cline/</code>. Stale <code>.clinerules/&lt;name&gt;.md</code> output is pruned on the next compile; your own rule files there are untouched.</li><li><strong>The measured tax moved with it</strong>, because the numbers are read from the adapters rather than restated: <strong>14×</strong> for a manifested skill (~40 lazy vs ~560 eager) and <strong>47×</strong> for an unmanifested one, up from 13× and 45×. Cline leaving the eager set costs a row in a table, not the argument — <code>aider</code> and <code>agentsmd</code> still carry the whole body every session. Eight of the ten targets are now lazy.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li><strong>A skill authored <code>disclosure = "eager"</code> now warns on <code>cline</code>.</strong> Cline loads every skill on demand, so an eager-authored skill does not get the always-resident body it asked for. Compiling that silently would fix one spec §2 conformance violation by introducing its mirror image; it warns instead, and fails <code>--strict</code>.</li></ul>
+</article>
+
+<article class="release" id="v0.12.0">
+  <div class="release-head">
+    <h2><a href="#v0.12.0">v0.12.0</a></h2>
+    <span class="release-date">2026-07-28</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>zed</code> adapter — the tenth target.</strong> Zed reads the vendor-neutral <code>.agents/skills/&lt;name&gt;/SKILL.md</code> path, but nothing in a Zed-only repo announces that: the <code>agents</code> adapter probes <code>.agents/</code> and <code>.codex/</code>, neither of which Zed creates. A repo whose only agent marker was <code>.zed/</code> therefore compiled to nothing but the eager <code>AGENTS.md</code> floor — paying a skill's whole body every session on an agent that can lazy-load it for free. The new target detects <code>.zed/</code> and emits the byte-identical file <code>agents</code> does, so a repo with both compiles that skill once, not twice. <strong>Ten targets, nine output files.</strong></li><li><strong>Zed's silent frontmatter rejections are now visible.</strong> Zed's skill loader is stricter than KSF and drops a non-conforming skill at load with no diagnostic in the UI — the silent capability loss spec §2 forbids. Two constraints are checked and warned about at <code>compile</code> (so <code>--strict</code> fails on them) and in <code>explain</code>: <code>name</code> must match <code>^[a-z0-9]+(-[a-z0-9]+)*$</code>, which rejects the doubled and trailing hyphens KSF's own name rule permits (<code>tidy--commits</code> is a legal skill name Zed will not load); and <code>description</code> must be non-empty and at most <strong>1024 UTF-8 bytes, not characters</strong> — a trap for any non-ASCII description, where 600 characters can be 1,200 bytes. A manifested skill is bounded at 200 characters, so only an unmanifested <code>SKILL.md</code>, whose frontmatter is copied through unvalidated, can breach either bound. No <code>disable-model-invocation</code> key is emitted: KSF has no field meaning "never auto-invoke", so synthesizing one would guess at the author's intent.</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li><strong><code>explain</code> no longer answers "no capability degradation" about a skill the target refuses to load.</strong> Adapters can now declare target-specific constraints separately from <code>emit()</code>, and <code>explain</code> reads them directly — a true statement that read as a false one.</li></ul>
+</article>
+
+<article class="release" id="v0.11.0">
+  <div class="release-head">
+    <h2><a href="#v0.11.0">v0.11.0</a></h2>
+    <span class="release-date">2026-07-28</span>
+  </div>
+<p class="release-intro">Credibility pass. A staff-level review of the shipped product found the docs, site, and CLI contradicting each other — fatal for a tool whose whole pitch is honest measurement. Every fix here aligns the surface with reality; none is a new feature.</p>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>The flagship number was reported three ways.</strong> <code>compile</code> warned ~517, <code>preview</code> showed ~507, and the benchmark said 560 for the same skill on the same target — because the compiled permissions note and the adapter's own wrapper were counted inconsistently. All three now report the true cost of the emitted file (560), and <code>preview</code> renders exactly what <code>compile</code> writes.</li><li><strong>The measurement no longer fails <code>--strict</code>.</strong> The standing-cost report was pushed into the same <code>warnings</code> array as real problems, so <code>compile --strict</code> failed on the one bundled skill — the product punishing the one number it exists to surface. It is now an informational note (<code>ℹ</code>), not a warning; <code>--strict</code> still fails on genuine warnings (budget overruns, degradation, conflicts).</li><li><strong>Stub commands cited already-passed milestones.</strong> <code>kitbash update</code> said "lands in v0.2" on a 0.10 build. The eight unimplemented commands now point at the roadmap with no stale version, and <code>--help</code> lists them under a separate "Planned (not yet implemented)" section instead of mixing them with working commands.</li><li><strong>The bundled example advertised <code>mode = gate</code></strong> while <code>kitbash gate</code> is unimplemented; it now ships as <code>mode = skill</code>, runnable end to end with shipped commands.</li><li><strong>Exit codes are consistent and conventional:</strong> unknown command is <code>2</code> (usage) with a did-you-mean suggestion instead of <code>1</code> + a full help dump; an unbuilt command is <code>7</code>; <code>test</code>/<code>lint</code> on an empty repo return <code>0</code> (vacuous pass) to match <code>compile</code>/<code>list</code>, so CI scripting agrees across commands.</li><li><strong><code>doctor</code></strong> shows undetected targets with <code>·</code> (not present in this repo) instead of <code>✗</code> (which now means a real problem), with an "N of 9 in this repo" count.</li><li><strong><code>compile</code></strong> on a partial fan-out prints how many more targets are available and how to enable them, so "compiled for 2 targets" no longer reads as a shortfall against the "every agent" pitch.</li><li>Website and docs corrected: the interactive preview no longer shows a fictional 1,480-token cost, the quickstart review/compile blocks match the real CLI, the standing-tax figure is stated once, README marks which skills ship vs are planned, and "KSF" is expanded on first use.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li>Per-command help (<code>kitbash install --help</code>, <code>kitbash help &lt;command&gt;</code>), a did-you-mean suggestion on a mistyped command, and proper pluralization in count lines ("1 skill for 2 targets", not "1 skill(s) for 2 agent target(s)"). Token counts carry units (<code>standing 60 tok/session</code>). Removed the <code>-v</code> version alias (it collides with the near-universal <code>-v</code> = verbose).</li></ul>
+</article>
+
+<article class="release" id="v0.10.0">
+  <div class="release-head">
+    <h2><a href="#v0.10.0">v0.10.0</a></h2>
+    <span class="release-date">2026-07-26</span>
+  </div>
+<p class="release-intro">Secrets and behavioral checks — adopted from the field-tested rule set of a dedicated agent-config scanner, but scoped to what Kitbash does: scan the skill being installed, statically, with no network. Kitbash does not audit your own agent config (settings.json, MCP servers, hooks) — that is a different tool's job.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>secrets</code> lint (hard-fail).</strong> A skill that ships a live credential — AWS, Anthropic, OpenAI, GitHub, Google, Stripe, Slack, or Linear keys, a database connection string with an inline password, or a private-key block — now blocks install, in the body or any file in the skill. Each pattern keys on a provider's real key shape (prefix + length + character class), and a placeholder guard drops documentation values, so a skill that teaches <code>sk-ant-...</code>, <code>${OPENAI_API_KEY}</code>, or AWS's own <code>AKIAIOSFODNN7EXAMPLE</code> installs fine. Not bypassable by <code>--yes</code>, enforced with or without a <code>[policy]</code> file.</li><li><strong>Behavioral warn heuristics</strong> in the injection check: output-suppression directives (<code>always report success</code>, <code>suppress the findings</code>), auto-run / no-consent directives (<code>without asking</code>, <code>automatically install</code>), bulk-credential harvesting (<code>collect all passwords</code>), and an injection directive hidden in an HTML comment (invisible in rendered markdown, read by the agent — while ordinary tooling comments like <code>&lt;!-- prettier-ignore --&gt;</code> do not trip it). These warn rather than block, since a defensive security skill may legitimately quote them; <code>--strict</code> fails on them.</li></ul>
+<h3 class="group">Notes</h3>
+<ul><li>This is a deliberate narrow adoption. Config-auditing (permissions in <code>settings.json</code>, MCP server risk, hook analysis) and harness-OS features (learned instincts, session memory, a skill marketplace) are out of scope by design — Kitbash is a compiler with a review gate, not an agent operating system.</li></ul>
+</article>
+
+<article class="release" id="v0.9.0">
+  <div class="release-head">
+    <h2><a href="#v0.9.0">v0.9.0</a></h2>
+    <span class="release-date">2026-07-24</span>
+  </div>
+<p class="release-intro">Conformance and honesty release. A codebase audit found a consistent pattern: the JSON schema was treated as the contract, but the loader enforced almost none of it, and several layers advertised enforcement they never delivered. This closes that gap.</p>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>Adapters no longer claim capabilities they don't deliver.</strong> <code>claude-code</code> declared <code>scripts</code>/<code>hooks</code>/<code>subagents</code> and the skill-directory adapters declared <code>scripts</code>, but <code>emit()</code> only writes <code>SKILL.md</code> — no <code>scripts/</code> copied, no hook, no subagent. Because the capability was in the set, degradation was computed as empty and <code>explain</code>/<code>--strict</code> reported full support for output referencing files that were never produced — the exact silent capability loss spec §2 forbids. Capability sets are now empty until the emit code that delivers a capability exists; a skill that <code>requires</code> one now correctly reports degraded.</li><li><strong>The manifest loader enforces the schema instead of silently coercing.</strong> A scalar where the schema types an array (<code>commands = "/deploy"</code>) became <code>[]</code> (a slash command that never registered, permissions that evaporated); a fractional <code>budget</code> passed the range check; an unknown <code>disclosure</code> silently became <code>lazy</code>. These are now hard errors, and an unknown <code>targets.mode</code> warns at <code>test</code> (forward-compatible table, per RFC 0002).</li><li><strong>Safety lints scan the whole skill, not just <code>SKILL.md</code>.</strong> The three install-blocking lints read only the body while install copies the entire directory — a <code>curl … | sh</code> in <code>scripts/setup.sh</code>, or hidden text in a sibling file, sailed straight through. Every non-binary file is now scanned; a symlink is flagged (it points outside the reviewed files).</li><li><strong>A malformed installed manifest no longer bricks every command.</strong> One hand-edited <code>skill.toml</code> made <code>list</code>/<code>compile</code>/<code>doctor</code> exit before processing valid siblings — and <code>doctor</code> threw before the integrity check that exists to catch exactly that tamper. <code>doctor</code> now reports the load failure, counts it, and still runs drift detection.</li><li><strong><code>compile</code> refuses to run with zero resolved targets</strong> (e.g. <code>targets = []</code>) rather than pruning every generated file while writing nothing back.</li><li><strong>Pruning removes only the generated file</strong>, never a user file colocated in a generated skill directory (a <code>NOTES.md</code> beside <code>SKILL.md</code> survives).</li><li><strong>Integrity hashing is symlink-aware.</strong> <code>walk()</code> skipped symlinks entirely, so repointing one inside an installed skill was invisible drift; the link target is now hashed without being followed.</li><li><strong><code>preview</code> errors on a bad <code>[project].targets</code></strong> instead of silently falling back to every adapter.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li><strong>Declared permissions are compiled into the instruction body.</strong> Spec §2 requires permissions be enforced natively or compiled into the instructions; only the install-review third was done, so a teammate who pulled the generated file saw no restriction. Non-default permissions now render a block into every target's output (prose, not native frontmatter — the KSF tool grammar is provisional).</li><li><strong><code>gate-verdict</code> check</strong>: a <code>mode = "gate"</code> skill with no <code>scripts/</code> and no declared artifact — nothing to produce a deterministic verdict — now fails <code>lint</code>/<code>test</code>.</li></ul>
+</article>
+
+<article class="release" id="v0.8.1">
+  <div class="release-head">
+    <h2><a href="#v0.8.1">v0.8.1</a></h2>
+    <span class="release-date">2026-07-23</span>
+  </div>
+<p class="release-intro">Security fix. The pre-install review gate did not actually block what it flagged.</p>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>Safety lints now block <code>install</code>, not just <code>lint</code>/<code>test</code>.</strong> The two hard-fail lints shipped in 0.8.0 (<code>visible-text</code>, <code>dynamic-context</code>) were printed at install as warnings and never stopped it — so a skill with hidden instructions installed cleanly for anyone without a <code>kitbash.toml</code>, since only a <code>[policy]</code> violation returned non-zero. Failed safety lints are now a hard gate at install: non-bypassable by <code>--yes</code>, enforced with or without a policy file, before anything is written. Schema and quality checks (a malformed artifact ref, a non-slash command) are unchanged — they still surface at <code>kitbash test</code> and never block an install.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>remote-exec</code> lint</strong> — a third hard-fail that catches download-and-execute pipelines hidden in a skill's prose (a "Prerequisites" section, a fenced example): <code>curl … | sh</code>, <code>eval "$(curl …)"</code>, <code>base64 -d | sh</code>, PowerShell <code>iex</code>/<code>iwr</code>, save-then-<code>chmod +x</code>-then-run, and remote-archive extract-run. This is the ClawHavoc / ClickFix family — payloads that live in documentation, not in the manifest a structural lint reads. It is a heuristic, not a proof (<code>c=curl; $c url | sh</code> evades a regex on prose); it raises attacker cost at the point where one skill fans out to nine files. Verified against benign installs (<code>npm install</code>, <code>pip install</code>, <code>curl -o file</code>) to keep false positives out.</li><li><strong><code>deny_remote_exec</code> in <code>[policy]</code></strong> — defaults to on; set <code>false</code> to consciously exempt a trusted internal skill from the remote-exec block. The hidden-text and dynamic-context lints are never exemptible.</li></ul>
+</article>
+
+<article class="release" id="v0.8.0">
+  <div class="release-head">
+    <h2><a href="#v0.8.0">v0.8.0</a></h2>
+    <span class="release-date">2026-07-23</span>
+  </div>
+<p class="release-intro">Every target that can lazy-load now does. Two adapters were still emitting always-on files for agents that had since grown proper skill directories.</p>
+<h3 class="group">Changed</h3>
+<ul><li><strong><code>copilot</code> compiles to <code>.github/skills/&lt;name&gt;/SKILL.md</code></strong> instead of a <code>.github/instructions/*.instructions.md</code> file with <code>applyTo: "**"</code>. Copilot reads agentskills.io skills and loads only the frontmatter until the skill is needed; the old form applied to every single request.</li><li><strong><code>gemini</code> compiles to <code>.gemini/skills/&lt;name&gt;/SKILL.md</code></strong> instead of merging into <code>GEMINI.md</code>. Gemini CLI injects only each skill's name and description at session start and pulls the body in via its <code>activate_skill</code> tool; Google's own docs describe <code>GEMINI.md</code> as persistent workspace-wide background.</li><li>Six of nine targets now lazy-load — claude-code, cursor, agents, copilot, windsurf/devin, gemini. The eager holdouts are cline, aider and the AGENTS.md floor.</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li>Stale sections in a marker-merged file are now pruned whenever nothing wrote to that file during a compile, not only when the owning skill was uninstalled. Without this, a <code>GEMINI.md</code> from an older Kitbash kept its generated section forever after the adapter moved. Upgrading cleans up the old <code>GEMINI.md</code> sections and <code>.github/instructions/</code> files on the next <code>kitbash compile</code>; your own content in those files is untouched.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li><code>.github/workflows/release.yml</code> — a pushed <code>v*</code> tag verifies the tag against the manifest, re-runs the full gate suite, publishes to npm via OIDC trusted publishing (no stored token, provenance attached automatically), and bumps the Homebrew formula.</li></ul>
+</article>
+
+<article class="release" id="v0.7.0">
+  <div class="release-head">
+    <h2><a href="#v0.7.0">v0.7.0</a></h2>
+    <span class="release-date">2026-07-22</span>
+  </div>
+<p class="release-intro">Ecosystem-correctness release. Two of Kitbash's assumptions about the agent landscape had gone stale, and one of them was flattering its own headline number.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>agents</code> adapter</strong> — <code>.agents/skills/&lt;name&gt;/SKILL.md</code>, the vendor-neutral Agent Skills path read by Codex (its only repo path), Cursor, Copilot, Gemini CLI, Roo, Amp, OpenCode, Zed and Antigravity. Lazy-loaded; detected when <code>.agents/</code> or <code>.codex/</code> exists. <strong>Nine targets total.</strong></li><li><strong>Two hard lint failures</strong> for instructions a reviewer cannot see or that run before the model reads anything: <code>visible-text</code> rejects zero-width characters, bidi overrides and the Unicode Tags block; <code>dynamic-context</code> rejects backtick command substitution in a skill body. Both fail <code>lint</code> and <code>test</code> with exit 1, no <code>--strict</code> needed — Kitbash fans one skill out to nine files, several of them permanently in context.</li><li><code>node site/build.mjs --check</code> verifies the committed site output is current; gated in CI, and Vercel now runs the build instead of serving whatever was committed.</li></ul>
+<h3 class="group">Changed</h3>
+<ul><li><strong><code>windsurf</code> is lazy, not eager.</strong> Windsurf became Devin Desktop on 2026-06-02: the adapter now writes <code>.devin/rules/&lt;name&gt;.md</code> when <code>.devin/</code> exists (falling back to <code>.windsurf/rules/</code>) and emits <code>trigger: model_decision</code>, so the description sits in context and the body loads on demand.</li><li>The benchmark reads each target's loading mode from the adapters themselves rather than a second hardcoded map — the copy is exactly how published numbers drift from what the compiler emits. Regenerated: four targets now lazy-load, five are eager-only.</li><li>Standing-tax framing corrected throughout: Kitbash compiles to the cheapest loading mode each target actually supports, and the tax is what it costs on targets whose only mode is eager. The 12x/46x gap still holds, measured against the corrected matrix.</li></ul>
+</article>
+
+<article class="release" id="v0.6.0">
+  <div class="release-head">
+    <h2><a href="#v0.6.0">v0.6.0</a></h2>
+    <span class="release-date">2026-07-14</span>
+  </div>
+<p class="release-intro">Trust &amp; review release: installing a skill means letting someone else's instructions run with your agent's permissions — this release makes that reviewable and governable.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong>Pre-install review gate</strong>: <code>kitbash install</code> prints a review block (permissions incl. network/write, budget, standing, capability requirements, lint warnings incl. injection heuristics) <em>before</em> writing anything, and prompts <code>install? [y/N]</code> on a TTY. <code>--yes</code>/<code>-y</code> skips the prompt; non-interactive runs (CI) proceed as before.</li><li><strong><code>[policy]</code> in <code>kitbash.toml</code></strong> — org-level allowlists: <code>allow_sources</code> (globs matched against <code>gh:owner/repo[/path][@ref]</code> / <code>file:</code> sources), <code>deny_network</code>, <code>deny_write</code>, <code>max_budget</code>. Policy is a hard gate at install (<code>--yes</code> does not bypass it) and <code>doctor</code> rechecks it against already-installed skills.</li><li><strong>Remote sources for <code>preview</code>, <code>lint</code>, and <code>explain</code></strong>: <code>kitbash preview gh:owner/repo/path</code> fetches to a temp dir and renders the exact compiled output per agent — skills are fully readable before install, no side effects.</li></ul>
+<h3 class="group">Changed</h3>
+<ul><li><code>install</code> output: the summary (budget/standing/permissions) moved from after the copy to the review block before it; the post-install lines now just confirm the pin.</li><li><code>explain</code>/<code>lint</code>/<code>preview</code> "not found" errors now mention that a source (<code>gh:owner/repo</code>, <code>file:path</code>) is accepted.</li></ul>
+</article>
+
+<article class="release" id="v0.5.0">
+  <div class="release-head">
+    <h2><a href="#v0.5.0">v0.5.0</a></h2>
+    <span class="release-date">2026-07-12</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li>Three v0.2-roadmap commands: <code>kitbash lint [skill-or-path] [--strict]</code> (full static check suite, works pre-install), <code>kitbash explain &lt;skill-or-path&gt; &lt;adapter&gt;</code> (why a compilation degraded, with the token cost of eager targets), and <code>kitbash preview &lt;skill-or-path&gt;</code> (each adapter's compiled output with per-target token counts, before installing).</li><li><code>aider</code> adapter — marker-merged <code>CONVENTIONS.md</code> (detected via an existing <code>CONVENTIONS.md</code> or <code>.aider.conf.yml</code>) — <strong>8 targets total</strong>.</li><li>CI runs on Windows and macOS alongside Linux; fixed the platform-dependent subpath test so the suite is green on all three.</li><li>Site: live terminal replay in the hero and an interactive per-target compile preview.</li></ul>
+</article>
+
+<article class="release" id="v0.4.1">
+  <div class="release-head">
+    <h2><a href="#v0.4.1">v0.4.1</a></h2>
+    <span class="release-date">2026-07-11</span>
+  </div>
+<h3 class="group">Fixed</h3>
+<ul><li>TOML parser hardening: quoted strings and keys, signed numbers, spaced table headers, invalid-escape guard (<code>TomlError</code> instead of raw exceptions), plus edge cases around inline values.</li><li><code>gh:</code> installer: directory-traversal guard on subpaths; two skills writing the same output path now warn instead of silently overwriting.</li><li>Schema bounds enforced (budget ≤ 20000, standing ≤ 500, description ≤ 200 chars); YAML frontmatter values escaped so descriptions with quotes/colons stay valid.</li><li>Cross-platform deterministic integrity hashing — <code>kitbash.lock</code> hashes are CRLF/LF-insensitive and path-order stable.</li><li><code>doctor</code> flags a missing lockfile and installed-but-unpinned skills.</li><li>Standing stub skips markdown headers; unresolved <code>{{template}}</code> variables error at compile instead of leaking.</li><li>UTF-8 BOM stripped from manifests; stray subdirectories under the skills dir no longer crash <code>list</code>/<code>doctor</code>.</li></ul>
+</article>
+
+<article class="release" id="v0.4.0">
+  <div class="release-head">
+    <h2><a href="#v0.4.0">v0.4.0</a></h2>
+    <span class="release-date">2026-07-11</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li>Homebrew install: <code>brew install singhharsh1708/tap/kitbash</code>; README install/update/uninstall guide.</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li>Every eager target now reports the standing token cost of a lazy-authored skill, not just the shared-file ones.</li></ul>
+</article>
+
+<article class="release" id="v0.3.0">
+  <div class="release-head">
+    <h2><a href="#v0.3.0">v0.3.0</a></h2>
+    <span class="release-date">2026-07-11</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li>Four new adapters — <code>copilot</code> (<code>.github/instructions/*.instructions.md</code>), <code>cline</code> (<code>.clinerules/</code>), <code>windsurf</code> (<code>.windsurf/rules/</code>), <code>gemini</code> (GEMINI.md marker merge) — <strong>7 targets total</strong>.</li><li>Commands compilation: <code>triggers.commands</code> now emit native slash commands (Claude Code <code>.claude/commands/*.md</code> shims).</li><li>Generalized marker-merge for shared files (AGENTS.md, GEMINI.md): user content preserved, sections idempotent, stale sections pruned.</li><li>Pruning generalized to written-set semantics across all managed output locations — covers removed skills and renamed commands.</li><li>README: badges, status-quo-vs-kitbash comparison, FAQ; social preview asset; demo regenerated from a real 7-target session.</li></ul>
+</article>
+
+<article class="release" id="v0.2.0">
+  <div class="release-head">
+    <h2><a href="#v0.2.0">v0.2.0</a></h2>
+    <span class="release-date">2026-07-11</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li><code>kitbash.lock</code>: content-hash pins (sha256 over the skill directory) written on install, dropped on remove.</li><li>Integrity drift detection in <code>kitbash doctor</code> — exits 1 when installed files differ from the lock.</li><li>SKILL.md-only interop (skills.sh / Claude Skills convention): installs directly, manifest synthesized with conservative defaults, flagged <code>unmanifested</code> at install/list/compile. Verified against real third-party repos.</li><li><code>owner/repo</code> shorthand sources (resolve as <code>gh:</code>).</li><li>Stale-output pruning on <code>compile</code>: generated outputs of removed skills are deleted — only files bearing the generated header are ever touched.</li><li><code>kitbash.toml</code> <code>[project].targets</code> honored; unknown targets error.</li><li>Animated real-session demo in the README; launch plan in <code>docs/launch.md</code>.</li></ul>
+<h3 class="group">Changed</h3>
+<ul><li>Bare (unmanifested) skills report budget violations as warnings instead of build failures — their authors never declared those limits.</li><li><code>--version</code> reads package.json.</li></ul>
+</article>
+
+<article class="release" id="v0.1.0">
+  <div class="release-head">
+    <h2><a href="#v0.1.0">v0.1.0</a></h2>
+    <span class="release-date">2026-07-10</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li>KSF spec draft v0.1 (<code>spec/SPEC.md</code>) with JSON schema; RFC process (<code>rfcs/</code>); RFC-0001.</li><li>Working thin slice, zero runtime dependencies: <code>init</code>, <code>install</code> (gh:/file:), <code>remove</code>, <code>list</code>, <code>compile</code>, <code>doctor</code>.</li><li>Adapters: <code>claude-code</code>, <code>cursor</code>, <code>agentsmd</code> floor (idempotent marker merge).</li><li>Context budget and standing-stub enforcement at compile; visible degradation warnings; <code>--strict</code>.</li><li>Template resolution: <code>{{artifact.*}}</code>/<code>{{lore.*}}</code> compile to path references, <code>{{prompt.*}}</code> inlines.</li><li>End-to-end test suite in CI.</li><li>Reference skill <code>prereview</code>; manifesto; landing page; docs.</li></ul>
+</article>
+<!-- changelog:end -->amp;</code>, or <code>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-divider"></div>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="2.6" fill="none" stroke="currentColor" stroke-width="2"></rect>
+        <rect x="10.5" y="10.5" width="11" height="11" rx="2.6" fill="var(--logo-accent)"></rect>
+      </svg>
+      <strong>kitbash</strong>
+      <span>One skill, every coding agent.</span>
+    </div>
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <a href="docs/">Docs</a>
+      <a href="docs/cli">CLI</a>
+      <a href="docs/format">Format</a>
+      <a href="docs/trust">Trust</a>
+      <a href="benchmark">Benchmark</a>
+      <a href="changelog">Changelog</a>
+      <a href="https://github.com/singhharsh1708/kitbash/blob/main/MANIFESTO.md" target="_blank" rel="noopener">Manifesto</a>
+    </nav>
+    <div class="footer-actions">
+      <a class="nav-heart" href="https://github.com/sponsors/singhharsh1708" target="_blank" rel="noopener">
+        <svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M927.4 273.5v-95.4h-87.9V82.8h-201v95.3h-87.9v95.4h-78.5v-95.4h-88V82.8H183.2v95.3H95.3v95.4H16.7v190.6h78.6v95.4h75.3v95.3H246v95.3h87.9v95.4h100.5v95.3h153.9v-95.3h100.4v-95.4h88v-95.3H852.1v-95.3h75.3v-95.4h78.5V273.5z" fill="#E02D2D"></path></svg>
+        Support
+      </a>
+      <a href="https://github.com/singhharsh1708/kitbash" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g transform="translate(-140 -7559)" fill="currentColor"><g transform="translate(56 160)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" /></g></g></g></svg>
+        GitHub
+      </a>
+    </div>
+    <p class="footer-meta">Apache-2.0 · stable spec</p>
+  </div>
+</footer>
+
+<script src="assets/kitbash.js" defer></script>
+</body>
+</html>
+</code> corrupted <code>AGENTS.md</code> on every recompile.</strong> <code>mergeSection</code> passed the compiled section as a <code>String.replace</code> <em>replacement</em>, where those sequences are substitution patterns. A body reading <code>In Makefiles write $HOME</code> came back as <code>$HOME</code> on the second compile — a wrong instruction shipped to every agent — while <code><!-- changelog:begin -->
+<article class="release" id="v0.14.0">
+  <div class="release-head">
+    <h2><a href="#v0.14.0">v0.14.0</a></h2>
+    <span class="release-date">2026-08-07</span><span class="release-tag">latest</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>kitbash update</code> — the v0.2 exit criterion, closed.</strong> Updating a skill was the one lifecycle step with no tooling: you ran <code>remove</code> + <code>install</code> and reviewed nothing, or edited files by hand and tripped doctor's drift check. <code>update</code> refetches each skill's pinned source and prints the complete review before touching a byte: manifest field deltas with permission escalations flagged (<code>permissions.network: no → YES  ⚠ escalation</code>), the changed-file list, then a unified diff of every readable file — instructions, prompts, scripts. Only then does it ask. Three properties are deliberate. The four safety lints that gate install (<code>visible-text</code>, <code>dynamic-context</code>, <code>remote-exec</code>, <code>secrets</code>) re-run against the new version and block the update regardless of <code>--yes</code> — a skill must clear the same gate to change on disk as to arrive. <code>[policy]</code> is re-enforced, so a new version that declares a permission your policy denies cannot arrive by update. And unlike <code>install</code>, a non-interactive run <strong>never</strong> auto-applies: no TTY plus no <code>--yes</code> means the diff prints, nothing changes, and the exit code says so — the command's whole contract is that a human saw the diff and said yes. Local edits to an installed skill are detected via the lockfile hash and called out before being overwritten; a source that renames its skill is refused rather than silently replacing another.</li><li><strong><code>kitbash diff</code> — the same review, read-only.</strong> One argument diffs an installed skill against a fresh fetch of its pinned source ("what would update do?"); two arguments diff any two skills — installed names, local paths, or fetchable sources, so <code>kitbash diff prereview gh:owner/repo/skills/prereview@v2</code> works before anything is installed. Exit codes follow diff(1): <code>0</code> identical, <code>1</code> different, <code>2</code> trouble — scriptable as a cheap "is my skill stale?" probe in CI. Both commands share one diff engine: an LCS line diff with hunk headers, binary and symlink entries listed but never line-diffed, CRLF normalized so a Windows checkout doesn't read as a wall of changes.</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li>The CLI docs page still described the 0.6.0 command surface: a flat help listing with no planned/working split, an unknown command exiting <code>1</code> with a help dump (it exits <code>2</code> with a did-you-mean), planned commands exiting <code>2</code> (they exit <code>7</code>), and a <code>-v</code> alias that was removed in 0.11.0. The synopsis, command summary, and exit-code table now match the shipped binary, and the docs index gained the tenth adapter (<code>zed</code>) its own list had dropped.</li></ul>
+</article>
+
+<article class="release" id="v0.13.0">
+  <div class="release-head">
+    <h2><a href="#v0.13.0">v0.13.0</a></h2>
+    <span class="release-date">2026-07-29</span>
+  </div>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>Cline was being charged a standing tax it stopped owing, and served the same skill twice.</strong> The <code>cline</code> adapter compiled to <code>.clinerules/&lt;name&gt;.md</code> — a <em>rule</em>, always active, whole body in context every session — and declared the target eager. Cline reads Agent Skills (<code>apps/vscode/src/core/storage/skill-directories.ts</code> scans <code>.cline/skills</code>, <code>.clinerules/skills</code>, <code>.claude/skills</code> and <code>.agents/skills</code>) and loads them progressively: name and description at startup, the body only when <code>use_skill</code> fires. So the target was billed ~539 standing tokens for a skill Cline was willing to lazy-load for ~40. Worse, in any repo that also had <code>.agents/</code>, Kitbash emitted the identical body to both paths and Cline scanned both — the always-on copy defeating the lazy one, and a tool whose entire pitch is measuring standing cost silently adding ~539 tokens of it. <code>cline</code> now compiles to <code>.agents/skills/&lt;name&gt;/SKILL.md</code>, the same vendor-neutral file <code>agents</code> and <code>zed</code> emit, which makes the duplicate structurally impossible: one file serves Cline, Codex, Cursor, Copilot and Zed at once. Detection gains <code>.cline/</code>. Stale <code>.clinerules/&lt;name&gt;.md</code> output is pruned on the next compile; your own rule files there are untouched.</li><li><strong>The measured tax moved with it</strong>, because the numbers are read from the adapters rather than restated: <strong>14×</strong> for a manifested skill (~40 lazy vs ~560 eager) and <strong>47×</strong> for an unmanifested one, up from 13× and 45×. Cline leaving the eager set costs a row in a table, not the argument — <code>aider</code> and <code>agentsmd</code> still carry the whole body every session. Eight of the ten targets are now lazy.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li><strong>A skill authored <code>disclosure = "eager"</code> now warns on <code>cline</code>.</strong> Cline loads every skill on demand, so an eager-authored skill does not get the always-resident body it asked for. Compiling that silently would fix one spec §2 conformance violation by introducing its mirror image; it warns instead, and fails <code>--strict</code>.</li></ul>
+</article>
+
+<article class="release" id="v0.12.0">
+  <div class="release-head">
+    <h2><a href="#v0.12.0">v0.12.0</a></h2>
+    <span class="release-date">2026-07-28</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>zed</code> adapter — the tenth target.</strong> Zed reads the vendor-neutral <code>.agents/skills/&lt;name&gt;/SKILL.md</code> path, but nothing in a Zed-only repo announces that: the <code>agents</code> adapter probes <code>.agents/</code> and <code>.codex/</code>, neither of which Zed creates. A repo whose only agent marker was <code>.zed/</code> therefore compiled to nothing but the eager <code>AGENTS.md</code> floor — paying a skill's whole body every session on an agent that can lazy-load it for free. The new target detects <code>.zed/</code> and emits the byte-identical file <code>agents</code> does, so a repo with both compiles that skill once, not twice. <strong>Ten targets, nine output files.</strong></li><li><strong>Zed's silent frontmatter rejections are now visible.</strong> Zed's skill loader is stricter than KSF and drops a non-conforming skill at load with no diagnostic in the UI — the silent capability loss spec §2 forbids. Two constraints are checked and warned about at <code>compile</code> (so <code>--strict</code> fails on them) and in <code>explain</code>: <code>name</code> must match <code>^[a-z0-9]+(-[a-z0-9]+)*$</code>, which rejects the doubled and trailing hyphens KSF's own name rule permits (<code>tidy--commits</code> is a legal skill name Zed will not load); and <code>description</code> must be non-empty and at most <strong>1024 UTF-8 bytes, not characters</strong> — a trap for any non-ASCII description, where 600 characters can be 1,200 bytes. A manifested skill is bounded at 200 characters, so only an unmanifested <code>SKILL.md</code>, whose frontmatter is copied through unvalidated, can breach either bound. No <code>disable-model-invocation</code> key is emitted: KSF has no field meaning "never auto-invoke", so synthesizing one would guess at the author's intent.</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li><strong><code>explain</code> no longer answers "no capability degradation" about a skill the target refuses to load.</strong> Adapters can now declare target-specific constraints separately from <code>emit()</code>, and <code>explain</code> reads them directly — a true statement that read as a false one.</li></ul>
+</article>
+
+<article class="release" id="v0.11.0">
+  <div class="release-head">
+    <h2><a href="#v0.11.0">v0.11.0</a></h2>
+    <span class="release-date">2026-07-28</span>
+  </div>
+<p class="release-intro">Credibility pass. A staff-level review of the shipped product found the docs, site, and CLI contradicting each other — fatal for a tool whose whole pitch is honest measurement. Every fix here aligns the surface with reality; none is a new feature.</p>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>The flagship number was reported three ways.</strong> <code>compile</code> warned ~517, <code>preview</code> showed ~507, and the benchmark said 560 for the same skill on the same target — because the compiled permissions note and the adapter's own wrapper were counted inconsistently. All three now report the true cost of the emitted file (560), and <code>preview</code> renders exactly what <code>compile</code> writes.</li><li><strong>The measurement no longer fails <code>--strict</code>.</strong> The standing-cost report was pushed into the same <code>warnings</code> array as real problems, so <code>compile --strict</code> failed on the one bundled skill — the product punishing the one number it exists to surface. It is now an informational note (<code>ℹ</code>), not a warning; <code>--strict</code> still fails on genuine warnings (budget overruns, degradation, conflicts).</li><li><strong>Stub commands cited already-passed milestones.</strong> <code>kitbash update</code> said "lands in v0.2" on a 0.10 build. The eight unimplemented commands now point at the roadmap with no stale version, and <code>--help</code> lists them under a separate "Planned (not yet implemented)" section instead of mixing them with working commands.</li><li><strong>The bundled example advertised <code>mode = gate</code></strong> while <code>kitbash gate</code> is unimplemented; it now ships as <code>mode = skill</code>, runnable end to end with shipped commands.</li><li><strong>Exit codes are consistent and conventional:</strong> unknown command is <code>2</code> (usage) with a did-you-mean suggestion instead of <code>1</code> + a full help dump; an unbuilt command is <code>7</code>; <code>test</code>/<code>lint</code> on an empty repo return <code>0</code> (vacuous pass) to match <code>compile</code>/<code>list</code>, so CI scripting agrees across commands.</li><li><strong><code>doctor</code></strong> shows undetected targets with <code>·</code> (not present in this repo) instead of <code>✗</code> (which now means a real problem), with an "N of 9 in this repo" count.</li><li><strong><code>compile</code></strong> on a partial fan-out prints how many more targets are available and how to enable them, so "compiled for 2 targets" no longer reads as a shortfall against the "every agent" pitch.</li><li>Website and docs corrected: the interactive preview no longer shows a fictional 1,480-token cost, the quickstart review/compile blocks match the real CLI, the standing-tax figure is stated once, README marks which skills ship vs are planned, and "KSF" is expanded on first use.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li>Per-command help (<code>kitbash install --help</code>, <code>kitbash help &lt;command&gt;</code>), a did-you-mean suggestion on a mistyped command, and proper pluralization in count lines ("1 skill for 2 targets", not "1 skill(s) for 2 agent target(s)"). Token counts carry units (<code>standing 60 tok/session</code>). Removed the <code>-v</code> version alias (it collides with the near-universal <code>-v</code> = verbose).</li></ul>
+</article>
+
+<article class="release" id="v0.10.0">
+  <div class="release-head">
+    <h2><a href="#v0.10.0">v0.10.0</a></h2>
+    <span class="release-date">2026-07-26</span>
+  </div>
+<p class="release-intro">Secrets and behavioral checks — adopted from the field-tested rule set of a dedicated agent-config scanner, but scoped to what Kitbash does: scan the skill being installed, statically, with no network. Kitbash does not audit your own agent config (settings.json, MCP servers, hooks) — that is a different tool's job.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>secrets</code> lint (hard-fail).</strong> A skill that ships a live credential — AWS, Anthropic, OpenAI, GitHub, Google, Stripe, Slack, or Linear keys, a database connection string with an inline password, or a private-key block — now blocks install, in the body or any file in the skill. Each pattern keys on a provider's real key shape (prefix + length + character class), and a placeholder guard drops documentation values, so a skill that teaches <code>sk-ant-...</code>, <code>${OPENAI_API_KEY}</code>, or AWS's own <code>AKIAIOSFODNN7EXAMPLE</code> installs fine. Not bypassable by <code>--yes</code>, enforced with or without a <code>[policy]</code> file.</li><li><strong>Behavioral warn heuristics</strong> in the injection check: output-suppression directives (<code>always report success</code>, <code>suppress the findings</code>), auto-run / no-consent directives (<code>without asking</code>, <code>automatically install</code>), bulk-credential harvesting (<code>collect all passwords</code>), and an injection directive hidden in an HTML comment (invisible in rendered markdown, read by the agent — while ordinary tooling comments like <code>&lt;!-- prettier-ignore --&gt;</code> do not trip it). These warn rather than block, since a defensive security skill may legitimately quote them; <code>--strict</code> fails on them.</li></ul>
+<h3 class="group">Notes</h3>
+<ul><li>This is a deliberate narrow adoption. Config-auditing (permissions in <code>settings.json</code>, MCP server risk, hook analysis) and harness-OS features (learned instincts, session memory, a skill marketplace) are out of scope by design — Kitbash is a compiler with a review gate, not an agent operating system.</li></ul>
+</article>
+
+<article class="release" id="v0.9.0">
+  <div class="release-head">
+    <h2><a href="#v0.9.0">v0.9.0</a></h2>
+    <span class="release-date">2026-07-24</span>
+  </div>
+<p class="release-intro">Conformance and honesty release. A codebase audit found a consistent pattern: the JSON schema was treated as the contract, but the loader enforced almost none of it, and several layers advertised enforcement they never delivered. This closes that gap.</p>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>Adapters no longer claim capabilities they don't deliver.</strong> <code>claude-code</code> declared <code>scripts</code>/<code>hooks</code>/<code>subagents</code> and the skill-directory adapters declared <code>scripts</code>, but <code>emit()</code> only writes <code>SKILL.md</code> — no <code>scripts/</code> copied, no hook, no subagent. Because the capability was in the set, degradation was computed as empty and <code>explain</code>/<code>--strict</code> reported full support for output referencing files that were never produced — the exact silent capability loss spec §2 forbids. Capability sets are now empty until the emit code that delivers a capability exists; a skill that <code>requires</code> one now correctly reports degraded.</li><li><strong>The manifest loader enforces the schema instead of silently coercing.</strong> A scalar where the schema types an array (<code>commands = "/deploy"</code>) became <code>[]</code> (a slash command that never registered, permissions that evaporated); a fractional <code>budget</code> passed the range check; an unknown <code>disclosure</code> silently became <code>lazy</code>. These are now hard errors, and an unknown <code>targets.mode</code> warns at <code>test</code> (forward-compatible table, per RFC 0002).</li><li><strong>Safety lints scan the whole skill, not just <code>SKILL.md</code>.</strong> The three install-blocking lints read only the body while install copies the entire directory — a <code>curl … | sh</code> in <code>scripts/setup.sh</code>, or hidden text in a sibling file, sailed straight through. Every non-binary file is now scanned; a symlink is flagged (it points outside the reviewed files).</li><li><strong>A malformed installed manifest no longer bricks every command.</strong> One hand-edited <code>skill.toml</code> made <code>list</code>/<code>compile</code>/<code>doctor</code> exit before processing valid siblings — and <code>doctor</code> threw before the integrity check that exists to catch exactly that tamper. <code>doctor</code> now reports the load failure, counts it, and still runs drift detection.</li><li><strong><code>compile</code> refuses to run with zero resolved targets</strong> (e.g. <code>targets = []</code>) rather than pruning every generated file while writing nothing back.</li><li><strong>Pruning removes only the generated file</strong>, never a user file colocated in a generated skill directory (a <code>NOTES.md</code> beside <code>SKILL.md</code> survives).</li><li><strong>Integrity hashing is symlink-aware.</strong> <code>walk()</code> skipped symlinks entirely, so repointing one inside an installed skill was invisible drift; the link target is now hashed without being followed.</li><li><strong><code>preview</code> errors on a bad <code>[project].targets</code></strong> instead of silently falling back to every adapter.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li><strong>Declared permissions are compiled into the instruction body.</strong> Spec §2 requires permissions be enforced natively or compiled into the instructions; only the install-review third was done, so a teammate who pulled the generated file saw no restriction. Non-default permissions now render a block into every target's output (prose, not native frontmatter — the KSF tool grammar is provisional).</li><li><strong><code>gate-verdict</code> check</strong>: a <code>mode = "gate"</code> skill with no <code>scripts/</code> and no declared artifact — nothing to produce a deterministic verdict — now fails <code>lint</code>/<code>test</code>.</li></ul>
+</article>
+
+<article class="release" id="v0.8.1">
+  <div class="release-head">
+    <h2><a href="#v0.8.1">v0.8.1</a></h2>
+    <span class="release-date">2026-07-23</span>
+  </div>
+<p class="release-intro">Security fix. The pre-install review gate did not actually block what it flagged.</p>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>Safety lints now block <code>install</code>, not just <code>lint</code>/<code>test</code>.</strong> The two hard-fail lints shipped in 0.8.0 (<code>visible-text</code>, <code>dynamic-context</code>) were printed at install as warnings and never stopped it — so a skill with hidden instructions installed cleanly for anyone without a <code>kitbash.toml</code>, since only a <code>[policy]</code> violation returned non-zero. Failed safety lints are now a hard gate at install: non-bypassable by <code>--yes</code>, enforced with or without a policy file, before anything is written. Schema and quality checks (a malformed artifact ref, a non-slash command) are unchanged — they still surface at <code>kitbash test</code> and never block an install.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>remote-exec</code> lint</strong> — a third hard-fail that catches download-and-execute pipelines hidden in a skill's prose (a "Prerequisites" section, a fenced example): <code>curl … | sh</code>, <code>eval "$(curl …)"</code>, <code>base64 -d | sh</code>, PowerShell <code>iex</code>/<code>iwr</code>, save-then-<code>chmod +x</code>-then-run, and remote-archive extract-run. This is the ClawHavoc / ClickFix family — payloads that live in documentation, not in the manifest a structural lint reads. It is a heuristic, not a proof (<code>c=curl; $c url | sh</code> evades a regex on prose); it raises attacker cost at the point where one skill fans out to nine files. Verified against benign installs (<code>npm install</code>, <code>pip install</code>, <code>curl -o file</code>) to keep false positives out.</li><li><strong><code>deny_remote_exec</code> in <code>[policy]</code></strong> — defaults to on; set <code>false</code> to consciously exempt a trusted internal skill from the remote-exec block. The hidden-text and dynamic-context lints are never exemptible.</li></ul>
+</article>
+
+<article class="release" id="v0.8.0">
+  <div class="release-head">
+    <h2><a href="#v0.8.0">v0.8.0</a></h2>
+    <span class="release-date">2026-07-23</span>
+  </div>
+<p class="release-intro">Every target that can lazy-load now does. Two adapters were still emitting always-on files for agents that had since grown proper skill directories.</p>
+<h3 class="group">Changed</h3>
+<ul><li><strong><code>copilot</code> compiles to <code>.github/skills/&lt;name&gt;/SKILL.md</code></strong> instead of a <code>.github/instructions/*.instructions.md</code> file with <code>applyTo: "**"</code>. Copilot reads agentskills.io skills and loads only the frontmatter until the skill is needed; the old form applied to every single request.</li><li><strong><code>gemini</code> compiles to <code>.gemini/skills/&lt;name&gt;/SKILL.md</code></strong> instead of merging into <code>GEMINI.md</code>. Gemini CLI injects only each skill's name and description at session start and pulls the body in via its <code>activate_skill</code> tool; Google's own docs describe <code>GEMINI.md</code> as persistent workspace-wide background.</li><li>Six of nine targets now lazy-load — claude-code, cursor, agents, copilot, windsurf/devin, gemini. The eager holdouts are cline, aider and the AGENTS.md floor.</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li>Stale sections in a marker-merged file are now pruned whenever nothing wrote to that file during a compile, not only when the owning skill was uninstalled. Without this, a <code>GEMINI.md</code> from an older Kitbash kept its generated section forever after the adapter moved. Upgrading cleans up the old <code>GEMINI.md</code> sections and <code>.github/instructions/</code> files on the next <code>kitbash compile</code>; your own content in those files is untouched.</li></ul>
+<h3 class="group">Added</h3>
+<ul><li><code>.github/workflows/release.yml</code> — a pushed <code>v*</code> tag verifies the tag against the manifest, re-runs the full gate suite, publishes to npm via OIDC trusted publishing (no stored token, provenance attached automatically), and bumps the Homebrew formula.</li></ul>
+</article>
+
+<article class="release" id="v0.7.0">
+  <div class="release-head">
+    <h2><a href="#v0.7.0">v0.7.0</a></h2>
+    <span class="release-date">2026-07-22</span>
+  </div>
+<p class="release-intro">Ecosystem-correctness release. Two of Kitbash's assumptions about the agent landscape had gone stale, and one of them was flattering its own headline number.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>agents</code> adapter</strong> — <code>.agents/skills/&lt;name&gt;/SKILL.md</code>, the vendor-neutral Agent Skills path read by Codex (its only repo path), Cursor, Copilot, Gemini CLI, Roo, Amp, OpenCode, Zed and Antigravity. Lazy-loaded; detected when <code>.agents/</code> or <code>.codex/</code> exists. <strong>Nine targets total.</strong></li><li><strong>Two hard lint failures</strong> for instructions a reviewer cannot see or that run before the model reads anything: <code>visible-text</code> rejects zero-width characters, bidi overrides and the Unicode Tags block; <code>dynamic-context</code> rejects backtick command substitution in a skill body. Both fail <code>lint</code> and <code>test</code> with exit 1, no <code>--strict</code> needed — Kitbash fans one skill out to nine files, several of them permanently in context.</li><li><code>node site/build.mjs --check</code> verifies the committed site output is current; gated in CI, and Vercel now runs the build instead of serving whatever was committed.</li></ul>
+<h3 class="group">Changed</h3>
+<ul><li><strong><code>windsurf</code> is lazy, not eager.</strong> Windsurf became Devin Desktop on 2026-06-02: the adapter now writes <code>.devin/rules/&lt;name&gt;.md</code> when <code>.devin/</code> exists (falling back to <code>.windsurf/rules/</code>) and emits <code>trigger: model_decision</code>, so the description sits in context and the body loads on demand.</li><li>The benchmark reads each target's loading mode from the adapters themselves rather than a second hardcoded map — the copy is exactly how published numbers drift from what the compiler emits. Regenerated: four targets now lazy-load, five are eager-only.</li><li>Standing-tax framing corrected throughout: Kitbash compiles to the cheapest loading mode each target actually supports, and the tax is what it costs on targets whose only mode is eager. The 12x/46x gap still holds, measured against the corrected matrix.</li></ul>
+</article>
+
+<article class="release" id="v0.6.0">
+  <div class="release-head">
+    <h2><a href="#v0.6.0">v0.6.0</a></h2>
+    <span class="release-date">2026-07-14</span>
+  </div>
+<p class="release-intro">Trust &amp; review release: installing a skill means letting someone else's instructions run with your agent's permissions — this release makes that reviewable and governable.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong>Pre-install review gate</strong>: <code>kitbash install</code> prints a review block (permissions incl. network/write, budget, standing, capability requirements, lint warnings incl. injection heuristics) <em>before</em> writing anything, and prompts <code>install? [y/N]</code> on a TTY. <code>--yes</code>/<code>-y</code> skips the prompt; non-interactive runs (CI) proceed as before.</li><li><strong><code>[policy]</code> in <code>kitbash.toml</code></strong> — org-level allowlists: <code>allow_sources</code> (globs matched against <code>gh:owner/repo[/path][@ref]</code> / <code>file:</code> sources), <code>deny_network</code>, <code>deny_write</code>, <code>max_budget</code>. Policy is a hard gate at install (<code>--yes</code> does not bypass it) and <code>doctor</code> rechecks it against already-installed skills.</li><li><strong>Remote sources for <code>preview</code>, <code>lint</code>, and <code>explain</code></strong>: <code>kitbash preview gh:owner/repo/path</code> fetches to a temp dir and renders the exact compiled output per agent — skills are fully readable before install, no side effects.</li></ul>
+<h3 class="group">Changed</h3>
+<ul><li><code>install</code> output: the summary (budget/standing/permissions) moved from after the copy to the review block before it; the post-install lines now just confirm the pin.</li><li><code>explain</code>/<code>lint</code>/<code>preview</code> "not found" errors now mention that a source (<code>gh:owner/repo</code>, <code>file:path</code>) is accepted.</li></ul>
+</article>
+
+<article class="release" id="v0.5.0">
+  <div class="release-head">
+    <h2><a href="#v0.5.0">v0.5.0</a></h2>
+    <span class="release-date">2026-07-12</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li>Three v0.2-roadmap commands: <code>kitbash lint [skill-or-path] [--strict]</code> (full static check suite, works pre-install), <code>kitbash explain &lt;skill-or-path&gt; &lt;adapter&gt;</code> (why a compilation degraded, with the token cost of eager targets), and <code>kitbash preview &lt;skill-or-path&gt;</code> (each adapter's compiled output with per-target token counts, before installing).</li><li><code>aider</code> adapter — marker-merged <code>CONVENTIONS.md</code> (detected via an existing <code>CONVENTIONS.md</code> or <code>.aider.conf.yml</code>) — <strong>8 targets total</strong>.</li><li>CI runs on Windows and macOS alongside Linux; fixed the platform-dependent subpath test so the suite is green on all three.</li><li>Site: live terminal replay in the hero and an interactive per-target compile preview.</li></ul>
+</article>
+
+<article class="release" id="v0.4.1">
+  <div class="release-head">
+    <h2><a href="#v0.4.1">v0.4.1</a></h2>
+    <span class="release-date">2026-07-11</span>
+  </div>
+<h3 class="group">Fixed</h3>
+<ul><li>TOML parser hardening: quoted strings and keys, signed numbers, spaced table headers, invalid-escape guard (<code>TomlError</code> instead of raw exceptions), plus edge cases around inline values.</li><li><code>gh:</code> installer: directory-traversal guard on subpaths; two skills writing the same output path now warn instead of silently overwriting.</li><li>Schema bounds enforced (budget ≤ 20000, standing ≤ 500, description ≤ 200 chars); YAML frontmatter values escaped so descriptions with quotes/colons stay valid.</li><li>Cross-platform deterministic integrity hashing — <code>kitbash.lock</code> hashes are CRLF/LF-insensitive and path-order stable.</li><li><code>doctor</code> flags a missing lockfile and installed-but-unpinned skills.</li><li>Standing stub skips markdown headers; unresolved <code>{{template}}</code> variables error at compile instead of leaking.</li><li>UTF-8 BOM stripped from manifests; stray subdirectories under the skills dir no longer crash <code>list</code>/<code>doctor</code>.</li></ul>
+</article>
+
+<article class="release" id="v0.4.0">
+  <div class="release-head">
+    <h2><a href="#v0.4.0">v0.4.0</a></h2>
+    <span class="release-date">2026-07-11</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li>Homebrew install: <code>brew install singhharsh1708/tap/kitbash</code>; README install/update/uninstall guide.</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li>Every eager target now reports the standing token cost of a lazy-authored skill, not just the shared-file ones.</li></ul>
+</article>
+
+<article class="release" id="v0.3.0">
+  <div class="release-head">
+    <h2><a href="#v0.3.0">v0.3.0</a></h2>
+    <span class="release-date">2026-07-11</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li>Four new adapters — <code>copilot</code> (<code>.github/instructions/*.instructions.md</code>), <code>cline</code> (<code>.clinerules/</code>), <code>windsurf</code> (<code>.windsurf/rules/</code>), <code>gemini</code> (GEMINI.md marker merge) — <strong>7 targets total</strong>.</li><li>Commands compilation: <code>triggers.commands</code> now emit native slash commands (Claude Code <code>.claude/commands/*.md</code> shims).</li><li>Generalized marker-merge for shared files (AGENTS.md, GEMINI.md): user content preserved, sections idempotent, stale sections pruned.</li><li>Pruning generalized to written-set semantics across all managed output locations — covers removed skills and renamed commands.</li><li>README: badges, status-quo-vs-kitbash comparison, FAQ; social preview asset; demo regenerated from a real 7-target session.</li></ul>
+</article>
+
+<article class="release" id="v0.2.0">
+  <div class="release-head">
+    <h2><a href="#v0.2.0">v0.2.0</a></h2>
+    <span class="release-date">2026-07-11</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li><code>kitbash.lock</code>: content-hash pins (sha256 over the skill directory) written on install, dropped on remove.</li><li>Integrity drift detection in <code>kitbash doctor</code> — exits 1 when installed files differ from the lock.</li><li>SKILL.md-only interop (skills.sh / Claude Skills convention): installs directly, manifest synthesized with conservative defaults, flagged <code>unmanifested</code> at install/list/compile. Verified against real third-party repos.</li><li><code>owner/repo</code> shorthand sources (resolve as <code>gh:</code>).</li><li>Stale-output pruning on <code>compile</code>: generated outputs of removed skills are deleted — only files bearing the generated header are ever touched.</li><li><code>kitbash.toml</code> <code>[project].targets</code> honored; unknown targets error.</li><li>Animated real-session demo in the README; launch plan in <code>docs/launch.md</code>.</li></ul>
+<h3 class="group">Changed</h3>
+<ul><li>Bare (unmanifested) skills report budget violations as warnings instead of build failures — their authors never declared those limits.</li><li><code>--version</code> reads package.json.</li></ul>
+</article>
+
+<article class="release" id="v0.1.0">
+  <div class="release-head">
+    <h2><a href="#v0.1.0">v0.1.0</a></h2>
+    <span class="release-date">2026-07-10</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li>KSF spec draft v0.1 (<code>spec/SPEC.md</code>) with JSON schema; RFC process (<code>rfcs/</code>); RFC-0001.</li><li>Working thin slice, zero runtime dependencies: <code>init</code>, <code>install</code> (gh:/file:), <code>remove</code>, <code>list</code>, <code>compile</code>, <code>doctor</code>.</li><li>Adapters: <code>claude-code</code>, <code>cursor</code>, <code>agentsmd</code> floor (idempotent marker merge).</li><li>Context budget and standing-stub enforcement at compile; visible degradation warnings; <code>--strict</code>.</li><li>Template resolution: <code>{{artifact.*}}</code>/<code>{{lore.*}}</code> compile to path references, <code>{{prompt.*}}</code> inlines.</li><li>End-to-end test suite in CI.</li><li>Reference skill <code>prereview</code>; manifesto; landing page; docs.</li></ul>
+</article>
+<!-- changelog:end -->amp;</code> spliced the previous section into itself, leaving doubled <code>kitbash:begin/end</code> markers that then broke pruning. The replacement is now a function, so the body is inserted literally.</li><li><strong><code>compile</code> silently dropped skills whose manifest stopped loading</strong> — and pruned their <code>AGENTS.md</code> sections while doing it, still exiting 0. A hand-edited <code>version = "1.0"</code> was enough: the skill stayed on disk, stayed pinned in <code>kitbash.lock</code>, and every agent quietly lost its instructions. <code>compile</code> now reports the failure, leaves that skill's existing output exactly where it is, and exits non-zero. (<code>list</code> and <code>doctor</code> already reported it; <code>compile</code> was the one command that both hid the failure and acted on it.)</li><li><strong>Installing <code>owner/repo</code> copied the clone's <code>.git</code></strong>, which made <code>update</code> and <code>diff</code> permanently broken for that skill: git's index and reflog differ between two clones of the same commit, so the up-to-date check never matched, every run reported changes, and the review diff filled with <code>.git/…</code> entries. The clone's <code>.git</code> is now removed before use, excluded from the install copy, and ignored by the directory hasher.</li><li><strong>An unmanifested skill installed from a repo root was named after a temp directory.</strong> With no <code>name:</code> frontmatter, the name came from <code>basename(dir)</code> — which for a whole-repo clone is the random <code>mkdtemp</code> path. Every <code>update</code> re-cloned to a new random directory, derived a different name, and refused the update as a rename, forever. Callers now pass the repo (or subpath) name as a hint; declared names still win.</li><li><strong>A removed file's contents never appeared in the review diff.</strong> <code>update</code> and <code>diff</code> showed added files in full but listed removed ones by name only — so an update that deletes the script or reference file a <code>SKILL.md</code> points at passed review with nobody seeing what left. Removals are now diffed against empty, like additions.</li></ul>
+</article>
+
+<article class="release" id="v0.14.0">
+  <div class="release-head">
+    <h2><a href="#v0.14.0">v0.14.0</a></h2>
+    <span class="release-date">2026-08-07</span>
   </div>
 <h3 class="group">Added</h3>
 <ul><li><strong><code>kitbash update</code> — the v0.2 exit criterion, closed.</strong> Updating a skill was the one lifecycle step with no tooling: you ran <code>remove</code> + <code>install</code> and reviewed nothing, or edited files by hand and tripped doctor's drift check. <code>update</code> refetches each skill's pinned source and prints the complete review before touching a byte: manifest field deltas with permission escalations flagged (<code>permissions.network: no → YES  ⚠ escalation</code>), the changed-file list, then a unified diff of every readable file — instructions, prompts, scripts. Only then does it ask. Three properties are deliberate. The four safety lints that gate install (<code>visible-text</code>, <code>dynamic-context</code>, <code>remote-exec</code>, <code>secrets</code>) re-run against the new version and block the update regardless of <code>--yes</code> — a skill must clear the same gate to change on disk as to arrive. <code>[policy]</code> is re-enforced, so a new version that declares a permission your policy denies cannot arrive by update. And unlike <code>install</code>, a non-interactive run <strong>never</strong> auto-applies: no TTY plus no <code>--yes</code> means the diff prints, nothing changes, and the exit code says so — the command's whole contract is that a human saw the diff and said yes. Local edits to an installed skill are detected via the lockfile hash and called out before being overwritten; a source that renames its skill is refused rather than silently replacing another.</li><li><strong><code>kitbash diff</code> — the same review, read-only.</strong> One argument diffs an installed skill against a fresh fetch of its pinned source ("what would update do?"); two arguments diff any two skills — installed names, local paths, or fetchable sources, so <code>kitbash diff prereview gh:owner/repo/skills/prereview@v2</code> works before anything is installed. Exit codes follow diff(1): <code>0</code> identical, <code>1</code> different, <code>2</code> trouble — scriptable as a cheap "is my skill stale?" probe in CI. Both commands share one diff engine: an LCS line diff with hunk headers, binary and symlink entries listed but never line-diffed, CRLF normalized so a Windows checkout doesn't read as a wall of changes.</li></ul>

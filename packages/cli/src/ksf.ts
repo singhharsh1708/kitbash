@@ -31,6 +31,8 @@ export interface LoadedSkill {
 
 export const SKILLS_DIR = ".kitbash/skills";
 export const NAME_RE = /^[a-z][a-z0-9-]{1,40}$/;
+/** spec/schema/skill.schema.json: a trigger command is a slash plus a lowercase name — never a path. */
+export const COMMAND_RE = /^\/[a-z][a-z0-9-]*$/;
 
 /** Read a UTF-8 file, stripping a leading BOM — editors on Windows add one and it breaks `^---` / `^[table]` matching. */
 function readText(path: string): string {
@@ -56,13 +58,20 @@ export function standingStub(body: string): string {
   return "";
 }
 
-export function loadSkill(dir: string): LoadedSkill {
+/**
+ * `nameHint` names an unmanifested skill whose directory name is meaningless —
+ * a whole-repo clone lands in a random mkdtemp dir, and deriving the name from
+ * that would pin a different name on every fetch (breaking update forever).
+ * Callers pass the repo or subpath name. Ignored when skill.toml or SKILL.md
+ * frontmatter declares a name.
+ */
+export function loadSkill(dir: string, nameHint?: string): LoadedSkill {
   const manifestPath = join(dir, "skill.toml");
   const bodyPath = join(dir, "SKILL.md");
   if (!existsSync(bodyPath)) {
     throw new Error(`no skill found at ${dir}\n  a skill is a folder with SKILL.md (and optionally skill.toml). Point the source at that folder.`);
   }
-  if (!existsSync(manifestPath)) return loadBareSkill(dir, bodyPath);
+  if (!existsSync(manifestPath)) return loadBareSkill(dir, bodyPath, nameHint);
 
   const raw = parseToml(readText(manifestPath));
   const manifest = validate(raw, manifestPath);
@@ -75,12 +84,13 @@ export function loadSkill(dir: string): LoadedSkill {
  * is valid KSF-minus-manifest. Synthesize permissive defaults and flag it —
  * the caller surfaces "unmanifested" warnings at install and compile.
  */
-function loadBareSkill(dir: string, bodyPath: string): LoadedSkill {
+function loadBareSkill(dir: string, bodyPath: string, nameHint?: string): LoadedSkill {
   const raw = readText(bodyPath);
   const fm = parseFrontmatter(raw);
   const body = raw.replace(FRONTMATTER_RE, "").trimStart();
 
-  const fallback = basename(dir).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^[^a-z]+/, "").slice(0, 40);
+  const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^[^a-z]+/, "").slice(0, 40);
+  const fallback = nameHint ? slug(nameHint) : slug(basename(dir));
   const name = fm["name"] && NAME_RE.test(fm["name"]) ? fm["name"] : fallback;
   if (!NAME_RE.test(name)) throw new Error(`${dir}: cannot derive a valid skill name (got "${name}")`);
 
@@ -244,6 +254,13 @@ function validate(raw: TomlTable, source: string): SkillManifest {
     const v = table(raw, tbl)[key];
     if (v !== undefined && !Array.isArray(v)) errors.push(`${tbl}.${key} must be an array (got a ${typeof v})`);
   }
+  // Commands become filenames (.claude/commands/<cmd>.md), so the schema's shape
+  // is a security boundary, not a style rule: "/../../../etc/x" would compile
+  // outside the repo. Enforced here rather than warned about downstream.
+  for (const c of strs(table(raw, "triggers"), "commands")) {
+    if (!COMMAND_RE.test(c)) errors.push(`triggers.commands "${c}" must match ${COMMAND_RE} (a slash and a lowercase name — no paths)`);
+  }
+
   // disclosure is a frozen enum — an unrecognized value must not silently become "lazy".
   const disc = str(context, "disclosure");
   if (disc !== undefined && disc !== "lazy" && disc !== "eager") errors.push(`context.disclosure "${disc}" must be "lazy" or "eager"`);

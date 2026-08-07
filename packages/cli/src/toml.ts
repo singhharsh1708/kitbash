@@ -11,7 +11,7 @@ export interface TomlTable {
 }
 
 export function parseToml(src: string): TomlTable {
-  const root: TomlTable = {};
+  const root: TomlTable = newTable();
   let current = root;
   const lines = src.split(/\r?\n/);
 
@@ -54,20 +54,38 @@ function isEscaped(s: string, i: number): boolean {
   return backslashes % 2 === 1;
 }
 
+/**
+ * Keys that would reach through a plain object into its prototype. Tables are
+ * created with a null prototype below, which already neuters the classic
+ * `[__proto__.x]` write, but a manifest that names one is either an attack or a
+ * mistake — either way it must not parse silently.
+ */
+const POISON_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
 /** Split a (possibly dotted, possibly space-padded) table name into validated segments. */
 function splitKeyPath(name: string, line: number): string[] {
   const parts = name.split(".").map((p) => p.trim());
-  for (const p of parts) if (!/^[A-Za-z0-9_-]+$/.test(p)) throw new TomlError(line, `invalid table name segment: "${p}"`);
+  for (const p of parts) {
+    if (!/^[A-Za-z0-9_-]+$/.test(p)) throw new TomlError(line, `invalid table name segment: "${p}"`);
+    if (POISON_KEYS.has(p)) throw new TomlError(line, `refusing prototype-reaching table name segment: "${p}"`);
+  }
   return parts;
 }
 
 /** Bare keys match [A-Za-z0-9_-]; quoted keys ("x" or 'x') are unwrapped verbatim. */
 function parseKey(raw: string, line: number): string {
-  if (raw.length >= 2 && ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'")))) {
-    return raw.slice(1, -1);
-  }
-  if (!/^[A-Za-z0-9_-]+$/.test(raw)) throw new TomlError(line, `invalid key: ${raw}`);
-  return raw;
+  const key =
+    raw.length >= 2 && ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'")))
+      ? raw.slice(1, -1)
+      : raw;
+  if (key === raw && !/^[A-Za-z0-9_-]+$/.test(raw)) throw new TomlError(line, `invalid key: ${raw}`);
+  if (POISON_KEYS.has(key)) throw new TomlError(line, `refusing prototype-reaching key: "${key}"`);
+  return key;
+}
+
+/** Tables carry no prototype: a key named like one can never resolve to inherited state. */
+function newTable(): TomlTable {
+  return Object.create(null) as TomlTable;
 }
 
 // Comment/array scanning tracks strings of both quote styles. Double-quoted strings honor
@@ -94,7 +112,7 @@ function ensureTable(root: TomlTable, path: string[], line: number): TomlTable {
   for (const part of path) {
     const existing = node[part];
     if (existing === undefined) {
-      const next: TomlTable = {};
+      const next: TomlTable = newTable();
       node[part] = next;
       node = next;
     } else if (isTable(existing)) {
@@ -113,7 +131,7 @@ function appendArrayTable(root: TomlTable, path: string[], line: number): TomlTa
   if (existing === undefined) parent[last] = [];
   else if (!Array.isArray(existing)) throw new TomlError(line, `cannot redefine "${last}" as an array of tables`);
   const arr = parent[last] as TomlValue[];
-  const entry: TomlTable = {};
+  const entry: TomlTable = newTable();
   arr.push(entry);
   return entry;
 }
@@ -132,8 +150,11 @@ function parseValue(raw: string, line: number): TomlValue {
     }
   }
   if (raw.startsWith("'")) {
-    // literal string: no escape processing, verbatim between the quotes
-    if (raw.length < 2 || !raw.endsWith("'")) throw new TomlError(line, `unterminated literal string: ${raw}`);
+    // Literal string: no escape processing, and no way to embed a quote — so the
+    // closing quote must be the last character with nothing after it. Anchoring
+    // the whole value stops `'It''s a helper'` (or any `'a' trailing junk'`) from
+    // silently parsing as a mangled string instead of erroring.
+    if (!/^'[^']*'$/.test(raw)) throw new TomlError(line, `invalid literal string (a literal string cannot contain '): ${raw}`);
     return raw.slice(1, -1);
   }
   if (raw.startsWith("[")) {
