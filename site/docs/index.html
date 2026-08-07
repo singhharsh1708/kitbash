@@ -213,8 +213,9 @@ write = false</code></pre>
       <ul>
         <li><code>init</code>, <code>install</code>, <code>remove</code>, <code>list</code>, <code>compile</code>, <code>doctor</code> — the core loop, end-to-end tested in CI.</li>
         <li><code>lint</code>, <code>preview</code>, <code>explain</code>, <code>test</code> — read-only inspection. The first three also accept an uninstalled source, so you can read a stranger's skill before it touches your disk.</li>
+        <li><code>update</code> — refetch each skill's pinned source and apply changes only after the full review diff: manifest deltas with permission escalations flagged, then a unified diff of every file. Install's safety lints and <code>[policy]</code> are re-enforced, and a non-interactive run never applies without <code>--yes</code>. <code>diff</code> is the same review, read-only — against the pinned source or between any two skills.</li>
         <li>Sources: <code>gh:owner/repo[/path][@ref]</code>, bare <code>owner/repo</code>, and <code>file:path</code>.</li>
-        <li>Nine adapters: <code>claude-code</code>, <code>cursor</code>, <code>agents</code>, <code>copilot</code>, <code>cline</code>, <code>windsurf</code>, <code>gemini</code>, <code>aider</code>, and the <code>agentsmd</code> floor.</li>
+        <li>Ten adapters: <code>claude-code</code>, <code>cursor</code>, <code>agents</code>, <code>zed</code>, <code>copilot</code>, <code>cline</code>, <code>windsurf</code>, <code>gemini</code>, <code>aider</code>, and the <code>agentsmd</code> floor.</li>
         <li>Budget and standing enforcement at compile time, degradation warnings, and <code>--strict</code>.</li>
         <li><code>kitbash.lock</code> with directory content hashes, drift detection in <code>doctor</code>, and stale-output pruning after <code>remove</code>.</li>
         <li>Pre-install review with <code>--yes</code> for scripts, and the <code>[policy]</code> allowlist as a hard gate that <code>--yes</code> does not bypass.</li>
@@ -223,15 +224,14 @@ write = false</code></pre>
       </ul>
 
       <h3 id="not-built-yet">Not built yet</h3>
-      <p>These commands exist in the surface — <code>kitbash help</code> lists them — but running one prints where it lands and exits <code>2</code>:</p>
-      <pre><code>$ kitbash update
-kitbash update: not implemented yet (lands in v0.2 — see docs/roadmap.md)</code></pre>
+      <p>These commands exist in the surface — <code>kitbash help</code> lists them — but running one points at the roadmap on stderr and exits <code>7</code>:</p>
+      <pre><code>$ kitbash audit
+kitbash audit: not implemented yet — planned, see the roadmap:
+  https://github.com/singhharsh1708/kitbash/blob/main/docs/roadmap.md</code></pre>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Command</th><th>What it will do</th><th>Milestone</th></tr></thead>
           <tbody>
-            <tr><td><code>update</code></td><td>Update skills, showing instruction diffs before applying</td><td>v0.2</td></tr>
-            <tr><td><code>diff</code></td><td>Instruction, permission, and budget diff between two versions</td><td>v0.2</td></tr>
             <tr><td><code>audit</code></td><td>Scan installed skills for permission drift and unsigned sources</td><td>v0.2</td></tr>
             <tr><td><code>gate</code></td><td>Run a gate-mode skill with a deterministic exit code</td><td>v0.3</td></tr>
             <tr><td><code>search</code></td><td>Search the community index</td><td>v0.4</td></tr>

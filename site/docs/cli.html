@@ -120,14 +120,14 @@
       <p>Three cases are handled before dispatch:</p>
       <ul>
         <li><code>help</code> / <code>--help</code> / <code>-h</code>, or no argument at all — print the usage listing and exit <code>0</code>.</li>
-        <li><code>--version</code> / <code>-v</code> — print the version and exit <code>0</code>.</li>
-        <li>Anything else that isn't a known command — print <code>kitbash: unknown command "…"</code> to stderr, print the usage listing, exit <code>1</code>.</li>
+        <li><code>--version</code> — print the version and exit <code>0</code>.</li>
+        <li>Anything else that isn't a known command — print <code>kitbash: unknown command "…"</code> and a did-you-mean suggestion to stderr, exit <code>2</code>.</li>
       </ul>
       <pre><code><span class="c">$ kitbash --version</span>
-0.6.0</code></pre>
+0.14.0</code></pre>
       <p>The usage listing is the command table itself:</p>
       <pre><code><span class="c">$ kitbash help</span>
-kitbash 0.6.0 — write a skill once, run it in every coding agent
+kitbash 0.14.0 — write a skill once, run it in every coding agent
 
 Usage: kitbash &lt;command&gt; [args]
 
@@ -137,24 +137,27 @@ Usage: kitbash &lt;command&gt; [args]
   list     List installed skills with versions and context cost
   compile  Emit native formats for every detected assistant (--strict)
   doctor   Detect assistants, report total standing context cost
-  update   Update skills, showing instruction diffs before applying
-  diff     Instruction/permission/budget diff between two skill versions
-  lint     Schema, context budgets, dead references, injection heuristics (--strict; accepts a name, path, or uninstalled source)
-  audit    Scan installed skills: permission drift, unsigned sources, injection heuristics
-  preview  Render each adapter's output with per-agent token counts — works on uninstalled sources (gh:owner/repo)
-  explain  Why a compilation degraded on a given adapter (accepts a name, path, or uninstalled source)
-  test     Run a skill's static evals: schema, budgets, dead refs, injection heuristics (--strict)
+  update   Refetch each skill's pinned source and apply changes after a full review diff (--yes; safety lints and [policy] re-enforced)
+  diff     Manifest/permission/file diff between a skill and its source, or any two skills (exit: 0 same, 1 differs, 2 trouble)
+  lint     Static checks: schema, budgets, dead refs, safety lints (--strict; name, path, or uninstalled source)
+  preview  Render each target's output with per-agent token counts — works on uninstalled sources
+  explain  Why a compilation degraded on a given target (name, path, or uninstalled source)
+  test     Run a skill's static evals (schema, budgets, dead refs, safety lints; --strict)
+
+Planned (not yet implemented):
+  audit    Scan installed skills: permission drift, unsigned sources
   gate     Run a gate-mode skill with a deterministic exit code
   search   Search the community index
   publish  Validate and publish a skill to the index
   lore     Build, query, and curate repo intelligence
   run      Run a declared pipeline (e.g. kitbash run ship)
 
+Global: kitbash --version · kitbash --help · kitbash help &lt;command&gt;
 Docs: https://kitbash.vercel.app/docs</code></pre>
       <p>Every command runs against the current working directory as the project root. Skills live in <code>.kitbash/skills/</code>, config in <code>kitbash.toml</code>, pins in <code>kitbash.lock</code>.</p>
 
       <h2 id="command-summary">Command summary</h2>
-      <p>Ten commands are implemented. The other eight are wired to a placeholder that prints <code>kitbash &lt;name&gt;: not implemented yet (lands in &lt;milestone&gt; — see docs/roadmap.md)</code> on stderr and returns exit code <code>2</code>. They occupy the command surface deliberately, so docs, spec, and implementation grow against one interface.</p>
+      <p>Twelve commands are implemented. The other six are wired to a placeholder that prints <code>kitbash &lt;name&gt;: not implemented yet — planned, see the roadmap</code> on stderr and returns exit code <code>7</code>. They occupy the command surface deliberately, so docs, spec, and implementation grow against one interface.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Command</th><th>Summary</th><th>Status</th></tr></thead>
@@ -165,8 +168,8 @@ Docs: https://kitbash.vercel.app/docs</code></pre>
             <tr><td><a href="#list"><code>list</code></a></td><td>List installed skills with versions and context cost</td><td>Available</td></tr>
             <tr><td><a href="#compile"><code>compile</code></a></td><td>Emit native formats for every detected assistant</td><td>Available</td></tr>
             <tr><td><a href="#doctor"><code>doctor</code></a></td><td>Detect assistants, report total standing context cost</td><td>Available</td></tr>
-            <tr><td><code>update</code></td><td>Update skills, showing instruction diffs before applying</td><td>Planned — v0.2</td></tr>
-            <tr><td><code>diff</code></td><td>Instruction/permission/budget diff between two skill versions</td><td>Planned — v0.2</td></tr>
+            <tr><td><a href="#update"><code>update</code></a></td><td>Refetch pinned sources, apply changes after a full review diff</td><td>Available</td></tr>
+            <tr><td><a href="#diff"><code>diff</code></a></td><td>Manifest/permission/file diff between a skill and its source, or any two skills</td><td>Available</td></tr>
             <tr><td><a href="#lint"><code>lint</code></a></td><td>Schema, context budgets, dead references, injection heuristics</td><td>Available</td></tr>
             <tr><td><code>audit</code></td><td>Scan installed skills: permission drift, unsigned sources, injection heuristics</td><td>Planned — v0.2</td></tr>
             <tr><td><a href="#preview"><code>preview</code></a></td><td>Render each adapter's output with per-agent token counts</td><td>Available</td></tr>
@@ -181,7 +184,7 @@ Docs: https://kitbash.vercel.app/docs</code></pre>
         </table>
       </div>
       <div class="callout warn">
-        <p><b>Do not script against planned commands.</b> They exit <code>2</code>, not <code>127</code> and not <code>1</code>. If your CI treats any non-zero code as a failure, calling <code>kitbash audit</code> today will fail the build with a message pointing at the roadmap.</p>
+        <p><b>Do not script against planned commands.</b> They exit <code>7</code>, not <code>127</code> and not <code>1</code>. If your CI treats any non-zero code as a failure, calling <code>kitbash audit</code> today will fail the build with a message pointing at the roadmap.</p>
       </div>
 
       <h2 id="commands">Commands</h2>
@@ -353,6 +356,59 @@ standing context cost: ~98 tokens (stubs); worst-case active: 3700 tokens (budge
       </div>
 
       <div class="cmd-entry">
+        <h3 id="update">update</h3>
+        <p class="sig">kitbash update [skill-name] [--yes]</p>
+        <p>Refetches each installed skill's pinned source — the exact <code>gh:</code>/<code>file:</code> source recorded in <code>kitbash.lock</code> — and, when anything differs, prints the complete review before touching a byte: manifest field deltas with permission escalations flagged, the changed-file list, then a unified diff of every readable file. Only after that does it ask for confirmation, replace the installed directory, and re-pin the lockfile with the new version and content hash.</p>
+        <pre><code><span class="c">$ kitbash update</span>
+diff: prereview@0.1.0 → prereview@0.2.0
+manifest:
+  version: 0.1.0 → 0.2.0
+  budget: 500 tok → 800 tok  <span class="warn">⚠</span> escalation
+  permissions.network: no → YES  <span class="warn">⚠</span> escalation
+files:
+  ~ SKILL.md
+  ~ skill.toml
+  + helper.sh
+
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -1,5 +1,6 @@
+ Do the thing.
+
+ Step one: read files.
+-Step two: report.
++Step two: fetch the changelog from the network.
++Step three: report.
+…
+update prereview to 0.2.0? [y/N]</code></pre>
+        <p>Three properties are deliberate:</p>
+        <ul>
+          <li>The four safety lints that gate <a href="#install"><code>install</code></a> — <code>visible-text</code>, <code>dynamic-context</code>, <code>remote-exec</code>, <code>secrets</code> — re-run against the new version and block the update <b>regardless of <code>--yes</code></b>. A skill must clear the same gate to change on disk as to arrive.</li>
+          <li><code>[policy]</code> is re-enforced. A new version that declares a permission your policy denies, or grows past <code>max_budget</code>, cannot arrive by update.</li>
+          <li>Unlike <code>install</code>, a non-interactive run <b>never auto-applies</b>. No TTY and no <code>--yes</code> means the diff prints, nothing changes, and the exit code is <code>1</code>. The command's whole contract is that a human saw the diff and said yes.</li>
+        </ul>
+        <p>Local edits to an installed skill are detected via the lockfile hash and called out before being overwritten. A source that renames its skill is refused — remove and reinstall instead of letting one skill silently replace another. An unchanged skill reports <code>up to date</code>.</p>
+        <ul class="flag-list">
+          <li><code>[skill-name]</code> <span>Optional. Update only this skill. Omit to check everything pinned in <code>kitbash.lock</code>.</span></li>
+          <li><code>--yes</code> <span>Apply without prompting. Does <b>not</b> bypass safety lints or <code>[policy]</code>.</span></li>
+        </ul>
+        <p><b>Exit codes:</b> <code>0</code> when every checked skill is up to date or was applied. <code>1</code> when any skill failed to fetch or load, was blocked by a safety lint or policy, or was left unapplied (declined, or non-interactive without <code>--yes</code>).</p>
+      </div>
+
+      <div class="cmd-entry">
+        <h3 id="diff">diff</h3>
+        <p class="sig">kitbash diff &lt;skill-name&gt; [&lt;skill-name | path | source&gt;]</p>
+        <p>The same review <a href="#update"><code>update</code></a> prints, read-only. With one argument it diffs the installed skill against a fresh fetch of its pinned source — "what would update do?". With two arguments it diffs any two skills, each resolved as an installed name, a local path, or a fetchable source, so you can compare two versions of a stranger's skill before either touches your repo:</p>
+        <pre><code><span class="c">$ kitbash diff prereview gh:owner/repo/skills/prereview@v2</span></code></pre>
+        <p>Output is the manifest field delta (escalations flagged with <code>⚠</code>), the changed-file list (<code>+</code> added, <code>-</code> removed, <code>~</code> modified; binaries and symlinks are listed but not line-diffed), then unified diffs. Identical skills print <code>no differences</code>.</p>
+        <ul class="flag-list">
+          <li><code>&lt;a&gt;</code> <span>Installed name, path, or source. With no second argument, must be an installed skill pinned in <code>kitbash.lock</code>.</span></li>
+          <li><code>[b]</code> <span>Optional second target to compare against.</span></li>
+        </ul>
+        <p><b>Exit codes:</b> diff(1) semantics — <code>0</code> identical, <code>1</code> different, <code>2</code> trouble (unresolvable target, missing lock pin, failed fetch). Scriptable as a cheap "is my skill stale?" probe in CI.</p>
+      </div>
+
+      <div class="cmd-entry">
         <h3 id="test">test</h3>
         <p class="sig">kitbash test [skill-name] [--strict]</p>
         <p>Runs the static-tier evals over installed skills: manifest presence, template and reference resolution, measured body tokens against <code>context.budget</code>, measured stub tokens against <code>context.standing</code>, artifact reference shape (<code>name@version</code>), slash-prefixed trigger commands, a <code>gate-verdict</code> check, schema-conformance lints, prompt-injection heuristics, and four safety checks on the body itself — <code>visible-text</code>, <code>dynamic-context</code>, <code>remote-exec</code>, and <code>secrets</code>.</p>
@@ -512,14 +568,15 @@ Arguments: $ARGUMENTS
       </div>
 
       <h2 id="exit-codes">Exit codes</h2>
-      <p>Three codes, used consistently. Wire CI against these rather than parsing output.</p>
+      <p>Four codes, used consistently. Wire CI against these rather than parsing output.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Code</th><th>Meaning</th></tr></thead>
           <tbody>
-            <tr><td><code>0</code></td><td>Success. Also returned by <code>--version</code>, <code>help</code>, and by read-only commands that found problems worth reporting but not failing on — <code>explain</code> on a degraded target, <code>list</code> with nothing installed.</td></tr>
-            <tr><td><code>1</code></td><td>Failure. Bad or missing arguments, an unresolvable target, a failed fetch, a validation or integrity failure, a policy violation, a declined prompt, a budget overrun, or <code>--strict</code> tripping on warnings. Unknown commands and uncaught errors also land here.</td></tr>
-            <tr><td><code>2</code></td><td>The command exists but is not implemented in this build. Reserved for the roadmap commands listed in the <a href="#command-summary">summary table</a>.</td></tr>
+            <tr><td><code>0</code></td><td>Success. Also returned by <code>--version</code>, <code>help</code>, by read-only commands that found problems worth reporting but not failing on — <code>explain</code> on a degraded target, <code>list</code> with nothing installed — and by <code>diff</code> when the skills are identical.</td></tr>
+            <tr><td><code>1</code></td><td>Failure. Bad or missing arguments, an unresolvable target, a failed fetch, a validation or integrity failure, a policy violation, a declined prompt, a budget overrun, an unapplied <code>update</code>, or <code>--strict</code> tripping on warnings. Uncaught errors also land here. For <code>diff</code> it means the opposite of trouble: differences were found.</td></tr>
+            <tr><td><code>2</code></td><td>Usage trouble: an unknown command (a did-you-mean suggestion is printed), or <code>diff</code> unable to resolve one of its targets.</td></tr>
+            <tr><td><code>7</code></td><td>The command exists but is not implemented in this build. Reserved for the roadmap commands listed in the <a href="#command-summary">summary table</a>.</td></tr>
           </tbody>
         </table>
       </div>
@@ -528,7 +585,7 @@ Arguments: $ARGUMENTS
 kitbash test --strict
 kitbash compile --strict</code></pre>
       <div class="callout">
-        <p><b>One caveat for CI.</b> <code>install</code> only prompts when stdin and stdout are both TTYs, so in a pipeline it installs without asking whether or not you passed <code>--yes</code>. The thing that actually stops an unwanted skill in automation is <code>[policy]</code> in <code>kitbash.toml</code> — see <a href="trust">trust &amp; review</a>.</p>
+        <p><b>One caveat for CI.</b> <code>install</code> only prompts when stdin and stdout are both TTYs, so in a pipeline it installs without asking whether or not you passed <code>--yes</code>. The thing that actually stops an unwanted skill in automation is <code>[policy]</code> in <code>kitbash.toml</code> — see <a href="trust">trust &amp; review</a>. <code>update</code> is deliberately stricter: in a pipeline it never applies without an explicit <code>--yes</code>.</p>
       </div>
 
     </div>

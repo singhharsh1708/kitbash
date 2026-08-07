@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.14.0] — 2026-08-07
+
+### Added
+- **`kitbash update` — the v0.2 exit criterion, closed.** Updating a skill was the one lifecycle step with no tooling: you ran `remove` + `install` and reviewed nothing, or edited files by hand and tripped doctor's drift check. `update` refetches each skill's pinned source and prints the complete review before touching a byte: manifest field deltas with permission escalations flagged (`permissions.network: no → YES  ⚠ escalation`), the changed-file list, then a unified diff of every readable file — instructions, prompts, scripts. Only then does it ask. Three properties are deliberate. The four safety lints that gate install (`visible-text`, `dynamic-context`, `remote-exec`, `secrets`) re-run against the new version and block the update regardless of `--yes` — a skill must clear the same gate to change on disk as to arrive. `[policy]` is re-enforced, so a new version that declares a permission your policy denies cannot arrive by update. And unlike `install`, a non-interactive run **never** auto-applies: no TTY plus no `--yes` means the diff prints, nothing changes, and the exit code says so — the command's whole contract is that a human saw the diff and said yes. Local edits to an installed skill are detected via the lockfile hash and called out before being overwritten; a source that renames its skill is refused rather than silently replacing another.
+- **`kitbash diff` — the same review, read-only.** One argument diffs an installed skill against a fresh fetch of its pinned source ("what would update do?"); two arguments diff any two skills — installed names, local paths, or fetchable sources, so `kitbash diff prereview gh:owner/repo/skills/prereview@v2` works before anything is installed. Exit codes follow diff(1): `0` identical, `1` different, `2` trouble — scriptable as a cheap "is my skill stale?" probe in CI. Both commands share one diff engine: an LCS line diff with hunk headers, binary and symlink entries listed but never line-diffed, CRLF normalized so a Windows checkout doesn't read as a wall of changes.
+
+### Fixed
+- The CLI docs page still described the 0.6.0 command surface: a flat help listing with no planned/working split, an unknown command exiting `1` with a help dump (it exits `2` with a did-you-mean), planned commands exiting `2` (they exit `7`), and a `-v` alias that was removed in 0.11.0. The synopsis, command summary, and exit-code table now match the shipped binary, and the docs index gained the tenth adapter (`zed`) its own list had dropped.
+
 ## [0.13.0] — 2026-07-29
 
 ### Fixed
