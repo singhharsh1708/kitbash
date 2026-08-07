@@ -86,11 +86,17 @@ function hashableContent(buf: Buffer): Buffer {
  * Every entry under a directory, NFC-normalized and binary-sorted. Exported so the
  * install safety lints can scan the whole skill, not just SKILL.md. Symlinks are
  * reported (symlink: true) but not followed.
+ *
+ * A top-level `.git` is skipped. Installing `owner/repo` whose SKILL.md sits at
+ * the repo root copies the clone wholesale, and git's own index/reflog differ
+ * between two clones of the same commit — hashing them makes every skill look
+ * permanently drifted and fills the update diff with `.git/…` noise.
  */
 export function walk(base: string, rel: string): { path: string; symlink: boolean }[] {
   const out: { path: string; symlink: boolean }[] = [];
   const entries = readdirSync(join(base, rel), { withFileTypes: true })
     .map((e) => ({ e, name: e.name.normalize("NFC") }))
+    .filter(({ name }) => !(rel === "" && name === ".git"))
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   for (const { e, name } of entries) {
     const r = rel ? `${rel}/${name}` : name;

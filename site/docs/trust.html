@@ -225,6 +225,8 @@ linted 1 skill(s) · 0 failure(s) · 2 warning(s)</code></pre>
 linted 1 skill(s) · 2 failure(s) · 0 warning(s)</code></pre>
       <p>The same checks run in <code>kitbash test</code> and, since 0.8.1, at <code>install</code> itself: a skill carrying any of the four cannot be installed or fanned out to nine agent files, <code>--yes</code> does not override it, and the block holds with no <code>kitbash.toml</code> present. (Before 0.8.1 these were printed at install but did not stop it — only a <a href="#org-allowlists"><code>[policy]</code></a> violation did, so a policy-less repo was unprotected.) Quality checks — a malformed artifact ref, a non-slash command — still only surface at <code>kitbash test</code> and never block an install.</p>
       <p>At <code>install</code> the scan is no longer confined to <code>SKILL.md</code>. Because install copies the whole skill directory, all four lints now read <strong>every non-binary file in it</strong> — a <code>curl … | sh</code> tucked into <code>scripts/setup.sh</code>, a live credential in a sibling config file, or hidden text in a sibling <code>.md</code>, is caught exactly as it would be in the body, with the offending file named in the report. A symlink is itself flagged: it can point anywhere outside the reviewed files and the copy follows it verbatim.</p>
+      <p>&ldquo;Non-binary&rdquo; is decided by control-character density, not by the presence of a NUL byte, and NULs are stripped before scanning. A single NUL is invisible in a terminal and in a rendered markdown file while the surrounding text still reads as instructions to the agent — keying the skip on it would have let one byte exempt a whole file from all four lints. A NUL inside an otherwise-textual file is itself reported as hidden text.</p>
+      <p>The four lints also apply to <a href="cli#update"><code>update</code></a>, against the incoming version, and are not bypassable by <code>--yes</code> there either. A skill must clear the same gate to change on disk as it did to arrive.</p>
 
       <h3 id="preview-and-explain">Preview the compiled output</h3>
       <p><code>lint</code> tells you whether a skill is well-formed. <code>preview</code> tells you what your agents will actually receive, and what it costs them:</p>
@@ -317,6 +319,7 @@ aborted — nothing installed.</code></pre>
         <li>Paths are NFC-normalized, because macOS hands back NFD and a name with an accent in it would otherwise hash differently on a Mac than on Linux.</li>
         <li>Entries sort by binary code-unit order, not locale collation, so the developer with a Turkish locale gets the same hash as everyone else.</li>
         <li>Text files are CRLF→LF normalized, so a Windows checkout with <code>core.autocrlf</code> does not read as tampering. Files containing a NUL byte are treated as binary and hashed verbatim.</li>
+        <li>A top-level <code>.git</code> is skipped. Installing a whole repo whose <code>SKILL.md</code> sits at the root copies the clone, and git's index and reflog differ between two clones of the same commit — hashing them would report permanent drift and fill every update diff with <code>.git/…</code> noise.</li>
       </ul>
       <p>Versions are human convenience. The hash is the thing that is actually checked.</p>
 
@@ -357,7 +360,7 @@ standing context cost: ~40 tokens (stubs); worst-case active: 1500 tokens (budge
         <table>
           <thead><tr><th>Key</th><th>Type</th><th>Effect</th></tr></thead>
           <tbody>
-            <tr><td><code>allow_sources</code></td><td>array of glob strings</td><td>A source must match at least one pattern. <code>*</code> spans any run of characters, including <code>/</code>. Each pattern is tried against both the source as you typed it and its canonical form — <code>gh:owner/repo[/path][@ref]</code> or <code>file:/absolute/path</code>. Absent or empty means no source restriction.</td></tr>
+            <tr><td><code>allow_sources</code></td><td>array of glob strings</td><td>A source must match at least one pattern. <code>*</code> spans any run of characters, including <code>/</code>. Patterns are matched against the <b>canonical</b> form of the source — <code>gh:owner/repo[/path][@ref]</code> or <code>file:/absolute/path</code> — never the raw string you typed, so a relative path or a <code>..</code> segment cannot resolve outside a directory the allowlist admits. Absent or empty means no source restriction.</td></tr>
             <tr><td><code>deny_network</code></td><td>boolean</td><td>When <code>true</code>, refuse any skill whose manifest declares <code>permissions.network = true</code>.</td></tr>
             <tr><td><code>deny_write</code></td><td>boolean</td><td>When <code>true</code>, refuse any skill whose manifest declares <code>permissions.write = true</code>.</td></tr>
             <tr><td><code>max_budget</code></td><td>number</td><td>Refuse any skill whose <code>context.budget</code> exceeds this.</td></tr>
