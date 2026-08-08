@@ -6,6 +6,10 @@ Kitbash is a compiler for AI agent skills that measures what a skill costs your 
 
 You write the skill once in one open format ([KSF](spec/SPEC.md)) and compile it to the native format of ten coding agents — Claude Code, Cursor, Copilot, Zed, Cline, Devin, Gemini CLI, Aider, the vendor-neutral `.agents/skills/` path, and the `AGENTS.md` floor — plus an opt-in eleventh target, the [Agent Plugins](https://agent-plugins.org) v1.0 package format. While compiling, it measures each output's **standing** cost: the tokens the skill parks in context on every request, whether or not it ever gets used.
 
+<p align="center">
+  <img src="assets/demo.svg" width="780" alt="kitbash demo: init, install a real third-party skill, compile to three agents">
+</p>
+
 ```bash
 npm install -g kitbash      # or: brew install singhharsh1708/tap/kitbash
 kitbash init
