@@ -385,7 +385,7 @@ compiled 1 skill for 2 targets
       <div class="cmd-entry">
         <h3 id="doctor">doctor</h3>
         <p class="sig">kitbash doctor</p>
-        <p>The repo health check. It reports which of the ten adapters were detected, how many skills are installed, the total standing context cost of their stubs, the worst-case active cost if every skill fired in one session, and then verifies the lockfile.</p>
+        <p>The repo health check. It reports which of the eleven adapters were detected, how many skills are installed, the total standing context cost of their stubs, the worst-case active cost if every skill fired in one session, and then verifies the lockfile.</p>
         <p>Three integrity conditions are checked: skills installed with no <code>kitbash.lock</code> at all, a locked skill whose files on disk no longer match their recorded hash, and a skill present on disk but absent from the lockfile. All three mean the code your agents load is not the code somebody reviewed.</p>
         <p>If <code>[policy]</code> is configured, doctor rechecks it against everything already installed — using each skill's recorded source from the lockfile. That catches skills that predate the policy or were copied in without going through <code>kitbash install</code>.</p>
         <ul class="flag-list">
@@ -396,12 +396,14 @@ detected targets:
   <span class="ok">✓</span> claude-code
   <span class="ok">✓</span> cursor
   <span class="warn">✗</span> agents
+  <span class="warn">✗</span> zed
   <span class="warn">✗</span> copilot
   <span class="warn">✗</span> cline
   <span class="warn">✗</span> windsurf
   <span class="warn">✗</span> gemini
   <span class="warn">✗</span> aider
   <span class="ok">✓</span> agentsmd (floor: Codex, Gemini CLI, anything reading AGENTS.md)
+  <span class="warn">✗</span> agent-plugins (opt-in: name it in [project].targets)
 installed skills: 2
 standing context cost: ~98 tokens (stubs); worst-case active: 3700 tokens (budgets)
 lock integrity: ok
@@ -559,23 +561,23 @@ prereviw: not found as a path or installed skill name (or pass a source: gh:owne
       <div class="cmd-entry">
         <h3 id="explain">explain</h3>
         <p class="sig">kitbash explain &lt;skill-name | path | source&gt; &lt;adapter&gt;</p>
-        <p>Answers one question: what does this skill lose on that agent? Both arguments are positional and both are required. The first resolves the same way as <a href="#lint">lint</a>'s target — path, installed name, or fetchable source. The second names an adapter: <code>claude-code</code>, <code>cursor</code>, <code>agents</code>, <code>copilot</code>, <code>cline</code>, <code>windsurf</code>, <code>gemini</code>, <code>aider</code>, or <code>agentsmd</code>.</p>
+        <p>Answers one question: what does this skill lose on that agent? Both arguments are positional and both are required. The first resolves the same way as <a href="#lint">lint</a>'s target — path, installed name, or fetchable source. The second names an adapter: <code>claude-code</code>, <code>cursor</code>, <code>agents</code>, <code>zed</code>, <code>copilot</code>, <code>cline</code>, <code>windsurf</code>, <code>gemini</code>, <code>aider</code>, <code>agentsmd</code>, or <code>agent-plugins</code>.</p>
         <p>Explain reports two independent kinds of loss. Capability degradation: each entry in the skill's <code>targets.requires</code> that the adapter does not support, which compiles down to instruction-only. And loading degradation: a skill authored for lazy disclosure on an eager adapter, which pays its full body as standing context in every session.</p>
         <ul class="flag-list">
           <li><code>&lt;target&gt;</code> <span>Required, first positional. Path, installed name, or uninstalled source.</span></li>
-          <li><code>&lt;adapter&gt;</code> <span>Required, second positional. One of the ten adapter ids.</span></li>
+          <li><code>&lt;adapter&gt;</code> <span>Required, second positional. One of the eleven adapter ids.</span></li>
         </ul>
         <pre><code><span class="c">$ kitbash explain prereview agentsmd</span>
 prereview → agentsmd: no capability degradation
   <span class="warn">⚠</span> loading: agentsmd is eager — skill costs ~560 tokens standing every session (declared limit: 60)</code></pre>
-        <p>No adapter declares a capability today — <code>emit()</code> writes instructions but does not copy <code>scripts/</code>, install a hook, or wire a subagent — so a skill that <code>requires</code> any of <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, or <code>network</code> reports degraded on every one of the ten targets, Claude Code included:</p>
+        <p>No adapter declares a capability today — <code>emit()</code> writes instructions but does not copy <code>scripts/</code>, install a hook, or wire a subagent — so a skill that <code>requires</code> any of <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, or <code>network</code> reports degraded on every one of the eleven targets, Claude Code included:</p>
         <pre><code><span class="c">$ kitbash explain prereview cursor</span>
 prereview → cursor: degraded
   <span class="warn">✗</span> requires "scripts" — not supported by cursor; compiled instruction-only</code></pre>
         <p>Missing arguments print the usage line and the adapter list:</p>
         <pre><code><span class="c">$ kitbash explain prereview</span>
 usage: kitbash explain &lt;skill-name-or-path-or-source&gt; &lt;adapter&gt;
-  adapters: claude-code, cursor, agents, copilot, cline, windsurf, gemini, aider, agentsmd</code></pre>
+  adapters: claude-code, cursor, agents, zed, copilot, cline, windsurf, gemini, aider, agentsmd, agent-plugins</code></pre>
         <p><b>Exit codes:</b> <code>0</code> whether or not degradation was found — explain reports, it does not judge. <code>1</code> when an argument is missing, the adapter name is unknown, the target cannot be resolved or loaded, or the body's template references cannot be resolved.</p>
       </div>
 

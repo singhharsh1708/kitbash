@@ -1330,6 +1330,63 @@ try {
   rmSync(imp, { recursive: true, force: true });
 }
 
+// ── Agent Plugins target (agent-plugins.org package format) ──────────────────
+// One KSF skill → a spec-shaped plugin (plugin.json + skills/<n>/SKILL.md), with
+// the trust/budget/drift layer the standard omits living in the KSF source.
+const ap = mkdtempSync(join(tmpdir(), "kitbash-agentplugins-"));
+try {
+  const apSrc = join(ap, "greet-src");
+  mkdirSync(apSrc, { recursive: true });
+  writeFileSync(
+    join(apSrc, "skill.toml"),
+    '[skill]\nname = "greet"\nversion = "0.1.0"\ndescription = "Greet the user warmly and concisely"\n[context]\nbudget = 500\nstanding = 80\n',
+  );
+  writeFileSync(join(apSrc, "SKILL.md"), "# Greet\n\nSay hello. Be brief.\n");
+
+  // Not detected by default: no plugin.json, not in [project].targets. The other
+  // adapters must still fan out; agent-plugins must NOT force itself onto a repo.
+  writeFileSync(join(ap, "kitbash.toml"), '[project]\ntargets = ["claude-code"]\n');
+  run(["install", `file:${apSrc}`, "--yes"], ap);
+  const noAp = run(["compile"], ap);
+  check("agent-plugins: opt-out repo does not emit a plugin", !existsSync(join(ap, "agent-plugin")), noAp.out);
+
+  // Opt in via [project].targets and recompile.
+  writeFileSync(join(ap, "kitbash.toml"), '[project]\ntargets = ["claude-code", "agent-plugins"]\n');
+  const apc = run(["compile"], ap);
+  check("agent-plugins: compile exits 0", apc.status === 0, apc.out);
+  check("agent-plugins: emits the skill under skills/<name>/SKILL.md", existsSync(join(ap, "agent-plugin/skills/greet/SKILL.md")), apc.out);
+  check("agent-plugins: emits plugin.json", existsSync(join(ap, "agent-plugin/plugin.json")), apc.out);
+
+  const manifest = readFileSync(join(ap, "agent-plugin/plugin.json"), "utf8");
+  let parsed = null;
+  try {
+    parsed = JSON.parse(manifest);
+  } catch {
+    parsed = null;
+  }
+  check("agent-plugins: plugin.json is valid JSON", parsed !== null, manifest);
+  check("agent-plugins: manifest declares the spec $schema + a name", !!parsed && typeof parsed.name === "string" && parsed.name.length > 0 && String(parsed.$schema).includes("agent-plugins.org"), manifest);
+
+  const skillMd = readFileSync(join(ap, "agent-plugin/skills/greet/SKILL.md"), "utf8");
+  check("agent-plugins: SKILL.md carries name + description frontmatter", skillMd.startsWith("---\nname: greet\n") && skillMd.includes("description:"), skillMd);
+
+  // Once a plugin.json exists the target is sticky: detection fires even with no
+  // targets list, so a follow-up compile keeps regenerating the plugin.
+  writeFileSync(join(ap, "kitbash.toml"), "");
+  const sticky = run(["compile"], ap);
+  check("agent-plugins: auto-detected once a plugin.json exists", existsSync(join(ap, "agent-plugin/skills/greet/SKILL.md")) && sticky.out.includes("agent-plugin/skills/greet/SKILL.md"), sticky.out);
+
+  // plugin.json is not rewritten when unchanged (no needless churn/diff).
+  check("agent-plugins: plugin.json not rewritten when unchanged", !sticky.out.includes("→ agent-plugin/plugin.json"), sticky.out);
+
+  // Removing the skill prunes its SKILL.md from the plugin's skills/ folder.
+  run(["remove", "greet"], ap);
+  const pruned = run(["compile"], ap);
+  check("agent-plugins: removed skill is pruned from the plugin", !existsSync(join(ap, "agent-plugin/skills/greet/SKILL.md")), pruned.out);
+} finally {
+  rmSync(ap, { recursive: true, force: true });
+}
+
 if (failures) {
   console.error(`\n${failures} test(s) failed`);
   process.exit(1);

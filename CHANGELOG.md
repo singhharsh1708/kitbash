@@ -2,6 +2,13 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.17.0] — 2026-08-08
+
+The eleventh target — and it's the one the whole industry just agreed on. On 2026-08-06 OpenAI, Amazon, Microsoft, Cursor and Vercel published **Agent Plugins v1.0** (agent-plugins.org, Google core-maintaining): a vendor-neutral package format — a `plugin.json` manifest plus a `skills/<name>/SKILL.md` folder — that ChatGPT/Codex, Cursor, Copilot, Kiro and VS Code all read. It is a *packaging* standard by design: it defines no permission model, no trust or provenance, no sandboxing, and no measurement. That absence is exactly the layer Kitbash already is. So rather than treat the standard as a competitor, Kitbash compiles to it.
+
+### Added
+- **`agent-plugins` compile target** — the eleventh adapter. `kitbash compile` emits a spec-shaped Agent Plugin: `agent-plugin/plugin.json` (the `$schema` + package name the standard requires) and one `agent-plugin/skills/<name>/SKILL.md` per skill, with `name` + `description` frontmatter so clients inject only the metadata and lazy-load the body. The skill drops into any Agent-Plugins client having *already* passed Kitbash's install gate, its declared token budget, and its drift check — the trust and measurement the format itself leaves out. Unlike the ten auto-detected targets this one is **opt-in**: it does not fire on a fresh repo, because publishing a plugin is a choice. Turn it on with `agent-plugins` under `[project].targets`, or once an `agent-plugin/plugin.json` exists it is detected on its own. The compiler owns `plugin.json` (one repo-level manifest, not per-skill), writes it only when it changes, and prunes a removed skill's `SKILL.md` from the plugin's `skills/` folder on the next compile.
+
 ## [0.16.0] — 2026-08-07
 
 The on-ramp for repos that already have the copy-per-agent mess — and an honesty correction. Grounded in a landscape scan: the strongest, most-cited pain for teams running several coding agents is config drift and painful onboarding across agents (named verbatim by five-plus independently-built sync tools). Kitbash made you author a fresh skill; now it can start from what you already have.

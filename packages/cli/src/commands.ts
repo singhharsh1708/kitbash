@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process";
 import { createInterface } from "node:readline";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve, sep } from "node:path";
-import { ADAPTERS, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, type CompiledFile } from "./adapters.js";
+import { ADAPTERS, AGENT_PLUGIN_DIR, agentPluginManifest, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, type CompiledFile } from "./adapters.js";
 import { dropLock, integrityOf, readLock, upsertLock, walk, LOCK_FILE } from "./lock.js";
 import { fileChanges, manifestDelta, textOf, unifiedDiff } from "./diff.js";
 import { collectImports, driftGroups, type ImportedSource } from "./importers.js";
@@ -902,6 +902,20 @@ export async function cmdCompile(args: string[]): Promise<number> {
     writeFileSync(abs, f.content.endsWith("\n") ? f.content : `${f.content}\n`);
     console.log(`→ ${f.path}`);
   }
+  // Agent Plugins: the skills/ folder is written per-skill by its adapter above.
+  // The plugin.json manifest that makes that folder a valid plugin is one
+  // repo-level file describing the whole package, so the compiler — not any one
+  // skill — owns it. Written only when the target is active and something compiled.
+  if (adapters.some((a) => a.id === "agent-plugins") && skills.length) {
+    const rel = `${AGENT_PLUGIN_DIR}/plugin.json`;
+    const manifest = agentPluginManifest(root);
+    if (readFileIfExists(root, rel) !== manifest) {
+      const abs = join(root, rel);
+      mkdirSync(dirname(abs), { recursive: true });
+      writeFileSync(abs, manifest);
+      console.log(`→ ${rel}`);
+    }
+  }
   // Shared marker files not rewritten this compile still need stale sections pruned.
   // Nothing wrote to this file, so none of its kitbash sections are current — whether
   // the last skill writing there was removed, the target was dropped from kitbash.toml,
@@ -1474,6 +1488,7 @@ const MANAGED_DIRS: { dir: string; suffix: string; wholeDir?: boolean }[] = [
   { dir: ".agents/skills", suffix: "/SKILL.md", wholeDir: true },
   { dir: ".gemini/skills", suffix: "/SKILL.md", wholeDir: true },
   { dir: ".github/skills", suffix: "/SKILL.md", wholeDir: true },
+  { dir: `${AGENT_PLUGIN_DIR}/skills`, suffix: "/SKILL.md", wholeDir: true },
   { dir: ".cursor/rules", suffix: ".mdc" },
   { dir: ".clinerules", suffix: ".md" },
   { dir: ".windsurf/rules", suffix: ".md" },

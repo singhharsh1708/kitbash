@@ -48,7 +48,7 @@ Deferred out of v0.1 on purpose: more adapters, more skills, index, evals tier 2
 - Community index (registry repo, Homebrew-tap model): `kitbash install prereview` short names, `kitbash search`.
 - `kitbash publish` (validates, tags, points the index).
 - Loadouts: `kitbash install loadout:oss-maintainer`.
-- ✅ Remaining adapters, landed early: `windsurf` (now Devin Desktop), `cline`, `aider`, `agents` — the vendor-neutral `.agents/skills/` path that Codex, Cursor, Copilot, Gemini CLI, Roo, Amp, OpenCode and Antigravity all read — and `zed`, which shares that path but detects `.zed/` and enforces Zed's own frontmatter rules. 10 targets total.
+- ✅ Remaining adapters, landed early: `windsurf` (now Devin Desktop), `cline`, `aider`, `agents` — the vendor-neutral `.agents/skills/` path that Codex, Cursor, Copilot, Gemini CLI, Roo, Amp, OpenCode and Antigravity all read — and `zed`, which shares that path but detects `.zed/` and enforces Zed's own frontmatter rules. Plus `agent-plugins`, the opt-in eleventh target that emits the industry-standard Agent Plugins package (agent-plugins.org). 11 targets total.
 - Docs site with the skill catalog + measured eval results per skill.
 - Skill badges, measurement-only: eval pass rate, compiled token cost, auto-derived compatibility matrix, signed status. No star ratings — measurement over popularity, by design.
 - **Launch moment.** The demo is one command turning a bare repo into a four-assistant, team-standard setup. Ponytail proved a single good skill can pull 75k stars; ours ride on infrastructure others can build on, which is the durable version of that story.

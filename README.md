@@ -4,7 +4,7 @@
 
 Kitbash is a compiler for AI agent skills that measures what a skill costs your context window every session — before you install it.
 
-You write the skill once in one open format ([KSF](spec/SPEC.md)) and compile it to the native format of ten coding agents — Claude Code, Cursor, Copilot, Zed, Cline, Devin, Gemini CLI, Aider, the vendor-neutral `.agents/skills/` path, and the `AGENTS.md` floor. While compiling, it measures each output's **standing** cost: the tokens the skill parks in context on every request, whether or not it ever gets used.
+You write the skill once in one open format ([KSF](spec/SPEC.md)) and compile it to the native format of ten coding agents — Claude Code, Cursor, Copilot, Zed, Cline, Devin, Gemini CLI, Aider, the vendor-neutral `.agents/skills/` path, and the `AGENTS.md` floor — plus an opt-in eleventh target, the [Agent Plugins](https://agent-plugins.org) v1.0 package format. While compiling, it measures each output's **standing** cost: the tokens the skill parks in context on every request, whether or not it ever gets used.
 
 ```bash
 npm install -g kitbash      # or: brew install singhharsh1708/tap/kitbash
@@ -23,7 +23,7 @@ In a repo that already has `.claude/` and `.cursor/`, that last command prints:
 → AGENTS.md
 ℹ prereview → agentsmd: agentsmd is eager and cannot lazy-load, so this skill adds ~560 tokens standing every session (a lazy target pays 0; declared limit 60)
 compiled 1 skill for 3 targets
-  7 more target(s) available — add agents, zed, copilot, … under [project].targets in kitbash.toml, or create their agent dirs.
+  8 more target(s) available — add agents, zed, copilot, … under [project].targets in kitbash.toml, or create their agent dirs.
 ```
 
 ### The `ℹ` line is why this is a compiler, not a converter
@@ -32,7 +32,7 @@ The identical instructions cost ~40 standing tokens on a target that lazy-loads 
 
 Those numbers are measured, not asserted: the method and the full per-target table are in [docs/benchmarks/README.md](docs/benchmarks/README.md), and `npm run bench` inside `packages/cli` regenerates them. A converter would translate the format and stop. Kitbash reads the skill and tells you what it will cost you. I have not found another tool that surfaces that number.
 
-Kitbash always compiles to the cheapest loading mode a target actually supports — eight of the ten lazy-load; Aider's `CONVENTIONS.md` and the `AGENTS.md` floor cannot, and carry the whole body every session. `--strict` turns budget overruns and degradation warnings into build failures.
+Kitbash always compiles to the cheapest loading mode a target actually supports — nine of the eleven lazy-load; Aider's `CONVENTIONS.md` and the `AGENTS.md` floor cannot, and carry the whole body every session. `--strict` turns budget overruns and degradation warnings into build failures.
 
 ### Why not a sync script?
 
@@ -62,7 +62,7 @@ Already carrying a hand-written `CLAUDE.md`, `.cursor/rules/`, `AGENTS.md`, and 
 <p align="center">
   <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/v/kitbash?color=ffb454" alt="npm version"></a>
   <a href="https://github.com/singhharsh1708/kitbash/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/singhharsh1708/kitbash/ci.yml?branch=main" alt="CI"></a>
-  <img src="https://img.shields.io/badge/agent_targets-10-ffb454" alt="10 agent targets">
+  <img src="https://img.shields.io/badge/agent_targets-11-ffb454" alt="11 agent targets">
   <img src="https://img.shields.io/badge/runtime_deps-0-ffb454" alt="zero runtime dependencies">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/singhharsh1708/kitbash?color=8b96ab" alt="Apache-2.0"></a>
 </p>
@@ -194,7 +194,7 @@ v0.1 is intentionally a thin slice: KSF, `compile`, three adapters, and one skil
 No. It's a compiler, a package manager, and a format spec. Prompt collections are the thing that gets compiled.
 
 **I already use skills.sh / Claude skills.**
-Keep them. They install directly with `kitbash install owner/repo`. You pick up ten targets, a lockfile, and a token-cost report, and you don't give anything up.
+Keep them. They install directly with `kitbash install owner/repo`. You pick up eleven targets, a lockfile, and a token-cost report, and you don't give anything up.
 
 **What if I stop using Kitbash?**
 Nothing breaks. The compiled output is plain files in your repo. Delete `kitbash.toml` and everything keeps working the way it does now.

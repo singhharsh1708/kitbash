@@ -190,7 +190,7 @@ consumes = [<span class="s">"plan@1"</span>]</code></pre>
       <pre class="copyable"><code><span class="k">[targets]</span>
 requires = []
 mode = <span class="s">"skill"</span></code></pre>
-      <p><code>requires</code> declares capabilities the skill needs: <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, <code>network</code>. No adapter delivers any of them today — <code>emit()</code> writes instructions but does not copy a skill's <code>scripts/</code>, install a hook, or wire a subagent — so any value here degrades on every one of the ten targets, and each produces a visible warning at compile:</p>
+      <p><code>requires</code> declares capabilities the skill needs: <code>scripts</code>, <code>hooks</code>, <code>subagents</code>, <code>network</code>. No adapter delivers any of them today — <code>emit()</code> writes instructions but does not copy a skill's <code>scripts/</code>, install a hook, or wire a subagent — so any value here degrades on every one of the eleven targets, and each produces a visible warning at compile:</p>
       <pre><code><span class="warn">⚠</span> test-gaps → cursor: target lacks "scripts"; compiled instruction-only (degraded)</code></pre>
       <p>Under <code>--strict</code> that warning becomes a build failure. Silent degradation is a conformance violation — leave <code>requires</code> empty unless the skill genuinely cannot function without the capability.</p>
       <p><code>mode</code> is <code>skill</code> or <code>gate</code>. A gate-mode skill must route its verdict through a script exit code or a schema-validated artifact. A bare model opinion is not a gate verdict.</p>
@@ -397,7 +397,7 @@ pre-push.
       <ul>
         <li><a href="format">Skill format (KSF)</a> — every field, and which ones are frozen for 1.0.</li>
         <li><a href="cli">CLI reference</a> — every command, flag, and exit code.</li>
-        <li><a href="adapters">Adapters &amp; targets</a> — what each of the ten targets supports, and where skills degrade.</li>
+        <li><a href="adapters">Adapters &amp; targets</a> — what each of the eleven targets supports, and where skills degrade.</li>
         <li><a href="trust">Trust &amp; review</a> — the install gate, and <code>[policy]</code> allowlists for teams.</li>
       </ul>
 
