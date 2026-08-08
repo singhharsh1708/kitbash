@@ -8,7 +8,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { estimateTokens, type LoadedSkill } from "./ksf.js";
 
 export interface CompiledFile {
@@ -366,7 +366,46 @@ const aider = mergedFileAdapter(
 /** The floor: everything that reads AGENTS.md (Codex and many others). */
 const agentsmd = mergedFileAdapter("agentsmd", "AGENTS.md", () => true);
 
-export const ADAPTERS: Adapter[] = [claudeCode, cursor, agents, zed, copilot, cline, windsurf, gemini, aider, agentsmd];
+/**
+ * Agent Plugins (agent-plugins.org) — the vendor-neutral package format ratified
+ * 2026-08-06 by OpenAI, Amazon, Microsoft, Cursor, Vercel, with Google as core
+ * maintainer. A plugin is a directory with a `plugin.json` manifest and a
+ * `skills/` folder whose subdirectories each hold a SKILL.md. First-wave clients:
+ * ChatGPT/Codex, Cursor, Copilot, Kiro, VS Code.
+ *
+ * The spec is a package format ONLY — it explicitly defines no permission model,
+ * trust, provenance, sandboxing, or measurement. That is exactly the layer
+ * Kitbash adds around it: compile here and the skill drops into any Agent-Plugins
+ * client, having already passed the install gate, the token budget, and the
+ * drift check that the standard leaves out. `plugin.json` is written by the
+ * compiler (see cmdCompile). Opt in via [project].targets; auto-detected once a
+ * plugin.json exists.
+ */
+export const AGENT_PLUGIN_DIR = "agent-plugin";
+const agentPlugins = skillDirAdapter(
+  "agent-plugins",
+  `${AGENT_PLUGIN_DIR}/skills`,
+  (root) => existsSync(join(root, "plugin.json")) || existsSync(join(root, AGENT_PLUGIN_DIR)),
+);
+
+/** The Agent Plugins package manifest (spec §plugin.json). Minimal + valid; skills/ is auto-discovered. */
+export function agentPluginManifest(root: string): string {
+  const name = basename(root).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "agent-plugin";
+  return (
+    JSON.stringify(
+      {
+        $schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+        name,
+        version: "1.0.0",
+        description: "Agent Plugin compiled by kitbash — install-gate, token budget, and drift checks live in the KSF source.",
+      },
+      null,
+      2,
+    ) + "\n"
+  );
+}
+
+export const ADAPTERS: Adapter[] = [claudeCode, cursor, agents, zed, copilot, cline, windsurf, gemini, aider, agentsmd, agentPlugins];
 
 /** Replace or append a skill's marker-delimited section in shared-file content. */
 export function mergeSection(existing: string, name: string, section: string): string {

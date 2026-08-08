@@ -151,7 +151,7 @@
         </a>
         <a class="doc-link" href="adapters">
           <h3>Adapters &amp; targets</h3>
-          <p>All ten targets, which are lazy or eager, and where compilation degrades.</p>
+          <p>All eleven targets, which are lazy or eager, and where compilation degrades.</p>
         </a>
         <a class="doc-link" href="trust">
           <h3>Trust &amp; review</h3>
@@ -215,7 +215,7 @@ write = false</code></pre>
         <li><code>lint</code>, <code>preview</code>, <code>explain</code>, <code>test</code> — read-only inspection. The first three also accept an uninstalled source, so you can read a stranger's skill before it touches your disk.</li>
         <li><code>update</code> — refetch each skill's pinned source and apply changes only after the full review diff: manifest deltas with permission escalations flagged, then a unified diff of every file. Install's safety lints and <code>[policy]</code> are re-enforced, and a non-interactive run never applies without <code>--yes</code>. <code>diff</code> is the same review, read-only — against the pinned source or between any two skills.</li>
         <li>Sources: <code>gh:owner/repo[/path][@ref]</code>, bare <code>owner/repo</code>, and <code>file:path</code>.</li>
-        <li>Ten adapters: <code>claude-code</code>, <code>cursor</code>, <code>agents</code>, <code>zed</code>, <code>copilot</code>, <code>cline</code>, <code>windsurf</code>, <code>gemini</code>, <code>aider</code>, and the <code>agentsmd</code> floor.</li>
+        <li>Eleven adapters: <code>claude-code</code>, <code>cursor</code>, <code>agents</code>, <code>zed</code>, <code>copilot</code>, <code>cline</code>, <code>windsurf</code>, <code>gemini</code>, <code>aider</code>, the <code>agentsmd</code> floor, and the opt-in <code>agent-plugins</code> package target.</li>
         <li>Budget and standing enforcement at compile time, degradation warnings, and <code>--strict</code>.</li>
         <li><code>kitbash.lock</code> with directory content hashes, drift detection in <code>doctor</code>, and stale-output pruning after <code>remove</code>.</li>
         <li>Pre-install review with <code>--yes</code> for scripts, and the <code>[policy]</code> allowlist as a hard gate that <code>--yes</code> does not bypass.</li>

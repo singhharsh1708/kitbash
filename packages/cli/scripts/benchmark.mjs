@@ -25,10 +25,17 @@ const repoRoot = resolve(here, "../../..");
 const cli = join(here, "../dist/index.js");
 const fixture = join(repoRoot, "examples/skills/prereview");
 
+// agent-plugins is an opt-in publishing target (agent-plugins.org): it is not part
+// of a repo's auto-detected fan-out and would not fire in this fixture's compile
+// (no plugin.json). It is lazy, so it carries the same stub cost as every other
+// lazy target and adds no standing-tax story — this benchmark measures the
+// always-on tax across the targets a repo compiles to by default, so it is excluded.
+const BENCH_ADAPTERS = ADAPTERS.filter((a) => a.id !== "agent-plugins");
+
 // How each target loads a skill, read from the adapters themselves rather than
 // restated here — a second copy of this map is exactly how the published numbers
 // drift away from what the compiler actually emits.
-const LOADING = Object.fromEntries(ADAPTERS.map((a) => [a.id, a.loading]));
+const LOADING = Object.fromEntries(BENCH_ADAPTERS.map((a) => [a.id, a.loading]));
 
 function run(args, cwd) {
   const r = spawnSync("node", [cli, ...args], { cwd, encoding: "utf8" });
