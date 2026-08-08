@@ -1,9 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="The Kitbasher, the tinkerer who builds from parts">
   <defs>
-    <radialGradient id="bg" cx="50%" cy="42%" r="72%">
-      <stop offset="0%" stop-color="#28324a"/>
-      <stop offset="100%" stop-color="#141924"/>
-    </radialGradient>
     <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#3e4a61"/>
       <stop offset="100%" stop-color="#2c3444"/>
@@ -17,9 +13,9 @@
     </clipPath>
   </defs>
 
-  <!-- badge -->
-  <circle cx="256" cy="256" r="236" fill="url(#bg)"/>
-
+  <!-- Transparent center: the badge is framed by the ring below, not a filled
+       disc, so the mascot sits cleanly on any canvas and adapts to GitHub's
+       light or dark theme instead of showing as a dark blob. -->
   <g clip-path="url(#badge)">
     <!-- floating kit parts -->
     <g transform="translate(84,314) rotate(-14)" stroke="#8b96ab" fill="none">
