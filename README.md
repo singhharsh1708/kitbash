@@ -55,6 +55,8 @@ A syncer multiplies your review surface; a compiler divides it. You review one s
 
 Already have skills? A plain SKILL.md folder — the skills.sh / Claude Skills convention — installs directly with `kitbash install owner/repo`. It is basically KSF without the manifest, so Kitbash fills in defaults and marks it `unmanifested`, since nobody declared a budget or permissions for it.
 
+Already carrying a hand-written `CLAUDE.md`, `.cursor/rules/`, `AGENTS.md`, and the rest of the copy-per-agent set? `kitbash import` reads them back into a single skill, measures what each one costs in standing context, and reports where the copies have drifted apart — so `kitbash compile` can regenerate them all from that one source. It touches nothing on disk until you remove the originals yourself.
+
 **Status.** v0.15.0, on npm and Homebrew, zero runtime dependencies, Node 20+. The KSF core is frozen and additive-only within the major version ([RFC 0002](rfcs/0002-ksf-1.0-stabilization.md)). Everything around it is early and labeled as such: `init`, `install`, `remove`, `list`, `compile`, `doctor`, `update`, `diff`, `lint`, `preview`, `explain`, and `test` work today; `audit`, `gate`, `search`, `publish`, `lore`, and `run` exit `7` and are on the [roadmap](docs/roadmap.md). One first-party skill ships (`prereview`); six more are specified but not built. Adoption is single-digit stars — if the measurement above is what you want, you are early.
 
 <p align="center">

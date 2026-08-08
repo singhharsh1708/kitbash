@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width">
 <title>CLI reference — Kitbash docs</title>
-<meta name="description" content="Every Kitbash command, flag, output line, and exit code — init, install, remove, list, compile, doctor, test, lint, explain, preview.">
+<meta name="description" content="Every Kitbash command, flag, output line, and exit code — init, import, install, remove, list, compile, doctor, test, lint, explain, preview.">
 <link rel="canonical" href="https://kitbash.vercel.app/docs/cli">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="kitbash">
@@ -132,6 +132,7 @@ kitbash 0.15.0 — write a skill once, run it in every coding agent
 Usage: kitbash &lt;command&gt; [args]
 
   init     Set up kitbash in this repository (kitbash.toml)
+  import   Turn a repo's existing agent config files (CLAUDE.md, .cursor/rules, …) into one skill + a drift report (--write; --name)
   install  Install a skill with pre-install review: gh:owner/repo[/path][@ref], owner/repo, or file:path (--yes; [policy] enforced)
   remove   Remove an installed skill
   list     List installed skills with versions and context cost
@@ -157,12 +158,13 @@ Docs: https://kitbash.vercel.app/docs</code></pre>
       <p>Every command runs against the current working directory as the project root. Skills live in <code>.kitbash/skills/</code>, config in <code>kitbash.toml</code>, pins in <code>kitbash.lock</code>.</p>
 
       <h2 id="command-summary">Command summary</h2>
-      <p>Twelve commands are implemented. The other six are wired to a placeholder that prints <code>kitbash &lt;name&gt;: not implemented yet — planned, see the roadmap</code> on stderr and returns exit code <code>7</code>. They occupy the command surface deliberately, so docs, spec, and implementation grow against one interface.</p>
+      <p>Thirteen commands are implemented. The other six are wired to a placeholder that prints <code>kitbash &lt;name&gt;: not implemented yet — planned, see the roadmap</code> on stderr and returns exit code <code>7</code>. They occupy the command surface deliberately, so docs, spec, and implementation grow against one interface.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Command</th><th>Summary</th><th>Status</th></tr></thead>
           <tbody>
             <tr><td><a href="#init"><code>init</code></a></td><td>Set up kitbash in this repository (<code>kitbash.toml</code>)</td><td>Available</td></tr>
+            <tr><td><a href="#import"><code>import</code></a></td><td>Turn a repo's existing agent config files into one skill and a drift report</td><td>Available</td></tr>
             <tr><td><a href="#install"><code>install</code></a></td><td>Install a skill with pre-install review</td><td>Available</td></tr>
             <tr><td><a href="#remove"><code>remove</code></a></td><td>Remove an installed skill</td><td>Available</td></tr>
             <tr><td><a href="#list"><code>list</code></a></td><td>List installed skills with versions and context cost</td><td>Available</td></tr>
@@ -204,6 +206,65 @@ next: kitbash install &lt;gh:owner/repo | owner/repo | file:path&gt;, then kitba
         <pre><code><span class="c">$ kitbash init</span>
 kitbash.toml already exists — nothing to do</code></pre>
         <p><b>Exit codes:</b> <code>0</code> always — both the created and the already-exists path succeed.</p>
+      </div>
+
+      <div class="cmd-entry">
+        <h3 id="import">import</h3>
+        <p class="sig">kitbash import [--write] [--name &lt;name&gt;]</p>
+        <p>Reads the agent instruction and rule files a repo already has, measures what each one costs in standing context, reports where the copies have <strong>drifted</strong> apart, and synthesizes one KSF skill from the version the most files agree on — so <a href="#compile">compile</a> can regenerate every target from that single source. It is the reverse of <a href="#compile">compile</a>, and the on-ramp for a repo already carrying a hand-maintained copy per agent. Nothing is deleted: the files it reads stay in place until you remove them yourself.</p>
+        <p>It reads back the formats the adapters write: <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>GEMINI.md</code>, <code>CONVENTIONS.md</code>, <code>.cursorrules</code>, <code>.windsurfrules</code>, <code>.clinerules</code> (file or directory), <code>.github/copilot-instructions.md</code>, and the rule directories <code>.cursor/rules/*.mdc</code>, <code>.github/instructions/*.instructions.md</code>, <code>.windsurf/rules/*.md</code>, and <code>.devin/rules/*.md</code>. YAML frontmatter and any kitbash-generated marker sections are stripped first, and a file that is <em>entirely</em> kitbash output is skipped — so import never re-imports its own generated copies.</p>
+        <p>Drift is the point. Files carrying the same rules after whitespace normalization are one version; more than one version means the copies have diverged, and the report lists which files fell into which. The largest group is treated as canonical — the version the most agents agree on — and that is what the skill is built from. When a skill is written from drifted sources, its <code>SKILL.md</code> is prefixed with a comment saying so, to be reviewed before you compile.</p>
+        <ul class="flag-list">
+          <li><code>--write</code> <span>Save the synthesized skill to <code>.kitbash/skills/&lt;name&gt;/</code> (as <code>skill.toml</code> + <code>SKILL.md</code>) and pin it in <code>kitbash.lock</code>. Without it, import is a dry run that prints the proposed skill and writes nothing.</span></li>
+          <li><code>--name &lt;name&gt;</code> <span>Name the skill. Must satisfy the KSF name rule — lowercase, starting with a letter, 2–41 characters. Defaults to <code>&lt;dir&gt;-rules</code>, derived from the repository directory name.</span></li>
+        </ul>
+        <pre><code><span class="c">$ kitbash import</span>
+found 4 agent config files:
+  CLAUDE.md  <span class="c">→</span> claude-code  (~638 tok, eager)
+  AGENTS.md  <span class="c">→</span> agentsmd  (~638 tok, eager)
+  .windsurfrules  <span class="c">→</span> windsurf  (~638 tok, eager)
+  .cursor/rules/conventions.mdc  <span class="c">→</span> cursor  (~602 tok, lazy)
+standing cost of the always-on files: ~1914 tokens every session
+
+<span class="warn">⚠</span> these 4 files have drifted into 2 different versions:
+  version 1: CLAUDE.md, AGENTS.md, .windsurfrules
+  version 2: .cursor/rules/conventions.mdc
+  the canonical version below is the one the most agents agree on.
+
+— proposed skill "acme-api-rules" (budget 800) —
+
+[skill]
+name = "acme-api-rules"
+version = "0.1.0"
+description = "Imported from 4 existing agent config files (claude-code, agentsmd, windsurf, cursor)"
+
+[context]
+budget = 800
+standing = 100
+disclosure = "lazy"
+
+# SKILL.md (638 tok, first lines):
+# Engineering conventions
+
+- Write tests for every bug fix — a regression test that fails before the fix lands.
+- Never widen a public type to `any` to silence the type checker.
+- Run `pnpm lint &amp;&amp; pnpm test` before opening a pull request.
+- Commit messages use the imperative mood with a scope prefix and no trailing period.
+- Prefer editing an existing module over adding a new one.
+- Ask before adding a runtime dependency; justify it in the PR description.
+
+re-run with --write to save it to .kitbash/skills/acme-api-rules/, then: kitbash compile</code></pre>
+        <p>When every file already carries the same rules there is no drift to report, and that block reads <code>✓ all 4 carry the same rules — no drift.</code> instead. Re-running with <code>--write</code> saves the skill and pins it:</p>
+        <pre><code><span class="c">$ kitbash import --write</span>
+…
+wrote .kitbash/skills/acme-api-rules/ (skill.toml + SKILL.md), pinned in kitbash.lock
+next: kitbash preview acme-api-rules   (see it per agent + the token cost)
+then: kitbash compile           (regenerate every target from this one source — ends the drift)</code></pre>
+        <p>On a repo with no agent instruction files at all there is nothing to reverse-compile, and import says so:</p>
+        <pre><code><span class="c">$ kitbash import</span>
+no existing agent instruction files found (CLAUDE.md, AGENTS.md, .cursor/rules/, .clinerules, …).
+  nothing to import — author a skill instead: kitbash init &amp;&amp; kitbash install &lt;source&gt;</code></pre>
+        <p><b>Exit codes:</b> <code>0</code> on a successful dry run or write, and on a repo with nothing to import. <code>1</code> when <code>--name</code> is not a valid KSF name, or when <code>--write</code> would overwrite an existing <code>.kitbash/skills/&lt;name&gt;/</code> — pass <code>--name &lt;other&gt;</code> or remove it first.</p>
       </div>
 
       <div class="cmd-entry">
