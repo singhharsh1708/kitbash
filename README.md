@@ -1,7 +1,6 @@
-<table width="100%"><tr><td>
-<img src="assets/mascot.svg" align="right" width="88" alt="The Kitbasher, the tinkerer who builds from parts">
-<h1>Kitbash</h1>
-</td></tr></table>
+<img src="assets/mascot.svg" align="right" width="120" alt="The Kitbasher, the tinkerer who builds from parts">
+
+# Kitbash
 
 Kitbash is a compiler for AI agent skills that measures what a skill costs your context window every session — before you install it.
 
