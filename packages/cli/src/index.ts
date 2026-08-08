@@ -8,7 +8,7 @@
  */
 
 import { createRequire } from "node:module";
-import { cmdCompile, cmdDiff, cmdDoctor, cmdInit, cmdInstall, cmdList, cmdRemove, cmdTest, cmdLint, cmdExplain, cmdPreview, cmdUpdate } from "./commands.js";
+import { cmdCompile, cmdDiff, cmdDoctor, cmdImport, cmdInit, cmdInstall, cmdList, cmdRemove, cmdTest, cmdLint, cmdExplain, cmdPreview, cmdUpdate } from "./commands.js";
 
 const VERSION: string = createRequire(import.meta.url)("../package.json").version;
 
@@ -30,6 +30,7 @@ function todo(name: string) {
 
 const commands: Command[] = [
   { name: "init", summary: "Set up kitbash in this repository (kitbash.toml)", run: cmdInit },
+  { name: "import", summary: "Turn a repo's existing agent config files (CLAUDE.md, .cursor/rules, …) into one skill + a drift report (--write; --name)", run: cmdImport },
   { name: "install", summary: "Install a skill with pre-install review: gh:owner/repo[/path][@ref], owner/repo, or file:path (--yes; [policy] enforced)", run: cmdInstall },
   { name: "remove", summary: "Remove an installed skill", run: cmdRemove },
   { name: "list", summary: "List installed skills with versions and context cost", run: cmdList },

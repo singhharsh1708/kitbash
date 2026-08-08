@@ -2,6 +2,16 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.16.0] — 2026-08-07
+
+The on-ramp for repos that already have the copy-per-agent mess — and an honesty correction. Grounded in a landscape scan: the strongest, most-cited pain for teams running several coding agents is config drift and painful onboarding across agents (named verbatim by five-plus independently-built sync tools). Kitbash made you author a fresh skill; now it can start from what you already have.
+
+### Added
+- **`kitbash import`** — reverse-compile. Reads a repo's existing agent instruction files (CLAUDE.md, AGENTS.md, GEMINI.md, CONVENTIONS.md, `.cursorrules`, `.cursor/rules/*.mdc`, `.github/copilot-instructions.md`, `.clinerules`, `.windsurf`/`.devin/rules/*`), measures what each costs, **detects drift** — where the copies have silently diverged — and synthesizes one KSF skill from the version the most agents agree on. `--write` saves it and pins it, so `kitbash compile` regenerates every target from one source and ends the drift. `--name` sets the skill name. Non-destructive: your original files are left in place until you remove them. Purely kitbash-generated files are skipped, not re-imported.
+
+### Fixed
+- Corrected an overstated claim on the benchmark page ("the number nobody measures"). Other tools do estimate context-file token cost; what is distinct about Kitbash is measuring it **per target, from one source, and enforcing it as a declared budget at compile time** — the page now says that instead.
+
 ## [0.15.0] — 2026-08-07
 
 Security and integrity pass. A multi-agent audit of the shipped code — five independent review passes, every finding independently reproduced before it was accepted — turned up four ways to walk a hostile skill straight past the install gate, plus five ways the tool corrupted or silently discarded its own output. Everything here was reachable in 0.13.0. Nothing here is a new feature.

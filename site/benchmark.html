@@ -128,7 +128,7 @@
       <p>Two costs matter, and conflating them is how the expensive one stays invisible:</p>
       <ul>
         <li><b>Loaded</b> — tokens the agent reads when the skill is actually in play. Roughly the same everywhere; this is the number people assume they are paying.</li>
-        <li><b>Standing</b> — tokens sitting in the context window every session, before the skill is invoked. Lazy targets keep only a short stub. Eager targets keep the whole body. This is the number nobody measures.</li>
+        <li><b>Standing</b> — tokens sitting in the context window every session, before the skill is invoked. Lazy targets keep only a short stub. Eager targets keep the whole body. It is the number the copy-per-agent workflow never sees — and the one Kitbash measures per target, from one source, and enforces as a declared budget at compile time.</li>
       </ul>
       <p>Token counts are estimates at roughly four characters per token — the same estimator the compiler enforces <code>context.budget</code> and <code>context.standing</code> with, so the benchmark and the build agree by construction. Loading modes are read from the adapters themselves, not restated here, so these tables cannot drift from what the compiler emits.</p>
       <p>Kitbash compiles to the cheapest loading mode each target actually supports. Claude Code, Cursor, Copilot, Devin (ex-Windsurf), Gemini CLI and the vendor-neutral <code>.agents/skills/</code> path all load on demand, so a skill there costs only its stub. What the tables below price is the rest: Cline, Aider and the AGENTS.md floor, whose only mode is eager — they carry the whole body, every session, before the skill is invoked.</p>

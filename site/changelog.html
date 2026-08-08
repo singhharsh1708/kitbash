@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.15.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.16.0</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,22 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.16.0">
+  <div class="release-head">
+    <h2><a href="#v0.16.0">v0.16.0</a></h2>
+    <span class="release-date">2026-08-07</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">The on-ramp for repos that already have the copy-per-agent mess — and an honesty correction. Grounded in a landscape scan: the strongest, most-cited pain for teams running several coding agents is config drift and painful onboarding across agents (named verbatim by five-plus independently-built sync tools). Kitbash made you author a fresh skill; now it can start from what you already have.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>kitbash import</code></strong> — reverse-compile. Reads a repo's existing agent instruction files (CLAUDE.md, AGENTS.md, GEMINI.md, CONVENTIONS.md, <code>.cursorrules</code>, <code>.cursor/rules/*.mdc</code>, <code>.github/copilot-instructions.md</code>, <code>.clinerules</code>, <code>.windsurf</code>/<code>.devin/rules/*</code>), measures what each costs, <strong>detects drift</strong> — where the copies have silently diverged — and synthesizes one KSF skill from the version the most agents agree on. <code>--write</code> saves it and pins it, so <code>kitbash compile</code> regenerates every target from one source and ends the drift. <code>--name</code> sets the skill name. Non-destructive: your original files are left in place until you remove them. Purely kitbash-generated files are skipped, not re-imported.</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li>Corrected an overstated claim on the benchmark page ("the number nobody measures"). Other tools do estimate context-file token cost; what is distinct about Kitbash is measuring it <strong>per target, from one source, and enforcing it as a declared budget at compile time</strong> — the page now says that instead.</li></ul>
+</article>
+
 <article class="release" id="v0.15.0">
   <div class="release-head">
     <h2><a href="#v0.15.0">v0.15.0</a></h2>
-    <span class="release-date">2026-08-07</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-08-07</span>
   </div>
 <p class="release-intro">Security and integrity pass. A multi-agent audit of the shipped code — five independent review passes, every finding independently reproduced before it was accepted — turned up four ways to walk a hostile skill straight past the install gate, plus five ways the tool corrupted or silently discarded its own output. Everything here was reachable in 0.13.0. Nothing here is a new feature.</p>
 <h3 class="group">Fixed — the install gate</h3>

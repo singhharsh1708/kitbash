@@ -8,6 +8,7 @@ import { basename, dirname, join, resolve, sep } from "node:path";
 import { ADAPTERS, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, type CompiledFile } from "./adapters.js";
 import { dropLock, integrityOf, readLock, upsertLock, walk, LOCK_FILE } from "./lock.js";
 import { fileChanges, manifestDelta, textOf, unifiedDiff } from "./diff.js";
+import { collectImports, driftGroups, type ImportedSource } from "./importers.js";
 import { estimateTokens, loadInstalledSkills, loadInstalledSkillsSafe, loadSkill, resolveBody, schemaLints, standingStub, COMMAND_RE, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
 import { parseToml } from "./toml.js";
 
@@ -46,6 +47,106 @@ export async function cmdInit(): Promise<number> {
   console.log(`created ${CONFIG} and ${SKILLS_DIR}/`);
   console.log("next: kitbash install <gh:owner/repo | owner/repo | file:path>, then kitbash compile");
   return 0;
+}
+
+/**
+ * Reverse compile: read the agent instruction/rule files a repo already has,
+ * measure what each costs, show where they have drifted apart, and synthesize a
+ * single KSF skill so `kitbash compile` can regenerate them all from one source.
+ * This is the on-ramp for a repo already carrying the copy-per-agent mess.
+ */
+export async function cmdImport(args: string[]): Promise<number> {
+  const root = process.cwd();
+  const write = args.includes("--write");
+  const nameArg = flagValue(args, "--name");
+
+  const sources = collectImports(root);
+  if (!sources.length) {
+    console.log("no existing agent instruction files found (CLAUDE.md, AGENTS.md, .cursor/rules/, .clinerules, …).");
+    console.log("  nothing to import — author a skill instead: kitbash init && kitbash install <source>");
+    return 0;
+  }
+
+  console.log(`found ${plural(sources.length, "agent config file")}:`);
+  for (const s of sources) {
+    console.log(`  ${s.file}  → ${s.agent}  (~${s.tokens} tok, ${s.loading})`);
+  }
+  const eager = sources.filter((s) => s.loading === "eager").reduce((sum, s) => sum + s.tokens, 0);
+  console.log(`standing cost of the always-on files: ~${eager} tokens every session`);
+
+  // Drift is the hook: do the copies actually say the same thing?
+  const groups = driftGroups(sources);
+  if (groups.length === 1) {
+    console.log(`\n✓ all ${sources.length} carry the same rules — no drift.`);
+  } else {
+    console.log(`\n⚠ these ${sources.length} files have drifted into ${groups.length} different versions:`);
+    groups.forEach((g, i) => console.log(`  version ${i + 1}: ${g.files.join(", ")}`));
+    console.log("  the canonical version below is the one the most agents agree on.");
+  }
+
+  // Synthesize one skill from the de-facto canonical body (largest drift group).
+  const canonical = groups[0]!;
+  const name = deriveImportName(nameArg, root);
+  if (!NAME_RE.test(name)) {
+    console.error(`invalid skill name "${name}" — use --name <a-z, digits, hyphens, 2–41 chars>`);
+    return 1;
+  }
+  const bodyTokens = estimateTokens(canonical.body);
+  const budget = Math.min(20000, Math.max(500, Math.ceil((bodyTokens * 1.2) / 100) * 100));
+  const desc = `Imported from ${sources.length} existing agent config file${sources.length === 1 ? "" : "s"} (${sources.map((s) => s.agent).filter((a, i, arr) => arr.indexOf(a) === i).slice(0, 4).join(", ")})`;
+  const manifest = [
+    `[skill]`,
+    `name = "${name}"`,
+    `version = "0.1.0"`,
+    `description = ${JSON.stringify(desc.slice(0, 200))}`,
+    ``,
+    `[context]`,
+    `budget = ${budget}`,
+    `standing = 100`,
+    `disclosure = "lazy"`,
+    ``,
+  ].join("\n");
+  const skillMd = groups.length > 1
+    ? `<!-- imported by kitbash from drifted sources; this is the version most agents agreed on. Review before compiling. -->\n\n${canonical.body}\n`
+    : `${canonical.body}\n`;
+
+  if (!write) {
+    console.log(`\n— proposed skill "${name}" (budget ${budget}) —\n`);
+    console.log(manifest);
+    console.log(`# SKILL.md (${bodyTokens} tok, first lines):`);
+    console.log(canonical.body.split("\n").slice(0, 8).join("\n"));
+    console.log(`\nre-run with --write to save it to ${SKILLS_DIR}/${name}/, then: kitbash compile`);
+    return 0;
+  }
+
+  const dest = join(root, SKILLS_DIR, name);
+  if (existsSync(dest)) {
+    console.error(`${SKILLS_DIR}/${name}/ already exists — pass --name <other> or remove it first.`);
+    return 1;
+  }
+  mkdirSync(dest, { recursive: true });
+  writeFileSync(join(dest, "skill.toml"), manifest);
+  writeFileSync(join(dest, "SKILL.md"), skillMd);
+  if (!existsSync(join(root, CONFIG))) writeFileSync(join(root, CONFIG), INIT_CONFIG);
+  upsertLock(root, { name, version: "0.1.0", source: "import:local", integrity: integrityOf(dest) });
+  console.log(`\nwrote ${SKILLS_DIR}/${name}/ (skill.toml + SKILL.md), pinned in ${LOCK_FILE}`);
+  console.log(`next: kitbash preview ${name}   (see it per agent + the token cost)`);
+  console.log(`then: kitbash compile           (regenerate every target from this one source — ends the drift)`);
+  return 0;
+}
+
+/** Derive a valid skill name from --name or the repo directory. */
+function deriveImportName(nameArg: string | undefined, root: string): string {
+  if (nameArg) return nameArg;
+  const base = basename(root).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").replace(/^[^a-z]+/, "");
+  const candidate = `${base || "project"}-rules`.slice(0, 41);
+  return NAME_RE.test(candidate) ? candidate : "project-rules";
+}
+
+/** Value following a `--flag` token, or undefined. */
+function flagValue(args: string[], flag: string): string | undefined {
+  const i = args.indexOf(flag);
+  return i >= 0 && i + 1 < args.length ? args[i + 1] : undefined;
 }
 
 /**

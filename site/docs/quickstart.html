@@ -110,6 +110,11 @@
 
     <div class="prose">
 
+      <div class="callout">
+        <p><b>Already have agent config files?</b> If your repo already carries <code>CLAUDE.md</code>, <code>.cursor/rules/</code>, <code>AGENTS.md</code> and their kin, you don't have to author or install a skill to start — <code>kitbash import</code> reads the files you already have into one skill and shows you where the copies have drifted apart, ready for <code>kitbash compile</code>. See <a href="cli#import">import</a>.</p>
+        <pre class="copyable"><code>kitbash import</code></pre>
+      </div>
+
       <h2 id="install">1. Install the CLI</h2>
       <p>Kitbash is a zero-dependency CLI. The npm route needs Node 20 or newer; the Homebrew route brings its own.</p>
       <pre class="copyable"><code><span class="c"># npm</span>
