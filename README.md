@@ -169,6 +169,27 @@ max_budget = 6000                  # cap per-skill context budget
 # deny_remote_exec = false         # opt out of the curl|sh body lint (default: on)
 ```
 
+## MCP servers
+
+A skill can declare the MCP servers it needs. `compile` writes the native config for every target that has one:
+
+```toml
+[mcp.servers.deploy-tools]
+transport = "stdio"                              # stdio | streamable-http | sse
+command = "npx"                                  # a single executable, never a shell string
+args = ["-y", "@acme/deploy-mcp@2.4.1"]          # pin the version — unpinned fails the gate
+tools = ["plan_diff", "list_environments"]       # required: deny-by-default allowlist
+
+[mcp.servers.deploy-tools.env]
+DEPLOY_TOKEN = "${ACME_DEPLOY_TOKEN}"            # a reference; a literal credential fails the gate
+```
+
+Three targets have a project-scoped MCP config file, and those are the three Kitbash writes: `claude-code` → `.mcp.json`, `copilot` → `.github/mcp.json`, `agent-plugins` → `<plugin-root>/mcp.json`. Nothing is passed through verbatim — the client dialects disagree (the HTTP transport is `http` in Claude Code and Copilot, `streamable-http` in Agent Plugins), so every emitter translates and always writes an explicit `type`.
+
+The other eight targets get a warning naming the specific reason — `no-mcp-surface` (aider, AGENTS.md have no configuration mechanism), `no-project-scope` (Cline and Windsurf are user-global only), `needs-shared-file-merge` (Zed and Gemini keep servers in a settings file full of unrelated user config) — and **no file**. A config the client never reads would look configured and do nothing, which is the failure mode this project exists to prevent.
+
+A declared MCP server is third-party code that will run with your agent's permissions, so its lints are non-bypassable, like the four safety lints: shell strings, unpinned versions, literal credentials, plain-`http` URLs off loopback, and a missing `tools` allowlist all block install, `--yes` included. Secrets may only appear as `${VAR}`; where a format defines no credential reference and expands no variables, the server is omitted with a warning rather than emitted broken.
+
 ## In CI
 
 Everything above is only as good as the last time someone ran it locally. The action makes it a check on the pull request:

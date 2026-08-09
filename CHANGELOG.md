@@ -2,6 +2,19 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.19.0] — 2026-08-09
+
+MCP servers, declared in the skill and gated like the code they are. A skill that needs an MCP server previously had to say so in prose and hope you configured it; now it declares the server, `compile` writes the native config for every target that has one, and the install gate reviews it first.
+
+The research behind this mattered more than the code. Of the eleven targets, only **three** have a dedicated, project-scoped, primary-source-confirmed MCP config file. The rest either have no MCP mechanism at all, no project scope, or keep servers in a shared settings file full of unrelated user config. Emitting a plausible-looking file for those would produce something that reads as configured and does nothing — the exact silent failure this project exists to prevent — so they get a typed warning naming the reason, and no file.
+
+### Added
+- **`[mcp.servers.<name>]` in `skill.toml`** — declare a server with `transport` (`stdio` / `streamable-http` / `sse`), `command` + `args`, or `url`, plus `env`, `headers`, `timeout_ms`, and a **required** `tools` allowlist. `tools` is required because it is the one field Kitbash cannot synthesize, Copilot's format demands it, and deny-by-default is the point; `tools = ["*"]` stays legal and is shown prominently at the gate.
+- **Compiles to the three targets that can actually carry it** — `claude-code` → `.mcp.json`, `copilot` → `.github/mcp.json`, `agent-plugins` → `<plugin-root>/mcp.json`. Nothing is passed through: the client dialects genuinely disagree, so the manifest's `streamable-http` is translated to `http` for Claude Code and Copilot and left as `streamable-http` for Agent Plugins, an explicit `type` is always emitted (a `url` with no `type` is a documented hard error in Claude Code), and `tools` is written only where the format has a field for it — with a warning where it does not, rather than a silent drop.
+- **Secrets are references, never literals.** A credential may only appear as `${VAR}`. A literal that looks like a credential, or any value under a key named like one, is an install-blocking failure. Where a format defines no credential reference and expands no variables — Agent Plugins — the server is **omitted with a warning** rather than emitted with a reference that would never resolve.
+- **The MCP lints block install, `--yes` included**, alongside the four existing safety lints: a shell string where a single executable belongs, shell metacharacters in `command`/`args`, an unpinned server version (`@latest`, `^`, `>=`), a plain-`http` URL off loopback, credentials embedded in a URL, a missing `tools` allowlist, and duplicate or malformed server names. A server declaration is a request to run third-party code with your agent's permissions, so "probably fine" is not a category.
+- **`on_unsupported = "error"`** turns "this target cannot carry the declaration" into a build failure for repos that would rather not ship half-configured.
+
 ## [0.18.0] — 2026-08-09
 
 Kitbash in CI. Everything it checks — the install-gate safety lints, the declared token budgets, the compiled output's drift from its source — was previously a thing one maintainer ran locally and everyone else took on trust. This release makes it a required check on the pull request instead.

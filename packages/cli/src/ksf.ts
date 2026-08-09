@@ -2,6 +2,7 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, join } from "node:path";
+import { parseMcp, type McpConfig } from "./mcp.js";
 import { parseToml, type TomlTable } from "./toml.js";
 
 export interface SkillManifest {
@@ -19,6 +20,8 @@ export interface SkillManifest {
   targets: { requires: string[]; mode: "skill" | "gate" };
   lore: { reads: string[]; writes: string[] };
   dependencies: Record<string, string>;
+  /** Declared MCP servers (spec: [mcp.servers.<name>]). Empty when the skill declares none. */
+  mcp: McpConfig;
 }
 
 export interface LoadedSkill {
@@ -107,6 +110,7 @@ function loadBareSkill(dir: string, bodyPath: string, nameHint?: string): Loaded
       targets: { requires: [], mode: "skill" },
       lore: { reads: [], writes: [] },
       dependencies: {},
+      mcp: { servers: [], onUnsupported: "warn" },
     },
   };
 }
@@ -187,7 +191,7 @@ export function resolveBody(skill: LoadedSkill): string {
   return resolved;
 }
 
-const KNOWN_TABLES = ["skill", "context", "triggers", "permissions", "artifacts", "targets", "lore", "dependencies"];
+const KNOWN_TABLES = ["skill", "context", "triggers", "permissions", "artifacts", "targets", "lore", "dependencies", "mcp"];
 /** (table, key) pairs the schema types as arrays; validate() rejects a scalar there. */
 const ARRAY_FIELDS: [string, string][] = [
   ["triggers", "commands"], ["triggers", "auto"], ["triggers", "events"],
@@ -285,6 +289,7 @@ function validate(raw: TomlTable, source: string): SkillManifest {
     targets: { requires: strs(t("targets"), "requires"), mode: str(t("targets"), "mode") === "gate" ? "gate" : "skill" },
     lore: { reads: strs(t("lore"), "reads"), writes: strs(t("lore"), "writes") },
     dependencies: deps(raw),
+    mcp: parseMcp(raw),
   };
 }
 
