@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.17.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.18.0</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,20 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.18.0">
+  <div class="release-head">
+    <h2><a href="#v0.18.0">v0.18.0</a></h2>
+    <span class="release-date">2026-08-09</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">Kitbash in CI. Everything it checks — the install-gate safety lints, the declared token budgets, the compiled output's drift from its source — was previously a thing one maintainer ran locally and everyone else took on trust. This release makes it a required check on the pull request instead.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>kitbash lint --sarif &lt;file&gt;</code></strong> — writes findings as SARIF 2.1.0, the format GitHub code scanning reads, so results land in the Security tab and as inline PR annotations rather than scrolling past in a log. Hard-fail safety lints (<code>remote-exec</code>, <code>visible-text</code>, <code>dynamic-context</code>, <code>secrets</code>) are <code>error</code>; heuristics and cost overruns are <code>warning</code>; passing checks are not emitted, so a clean run produces a valid, empty report rather than noise. Every finding carries its rule, the skill it came from, and a repo-relative path with forward slashes so the same report works on any runner. The report is written even when the lint fails — that is exactly the run whose findings need to reach the Security tab — and never outside the project (exit 2 if a path tries).</li><li><strong>A GitHub Action</strong> (<code>singhharsh1708/kitbash@v0.18.0</code>) — one step, three checks. It lints every installed skill for trust and budget, uploads SARIF, and then recompiles to catch <strong>drift</strong>: if <code>kitbash compile</code> changes anything in the working tree, the committed output no longer matches its source and the build fails with the diff. Competing scanners emit SARIF for skill content; none of them also measures the token cost or catches the source-vs-output drift, which is the failure a repo with eleven compile targets actually hits. Composite, so it runs on every runner OS with no image pull: <code>with: strict</code>, <code>drift</code>, <code>sarif</code>, <code>sarif-file</code>, <code>version</code>, <code>working-directory</code>.</li></ul>
+</article>
+
 <article class="release" id="v0.17.0">
   <div class="release-head">
     <h2><a href="#v0.17.0">v0.17.0</a></h2>
-    <span class="release-date">2026-08-08</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-08-08</span>
   </div>
 <p class="release-intro">The eleventh target — and it's the one the whole industry just agreed on. On 2026-08-06 OpenAI, Amazon, Microsoft, Cursor and Vercel published <strong>Agent Plugins v1.0</strong> (agent-plugins.org, Google core-maintaining): a vendor-neutral package format — a <code>plugin.json</code> manifest plus a <code>skills/&lt;name&gt;/SKILL.md</code> folder — that ChatGPT/Codex, Cursor, Copilot, Kiro and VS Code all read. It is a <em>packaging</em> standard by design: it defines no permission model, no trust or provenance, no sandboxing, and no measurement. That absence is exactly the layer Kitbash already is. So rather than treat the standard as a competitor, Kitbash compiles to it.</p>
 <h3 class="group">Added</h3>

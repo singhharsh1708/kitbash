@@ -38,7 +38,7 @@ const commands: Command[] = [
   { name: "doctor", summary: "Detect assistants, report total standing context cost", run: cmdDoctor },
   { name: "update", summary: "Refetch each skill's pinned source and apply changes after a full review diff (--yes; safety lints and [policy] re-enforced)", run: cmdUpdate },
   { name: "diff", summary: "Manifest/permission/file diff between a skill and its source, or any two skills (exit: 0 same, 1 differs, 2 trouble)", run: cmdDiff },
-  { name: "lint", summary: "Static checks: schema, budgets, dead refs, safety lints (--strict; name, path, or uninstalled source)", run: cmdLint },
+  { name: "lint", summary: "Static checks: schema, budgets, dead refs, safety lints (--strict; --sarif <file> for GitHub code scanning; name, path, or uninstalled source)", run: cmdLint },
   { name: "preview", summary: "Render each target's output with per-agent token counts — works on uninstalled sources", run: cmdPreview },
   { name: "explain", summary: "Why a compilation degraded on a given target (name, path, or uninstalled source)", run: cmdExplain },
   { name: "test", summary: "Run a skill's static evals (schema, budgets, dead refs, safety lints; --strict)", run: cmdTest },

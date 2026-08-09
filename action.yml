@@ -1,0 +1,92 @@
+# kitbash GitHub Action — one step that checks the three things a repo full of
+# agent skills can silently get wrong: untrusted skill content, token cost, and
+# drift between the source skill and the files each agent actually reads.
+#
+#   - uses: singhharsh1708/kitbash@v0.18.0
+#     with:
+#       sarif: true          # upload findings to the Security tab
+#
+# Composite (not a container/JS action) so it runs on every runner OS and adds
+# no image pull: it is npm install + the CLI a maintainer would run by hand.
+name: kitbash
+description: Lint agent skills for trust, token budget, and drift — with SARIF output for GitHub code scanning.
+author: singhharsh1708
+branding:
+  icon: package
+  color: orange
+
+inputs:
+  version:
+    description: 'npm version of the kitbash CLI to run (e.g. "0.18.0"). Defaults to the latest release.'
+    required: false
+    default: latest
+  strict:
+    description: 'Fail the build on warnings too, not just failures (passes --strict).'
+    required: false
+    default: "false"
+  drift:
+    description: 'Also verify the compiled output is current — fails if `kitbash compile` would change any generated file.'
+    required: false
+    default: "true"
+  sarif:
+    description: 'Write a SARIF 2.1.0 report. Upload it with github/codeql-action/upload-sarif to populate the Security tab.'
+    required: false
+    default: "true"
+  sarif-file:
+    description: 'Path for the SARIF report.'
+    required: false
+    default: kitbash.sarif
+  working-directory:
+    description: 'Directory to run in.'
+    required: false
+    default: "."
+
+outputs:
+  sarif-file:
+    description: 'Path of the SARIF report that was written (empty when sarif is false).'
+    value: ${{ steps.lint.outputs.sarif-file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install kitbash
+      shell: bash
+      run: npm install -g "kitbash@${{ inputs.version }}"
+
+    - name: Lint skills (trust, budgets, references)
+      id: lint
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      # `shell: bash` runs with -e, so every conditional is a full if-block:
+      # a bare `[ test ] && cmd` returns 1 when the test is false and would fail
+      # the step rather than skip the flag.
+      run: |
+        args=()
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          args+=(--strict)
+        fi
+        if [ "${{ inputs.sarif }}" = "true" ]; then
+          args+=(--sarif "${{ inputs.sarif-file }}")
+          echo "sarif-file=${{ inputs.sarif-file }}" >> "$GITHUB_OUTPUT"
+        fi
+        kitbash lint ${args[@]+"${args[@]}"}
+
+    # A skill that lints clean can still be out of sync with the files each agent
+    # reads — someone edited the generated output, or changed the source and never
+    # recompiled. Recompile and let git decide: any diff means the committed
+    # output no longer matches its source.
+    - name: Check for drift in compiled output
+      if: ${{ inputs.drift == 'true' }}
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      # `git diff` alone would miss a target whose file was never committed, so
+      # the check is "did compiling change the working tree at all" — modified
+      # tracked files OR new generated ones.
+      run: |
+        kitbash compile
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "::error::compiled output is out of date — run 'kitbash compile' and commit the result."
+          git status --short
+          git diff || true
+          exit 1
+        fi

@@ -37,6 +37,32 @@ jobs:
     steps:
       - run: echo "cli passed on all platforms"
 
+  # Dogfood the SARIF path on our own flagship skill. Uses the locally built CLI
+  # rather than the published action: at PR time npm has not seen this version yet.
+  skills:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm install
+        working-directory: packages/cli
+      - run: npm run build
+        working-directory: packages/cli
+      - name: Lint the example skill, emitting SARIF
+        run: node packages/cli/dist/index.js lint examples/skills/prereview --strict --sarif kitbash.sarif
+      - name: Upload findings to code scanning
+        # Runs even when the lint fails — a failing run is exactly the one whose
+        # findings need to reach the Security tab.
+        if: always() && hashFiles('kitbash.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: kitbash.sarif
+
   schema:
     runs-on: ubuntu-latest
     steps:
