@@ -166,6 +166,8 @@ allow_sources = ["gh:your-org/*"]  # only skills from your org
 deny_network = true                # refuse skills declaring network access
 deny_write = true                  # refuse skills declaring write access
 max_budget = 6000                  # cap per-skill context budget
+# deny_mcp = true                  # refuse skills declaring any MCP server
+# allow_mcp_servers = ["https://mcp.your-org.com/*"]  # globs; matched against a server's command or url
 # deny_remote_exec = false         # opt out of the curl|sh body lint (default: on)
 ```
 

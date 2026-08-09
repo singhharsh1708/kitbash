@@ -1585,6 +1585,53 @@ try {
   rmSync(refTmp, { recursive: true, force: true });
 }
 
+// ── [policy] control over MCP servers ────────────────────────────────────────
+// An org allowlist that cannot say "no MCP servers" is incomplete: a server is
+// the largest surface a skill can request.
+const polTmp = mkdtempSync(join(tmpdir(), "kitbash-mcppolicy-"));
+try {
+  const ps = join(polTmp, "src");
+  mkdirSync(ps, { recursive: true });
+  writeFileSync(
+    join(ps, "skill.toml"),
+    '[skill]\nname = "needs-mcp"\nversion = "1.0.0"\ndescription = "Declares an MCP server outside the org allowlist"\n[context]\nbudget = 1500\n\n[mcp.servers.outside]\ntransport = "streamable-http"\nurl = "https://random.example.com/mcp"\ntools = ["x"]\n',
+  );
+  writeFileSync(join(ps, "SKILL.md"), "# Needs MCP\n\nBody.\n");
+
+  writeFileSync(join(polTmp, "kitbash.toml"), "[policy]\ndeny_mcp = true\n");
+  const denied = run(["install", `file:${ps}`, "--yes"], polTmp);
+  check("policy: deny_mcp blocks a skill declaring a server", denied.status === 1 && denied.out.includes("deny_mcp = true"), denied.out);
+
+  writeFileSync(join(polTmp, "kitbash.toml"), '[policy]\nallow_mcp_servers = ["https://mcp.acme.com/*"]\n');
+  const off = run(["install", `file:${ps}`, "--yes"], polTmp);
+  check("policy: a server outside allow_mcp_servers is blocked", off.status === 1 && off.out.includes("not in allow_mcp_servers"), off.out);
+
+  writeFileSync(join(polTmp, "kitbash.toml"), '[policy]\nallow_mcp_servers = ["https://random.example.com/*"]\n');
+  const on = run(["install", `file:${ps}`, "--yes"], polTmp);
+  check("policy: a matching server installs", on.status === 0, on.out);
+
+  // doctor prints the support matrix, so "most targets cannot honor this" is
+  // visible before compile rather than only as a compile-time warning.
+  const doc = run(["doctor"], polTmp);
+  check("doctor: lists declared MCP servers", doc.out.includes("MCP servers declared: outside"), doc.out);
+  check("doctor: shows which targets can carry them", doc.out.includes(".mcp.json") && doc.out.includes(".github/mcp.json"), doc.out);
+  check("doctor: shows why the others cannot", doc.out.includes("no-mcp-surface") && doc.out.includes("needs-shared-file-merge"), doc.out);
+
+  // A stdio server is matched on its command line, not a url.
+  const stdioSrc = join(polTmp, "stdio");
+  mkdirSync(stdioSrc, { recursive: true });
+  writeFileSync(
+    join(stdioSrc, "skill.toml"),
+    '[skill]\nname = "stdio-mcp"\nversion = "1.0.0"\ndescription = "Declares a stdio MCP server for policy matching"\n[context]\nbudget = 1500\n\n[mcp.servers.local]\ntransport = "stdio"\ncommand = "npx"\nargs = ["-y", "@acme/tool@1.0.0"]\ntools = ["x"]\n',
+  );
+  writeFileSync(join(stdioSrc, "SKILL.md"), "# Stdio\n\nBody.\n");
+  writeFileSync(join(polTmp, "kitbash.toml"), '[policy]\nallow_mcp_servers = ["npx -y @acme/*"]\n');
+  const stdioOk = run(["install", `file:${stdioSrc}`, "--yes"], polTmp);
+  check("policy: a stdio server is matched on its command line", stdioOk.status === 0, stdioOk.out);
+} finally {
+  rmSync(polTmp, { recursive: true, force: true });
+}
+
 if (failures) {
   console.error(`\n${failures} test(s) failed`);
   process.exit(1);

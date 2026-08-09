@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.19.1] — 2026-08-09
+
+Follow-through on 0.19.0: policy gets a say over MCP servers, and the support matrix becomes something you can read before you compile.
+
+### Added
+- **`deny_mcp` and `allow_mcp_servers` in `[policy]`.** An org allowlist that could not say "no MCP servers" was incomplete — a declared server is the largest surface a skill can ask for. `deny_mcp = true` refuses any skill declaring one; `allow_mcp_servers` takes the same globs as `allow_sources` and matches a server's command line (stdio) or url (remote), so an org can pin servers to its own registry without banning MCP outright. Enforced at install and rechecked by `doctor`, like every other policy rule.
+- **`doctor` prints the MCP support matrix** when any skill declares a server: which targets carry it and to which file, and for the eight that cannot, the specific reason. Previously that only surfaced as a compile-time warning, after the decision to install had already been made.
+
+### Fixed
+- Removed two exports added in 0.19.0 that nothing called (`isWholeRef`, and the needlessly public `MCP_TARGETS`).
+
 ## [0.19.0] — 2026-08-09
 
 MCP servers, declared in the skill and gated like the code they are. A skill that needs an MCP server previously had to say so in prose and hope you configured it; now it declares the server, `compile` writes the native config for every target that has one, and the install gate reviews it first.

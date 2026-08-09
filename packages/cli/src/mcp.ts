@@ -54,9 +54,6 @@ export interface McpConfig {
 
 /** A `${VAR}` reference — the only way a secret may appear in a manifest. */
 const REF_RE = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
-/** A whole value that is exactly one reference. */
-const WHOLE_REF_RE = /^\$\{[A-Za-z_][A-Za-z0-9_]*\}$/;
-
 export function hasRef(v: string): boolean {
   REF_RE.lastIndex = 0;
   return REF_RE.test(v);
@@ -397,8 +394,8 @@ function emitCopilot(servers: McpServer[]): McpEmit {
   return { files: [{ path: ".github/mcp.json", content: json({ mcpServers: out }) }], warnings };
 }
 
-/** Targets that can carry an MCP declaration today, for `doctor` and the docs. */
-export const MCP_TARGETS = ["agent-plugins", "claude-code", "copilot"];
+/** Targets that can carry an MCP declaration today. */
+const MCP_TARGETS = ["agent-plugins", "claude-code", "copilot"];
 
 /** One line per target explaining its MCP status — the support matrix, printed. */
 export function mcpSupportMatrix(): string[] {
@@ -427,9 +424,4 @@ export function collectServers(skills: LoadedSkill[]): { servers: McpServer[]; c
   }
   const servers = [...byName.values()].map((v) => v.server).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   return { servers, conflicts };
-}
-
-/** True when a value is exactly one `${VAR}` and nothing else. */
-export function isWholeRef(v: string): boolean {
-  return WHOLE_REF_RE.test(v);
 }
