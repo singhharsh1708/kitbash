@@ -2,6 +2,14 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.18.0] — 2026-08-09
+
+Kitbash in CI. Everything it checks — the install-gate safety lints, the declared token budgets, the compiled output's drift from its source — was previously a thing one maintainer ran locally and everyone else took on trust. This release makes it a required check on the pull request instead.
+
+### Added
+- **`kitbash lint --sarif <file>`** — writes findings as SARIF 2.1.0, the format GitHub code scanning reads, so results land in the Security tab and as inline PR annotations rather than scrolling past in a log. Hard-fail safety lints (`remote-exec`, `visible-text`, `dynamic-context`, `secrets`) are `error`; heuristics and cost overruns are `warning`; passing checks are not emitted, so a clean run produces a valid, empty report rather than noise. Every finding carries its rule, the skill it came from, and a repo-relative path with forward slashes so the same report works on any runner. The report is written even when the lint fails — that is exactly the run whose findings need to reach the Security tab — and never outside the project (exit 2 if a path tries).
+- **A GitHub Action** (`singhharsh1708/kitbash@v0.18.0`) — one step, three checks. It lints every installed skill for trust and budget, uploads SARIF, and then recompiles to catch **drift**: if `kitbash compile` changes anything in the working tree, the committed output no longer matches its source and the build fails with the diff. Competing scanners emit SARIF for skill content; none of them also measures the token cost or catches the source-vs-output drift, which is the failure a repo with eleven compile targets actually hits. Composite, so it runs on every runner OS with no image pull: `with: strict`, `drift`, `sarif`, `sarif-file`, `version`, `working-directory`.
+
 ## [0.17.0] — 2026-08-08
 
 The eleventh target — and it's the one the whole industry just agreed on. On 2026-08-06 OpenAI, Amazon, Microsoft, Cursor and Vercel published **Agent Plugins v1.0** (agent-plugins.org, Google core-maintaining): a vendor-neutral package format — a `plugin.json` manifest plus a `skills/<name>/SKILL.md` folder — that ChatGPT/Codex, Cursor, Copilot, Kiro and VS Code all read. It is a *packaging* standard by design: it defines no permission model, no trust or provenance, no sandboxing, and no measurement. That absence is exactly the layer Kitbash already is. So rather than treat the standard as a competitor, Kitbash compiles to it.

@@ -169,6 +169,33 @@ max_budget = 6000                  # cap per-skill context budget
 # deny_remote_exec = false         # opt out of the curl|sh body lint (default: on)
 ```
 
+## In CI
+
+Everything above is only as good as the last time someone ran it locally. The action makes it a check on the pull request:
+
+```yaml
+- uses: singhharsh1708/kitbash@v0.18.0
+  with:
+    strict: true          # warnings fail the build too
+    sarif: true           # default — writes kitbash.sarif
+
+- uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: kitbash.sarif
+```
+
+Three checks in one step:
+
+| Check | Fails when |
+|---|---|
+| **Trust** | A skill trips a hard safety lint — `remote-exec`, `visible-text`, `dynamic-context`, `secrets` |
+| **Cost** | A skill exceeds the token budget or standing limit it declares |
+| **Drift** | `kitbash compile` changes the working tree — the committed output no longer matches its source |
+
+Findings upload as [SARIF 2.1.0](https://sarifweb.azurewebsites.net), so they appear in the Security tab and inline on the PR: hard lints as errors, heuristics and cost overruns as warnings. `kitbash lint --sarif <file>` produces the same report locally.
+
+Drift is the check worth having even if you trust every skill you install. A skill compiles to eleven targets; nothing stops someone editing a generated `.cursor/rules/*.mdc` by hand, or changing the source and forgetting to recompile. Then each agent reads something slightly different and no one finds out. Recompiling in CI and failing on any diff makes that impossible to merge.
+
 ## Concepts
 
 | Concept | One line | Depth |

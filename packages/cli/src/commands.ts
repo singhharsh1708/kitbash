@@ -2,17 +2,21 @@
 
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { createInterface } from "node:readline";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { ADAPTERS, AGENT_PLUGIN_DIR, agentPluginManifest, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, type CompiledFile } from "./adapters.js";
 import { dropLock, integrityOf, readLock, upsertLock, walk, LOCK_FILE } from "./lock.js";
 import { fileChanges, manifestDelta, textOf, unifiedDiff } from "./diff.js";
 import { collectImports, driftGroups, type ImportedSource } from "./importers.js";
 import { estimateTokens, loadInstalledSkills, loadInstalledSkillsSafe, loadSkill, resolveBody, schemaLints, standingStub, COMMAND_RE, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
+import { toSarif, type SarifFinding } from "./sarif.js";
 import { parseToml } from "./toml.js";
 
 const CONFIG = "kitbash.toml";
+/** Stamped into the SARIF report's tool.driver.version. */
+const VERSION: string = createRequire(import.meta.url)("../package.json").version;
 
 /**
  * Lints that block install unconditionally (not just `lint`/`test`): they flag
@@ -1289,7 +1293,8 @@ export async function cmdTest(args: string[]): Promise<number> {
 
 export async function cmdLint(args: string[]): Promise<number> {
   const strict = args.includes("--strict");
-  const target = args.find((a) => !a.startsWith("-"));
+  const sarifPath = flagValue(args, "--sarif");
+  const target = args.find((a) => !a.startsWith("-") && a !== sarifPath);
   const root = process.cwd();
 
   let skills: LoadedSkill[];
@@ -1309,8 +1314,21 @@ export async function cmdLint(args: string[]): Promise<number> {
   }
 
   try {
-    const { failed, warned } = reportChecks(skills);
+    const { failed, warned, findings } = reportChecks(skills, root);
     console.log(`\nlinted ${skills.length} skill(s) · ${failed} failure(s) · ${warned} warning(s)`);
+    // --sarif writes the same findings as SARIF 2.1.0 for GitHub code scanning.
+    // Written before the exit-code decision below: a failing lint is exactly the
+    // run whose report must reach the Security tab.
+    if (sarifPath) {
+      const abs = resolve(root, sarifPath);
+      if (!resolveSubpath(root, sarifPath) && !isAbsolute(sarifPath)) {
+        console.error(`refusing to write the SARIF report outside the project: ${sarifPath}`);
+        return 2;
+      }
+      mkdirSync(dirname(abs), { recursive: true });
+      writeFileSync(abs, toSarif(findings, VERSION));
+      console.log(`→ ${sarifPath} (SARIF 2.1.0)`);
+    }
     if (failed) return 1;
     if (strict && warned) {
       console.error(`--strict: failing on ${warned} warning(s)`);
@@ -1322,10 +1340,15 @@ export async function cmdLint(args: string[]): Promise<number> {
   }
 }
 
-/** Run staticChecks over each skill, print the per-check report, return totals. */
-function reportChecks(skills: LoadedSkill[]): { failed: number; warned: number } {
+/**
+ * Run staticChecks over each skill, print the per-check report, return totals
+ * plus the findings in the shape SARIF needs (`--sarif`). `root` anchors each
+ * finding to a repo-relative path so code scanning can attach it to a file.
+ */
+function reportChecks(skills: LoadedSkill[], root?: string): { failed: number; warned: number; findings: SarifFinding[] } {
   let failed = 0;
   let warned = 0;
+  const findings: SarifFinding[] = [];
   for (const skill of skills) {
     const checks = staticChecks(skill);
     const bad = checks.filter((c) => !c.ok);
@@ -1338,8 +1361,10 @@ function reportChecks(skills: LoadedSkill[]): { failed: number; warned: number }
       const sym = !c.ok ? "✗" : c.warn ? "⚠" : "·";
       console.log(`    ${sym} ${c.name}${c.detail ? ` — ${c.detail}` : ""}`);
     }
+    const rel = root ? relative(root, join(skill.dir, "SKILL.md")).split(sep).join("/") : "SKILL.md";
+    for (const c of checks) findings.push({ ...c, skill: skill.manifest.skill.name, file: rel });
   }
-  return { failed, warned };
+  return { failed, warned, findings };
 }
 
 export async function cmdExplain(args: string[]): Promise<number> {
