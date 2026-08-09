@@ -11,7 +11,7 @@ import { dropLock, integrityOf, readLock, upsertLock, walk, LOCK_FILE } from "./
 import { fileChanges, manifestDelta, textOf, unifiedDiff } from "./diff.js";
 import { collectImports, driftGroups, type ImportedSource } from "./importers.js";
 import { estimateTokens, loadInstalledSkills, loadInstalledSkillsSafe, loadSkill, resolveBody, schemaLints, standingStub, COMMAND_RE, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
-import { collectServers, emitMcp, mcpLints, mcpSupportMatrix, mcpWarnings } from "./mcp.js";
+import { collectServers, DEFAULT_MAX_TOOLS, emitMcp, mcpLints, mcpSupportMatrix, mcpWarnings, toolBudget, toolBudgetReport } from "./mcp.js";
 import { toSarif, type SarifFinding } from "./sarif.js";
 import { parseToml } from "./toml.js";
 
@@ -42,6 +42,7 @@ const INIT_CONFIG = `# kitbash project configuration — https://github.com/sing
 # max_budget = 6000                  # refuse skills with a larger context budget
 # deny_remote_exec = false           # opt OUT of the download-and-execute body lint (default: on)
 # deny_mcp = true                    # refuse skills declaring any MCP server
+# max_mcp_tools = 100                # cap declared MCP tools across all skills (default: 100)
 # allow_mcp_servers = ["https://mcp.your-org.com/*"]  # globs; matched against a server's command or url
 `;
 
@@ -641,6 +642,7 @@ export async function cmdDoctor(): Promise<number> {
   const declared = collectServers(skills).servers;
   if (declared.length) {
     console.log(`\nMCP servers declared: ${declared.map((s) => s.name).join(", ")}`);
+    console.log(`  ${toolBudgetReport(toolBudget(declared), loadPolicy(root)?.maxMcpTools ?? DEFAULT_MAX_TOOLS).line}`);
     for (const line of mcpSupportMatrix()) console.log(`  ${line}`);
   }
 
@@ -721,6 +723,8 @@ interface Policy {
   denyRemoteExec: boolean;
   /** Refuse any skill that declares an MCP server at all. */
   denyMcp: boolean;
+  /** Cap on declared MCP tools across all skills. Absent uses the documented 100-tool ceiling. */
+  maxMcpTools?: number | undefined;
   /**
    * Globs an MCP server's command (stdio) or url (remote) must match. Empty means
    * unrestricted — the same shape as allow_sources, so an org can pin servers to
@@ -747,6 +751,7 @@ function loadPolicy(root: string): Policy | null {
     // Absent means true — you must opt OUT of the remote-exec block explicitly.
     denyRemoteExec: tbl["deny_remote_exec"] !== false,
     denyMcp: tbl["deny_mcp"] === true,
+    maxMcpTools: typeof tbl["max_mcp_tools"] === "number" ? (tbl["max_mcp_tools"] as number) : undefined,
     allowMcpServers: Array.isArray(tbl["allow_mcp_servers"])
       ? (tbl["allow_mcp_servers"] as unknown[]).filter((x): x is string => typeof x === "string")
       : [],
@@ -957,6 +962,13 @@ export async function cmdCompile(args: string[]): Promise<number> {
     return 1;
   }
   if (mcpServers.length) {
+    // The standing-cost argument, applied to MCP. Counted from the declared
+    // allowlist — an exact floor, never an estimate — and reported as a note so
+    // the number shows on every compile, with a breach as a real warning.
+    const report = toolBudgetReport(toolBudget(mcpServers), loadPolicy(root)?.maxMcpTools ?? DEFAULT_MAX_TOOLS);
+    notes.push(report.line);
+    warnings.push(...report.warnings);
+
     const unsupported: string[] = [];
     for (const adapter of adapters) {
       const out = emitMcp(adapter.id, mcpServers, AGENT_PLUGIN_DIR);
