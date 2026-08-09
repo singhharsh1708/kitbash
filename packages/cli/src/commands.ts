@@ -11,7 +11,7 @@ import { dropLock, integrityOf, readLock, upsertLock, walk, LOCK_FILE } from "./
 import { fileChanges, manifestDelta, textOf, unifiedDiff } from "./diff.js";
 import { collectImports, driftGroups, type ImportedSource } from "./importers.js";
 import { estimateTokens, loadInstalledSkills, loadInstalledSkillsSafe, loadSkill, resolveBody, schemaLints, standingStub, COMMAND_RE, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
-import { collectServers, emitMcp, mcpLints, mcpWarnings } from "./mcp.js";
+import { collectServers, emitMcp, mcpLints, mcpSupportMatrix, mcpWarnings } from "./mcp.js";
 import { toSarif, type SarifFinding } from "./sarif.js";
 import { parseToml } from "./toml.js";
 
@@ -41,6 +41,8 @@ const INIT_CONFIG = `# kitbash project configuration — https://github.com/sing
 # deny_write = true                  # refuse skills declaring write permission
 # max_budget = 6000                  # refuse skills with a larger context budget
 # deny_remote_exec = false           # opt OUT of the download-and-execute body lint (default: on)
+# deny_mcp = true                    # refuse skills declaring any MCP server
+# allow_mcp_servers = ["https://mcp.your-org.com/*"]  # globs; matched against a server's command or url
 `;
 
 export async function cmdInit(): Promise<number> {
@@ -633,6 +635,15 @@ export async function cmdDoctor(): Promise<number> {
   console.log(`installed skills: ${skills.length}`);
   console.log(`standing context cost: ~${standing} tokens (stubs); worst-case active: ${active} tokens (budgets)`);
 
+  // MCP declarations are the one thing a skill can ask for that most targets
+  // cannot honor, so where they do and don't land is printed, not buried in a
+  // compile warning. Shown only when something actually declares a server.
+  const declared = collectServers(skills).servers;
+  if (declared.length) {
+    console.log(`\nMCP servers declared: ${declared.map((s) => s.name).join(", ")}`);
+    for (const line of mcpSupportMatrix()) console.log(`  ${line}`);
+  }
+
   let problems = 0;
   // A skill whose manifest no longer loads (hand-edited, or the exact tamper doctor
   // exists to catch). Count it, don't throw — the integrity loop below must still run.
@@ -708,6 +719,14 @@ interface Policy {
   maxBudget?: number | undefined;
   /** The remote-exec lint is a hard fail by default; a policy may consciously exempt it. */
   denyRemoteExec: boolean;
+  /** Refuse any skill that declares an MCP server at all. */
+  denyMcp: boolean;
+  /**
+   * Globs an MCP server's command (stdio) or url (remote) must match. Empty means
+   * unrestricted — the same shape as allow_sources, so an org can pin servers to
+   * its own registry without banning MCP outright.
+   */
+  allowMcpServers: string[];
 }
 
 function loadPolicy(root: string): Policy | null {
@@ -727,6 +746,10 @@ function loadPolicy(root: string): Policy | null {
     maxBudget: typeof tbl["max_budget"] === "number" ? (tbl["max_budget"] as number) : undefined,
     // Absent means true — you must opt OUT of the remote-exec block explicitly.
     denyRemoteExec: tbl["deny_remote_exec"] !== false,
+    denyMcp: tbl["deny_mcp"] === true,
+    allowMcpServers: Array.isArray(tbl["allow_mcp_servers"])
+      ? (tbl["allow_mcp_servers"] as unknown[]).filter((x): x is string => typeof x === "string")
+      : [],
   };
 }
 
@@ -763,6 +786,21 @@ function manifestViolations(policy: Policy, skill: LoadedSkill): string[] {
   if (policy.denyWrite && m.permissions.write) out.push(`${name} declares write permission and deny_write = true`);
   if (policy.maxBudget !== undefined && m.context.budget > policy.maxBudget) {
     out.push(`${name} budget ${m.context.budget} exceeds max_budget ${policy.maxBudget}`);
+  }
+  // An MCP server is third-party code that runs with the agent's permissions —
+  // the largest surface a skill can ask for, so policy gets a say over it.
+  for (const s of m.mcp.servers) {
+    if (policy.denyMcp) {
+      out.push(`${name} declares MCP server "${s.name}" and deny_mcp = true`);
+      continue;
+    }
+    if (!policy.allowMcpServers.length) continue;
+    // Match against whatever identifies the server: the executable for stdio,
+    // the endpoint for remote. A server matching neither is not allowed.
+    const subject = s.transport === "stdio" ? [s.command ?? "", ...s.args].join(" ").trim() : (s.url ?? "");
+    if (!policy.allowMcpServers.some((p) => sourceMatches(p, subject))) {
+      out.push(`${name} MCP server "${s.name}" (${subject}) is not in allow_mcp_servers (${policy.allowMcpServers.join(", ")})`);
+    }
   }
   return out;
 }

@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.19.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.19.1</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,22 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.19.1">
+  <div class="release-head">
+    <h2><a href="#v0.19.1">v0.19.1</a></h2>
+    <span class="release-date">2026-08-09</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">Follow-through on 0.19.0: policy gets a say over MCP servers, and the support matrix becomes something you can read before you compile.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong><code>deny_mcp</code> and <code>allow_mcp_servers</code> in <code>[policy]</code>.</strong> An org allowlist that could not say "no MCP servers" was incomplete — a declared server is the largest surface a skill can ask for. <code>deny_mcp = true</code> refuses any skill declaring one; <code>allow_mcp_servers</code> takes the same globs as <code>allow_sources</code> and matches a server's command line (stdio) or url (remote), so an org can pin servers to its own registry without banning MCP outright. Enforced at install and rechecked by <code>doctor</code>, like every other policy rule.</li><li><strong><code>doctor</code> prints the MCP support matrix</strong> when any skill declares a server: which targets carry it and to which file, and for the eight that cannot, the specific reason. Previously that only surfaced as a compile-time warning, after the decision to install had already been made.</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li>Removed two exports added in 0.19.0 that nothing called (<code>isWholeRef</code>, and the needlessly public <code>MCP_TARGETS</code>).</li></ul>
+</article>
+
 <article class="release" id="v0.19.0">
   <div class="release-head">
     <h2><a href="#v0.19.0">v0.19.0</a></h2>
-    <span class="release-date">2026-08-09</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-08-09</span>
   </div>
 <p class="release-intro">MCP servers, declared in the skill and gated like the code they are. A skill that needs an MCP server previously had to say so in prose and hope you configured it; now it declares the server, <code>compile</code> writes the native config for every target that has one, and the install gate reviews it first.</p>
 <p class="release-intro">The research behind this mattered more than the code. Of the eleven targets, only <strong>three</strong> have a dedicated, project-scoped, primary-source-confirmed MCP config file. The rest either have no MCP mechanism at all, no project scope, or keep servers in a shared settings file full of unrelated user config. Emitting a plausible-looking file for those would produce something that reads as configured and does nothing — the exact silent failure this project exists to prevent — so they get a typed warning naming the reason, and no file.</p>
