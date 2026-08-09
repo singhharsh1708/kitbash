@@ -394,6 +394,69 @@ function emitCopilot(servers: McpServer[]): McpEmit {
   return { files: [{ path: ".github/mcp.json", content: json({ mcpServers: out }) }], warnings };
 }
 
+// ── tool budget ──────────────────────────────────────────────────────────────
+
+/**
+ * The tool budget: how many MCP tools a repo's skills put in front of the model.
+ *
+ * This is the standing-cost argument applied to MCP. A skill body's cost is
+ * statically countable, which is why Kitbash can enforce `context.budget`. An
+ * MCP server's real cost — the JSON schema of every tool it exposes — is not
+ * knowable without asking the server, and asking a stdio server means executing
+ * it. That is precisely what the install gate exists to prevent, so Kitbash does
+ * not do it, and does not estimate a number it cannot derive.
+ *
+ * What it does count is the thing the manifest already states: the declared tool
+ * allowlist. Every one of those tools is a tool definition the agent carries, so
+ * the count is a real floor on the cost, and it is exact whenever the allowlist
+ * is exact. A server declaring `["*"]` has no countable bound — that is reported
+ * as unbounded rather than folded into a total that would then be wrong.
+ */
+export interface ToolBudget {
+  /** Tools named explicitly across all servers — an exact floor on what is loaded. */
+  declared: number;
+  /** Servers declaring `["*"]`: real cost unknown without asking the server. */
+  unbounded: string[];
+  servers: number;
+}
+
+/**
+ * Windsurf documents a hard cap of 100 tools total; past it, tools are dropped.
+ * It is the only primary-source numeric limit found across the clients, so it is
+ * the default ceiling. (A widely-repeated Cursor "40 tool" limit appears only in
+ * forum posts and blogs, never in Cursor's own docs, so it is deliberately not
+ * encoded here — a tool whose pitch is measurement must not ship a folklore number.)
+ */
+export const DEFAULT_MAX_TOOLS = 100;
+
+export function toolBudget(servers: McpServer[]): ToolBudget {
+  let declared = 0;
+  const unbounded: string[] = [];
+  for (const s of servers) {
+    if (s.tools.includes("*")) unbounded.push(s.name);
+    else declared += s.tools.length;
+  }
+  return { declared, unbounded, servers: servers.length };
+}
+
+/**
+ * Report the budget, and fail when a countable total breaches the cap. Servers
+ * declaring `["*"]` can never be proven under a cap, so they are surfaced as the
+ * reason the total is a floor rather than silently passing.
+ */
+export function toolBudgetReport(b: ToolBudget, max: number): { line: string; warnings: string[]; over: boolean } {
+  const bound = b.unbounded.length ? `${b.declared}+ (${b.unbounded.length} server(s) declare "*")` : `${b.declared}`;
+  const line = `MCP tool budget: ${bound} tool(s) across ${b.servers} server(s); cap ${max}. Real token cost is unmeasured — it needs the server's tool schemas, and reading those means running it.`;
+  const warnings: string[] = [];
+  const over = b.declared > max;
+  if (over) {
+    warnings.push(`MCP tool budget exceeded: ${b.declared} declared tools against a cap of ${max}. Windsurf documents 100 total tools as a hard cap, past which tools are dropped — and every tool definition is carried in context for the whole session.`);
+  } else if (b.unbounded.length) {
+    warnings.push(`MCP tool budget cannot be bounded: ${b.unbounded.join(", ")} declare tools = ["*"], so the total is at least ${b.declared} and may exceed the cap of ${max}. Name the tools to make it countable.`);
+  }
+  return { line, warnings, over };
+}
+
 /** Targets that can carry an MCP declaration today. */
 const MCP_TARGETS = ["agent-plugins", "claude-code", "copilot"];
 

@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.19.1</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.20.0</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,22 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.20.0">
+  <div class="release-head">
+    <h2><a href="#v0.20.0">v0.20.0</a></h2>
+    <span class="release-date">2026-08-09</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">The token-cost argument, applied to MCP — the largest standing-context line item Kitbash was not measuring.</p>
+<p class="release-intro">A skill body's cost is statically countable, which is why <code>context.budget</code> can be enforced at compile time. An MCP server's real cost is not: the tokens it adds are the JSON schema of every tool it exposes, and knowing those means asking the server — which for a stdio server means <strong>executing it</strong>. That is exactly what the install gate exists to prevent, so Kitbash does not do it, and does not print an estimate it cannot derive.</p>
+<p class="release-intro">What it can count exactly is the thing the manifest already states. Every tool in a declared allowlist is a tool definition the agent carries for the whole session, so the allowlist is an exact <strong>floor</strong> on the cost.</p>
+<h3 class="group">Added</h3>
+<ul><li><strong>MCP tool budget, reported on every compile and by <code>doctor</code></strong> — <code>MCP tool budget: 8 tool(s) across 2 server(s); cap 100</code>, alongside an explicit statement that the token cost is unmeasured and why. A server declaring <code>tools = ["*"]</code> has no countable bound, so the total renders as <code>8+ (1 server(s) declare "*")</code> and warns that it cannot be bounded, rather than folding into a total that would be wrong.</li><li><strong><code>max_mcp_tools</code> in <code>[policy]</code></strong> — caps declared MCP tools across all skills. A breach warns and fails <code>--strict</code>. The default ceiling is <strong>100</strong>, the one primary-source numeric limit found across the clients (Windsurf documents it as a hard cap past which tools are dropped). A widely-repeated "40 tool" Cursor limit is deliberately <strong>not</strong> encoded: it appears only in forum posts and blogs, never in Cursor's own docs, and a tool whose pitch is measurement must not ship a folklore number.</li></ul>
+</article>
+
 <article class="release" id="v0.19.1">
   <div class="release-head">
     <h2><a href="#v0.19.1">v0.19.1</a></h2>
-    <span class="release-date">2026-08-09</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-08-09</span>
   </div>
 <p class="release-intro">Follow-through on 0.19.0: policy gets a say over MCP servers, and the support matrix becomes something you can read before you compile.</p>
 <h3 class="group">Added</h3>

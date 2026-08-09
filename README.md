@@ -168,6 +168,7 @@ deny_write = true                  # refuse skills declaring write access
 max_budget = 6000                  # cap per-skill context budget
 # deny_mcp = true                  # refuse skills declaring any MCP server
 # allow_mcp_servers = ["https://mcp.your-org.com/*"]  # globs; matched against a server's command or url
+# max_mcp_tools = 100              # cap declared MCP tools across all skills
 # deny_remote_exec = false         # opt out of the curl|sh body lint (default: on)
 ```
 
@@ -189,6 +190,12 @@ DEPLOY_TOKEN = "${ACME_DEPLOY_TOKEN}"            # a reference; a literal creden
 Three targets have a project-scoped MCP config file, and those are the three Kitbash writes: `claude-code` → `.mcp.json`, `copilot` → `.github/mcp.json`, `agent-plugins` → `<plugin-root>/mcp.json`. Nothing is passed through verbatim — the client dialects disagree (the HTTP transport is `http` in Claude Code and Copilot, `streamable-http` in Agent Plugins), so every emitter translates and always writes an explicit `type`.
 
 The other eight targets get a warning naming the specific reason — `no-mcp-surface` (aider, AGENTS.md have no configuration mechanism), `no-project-scope` (Cline and Windsurf are user-global only), `needs-shared-file-merge` (Zed and Gemini keep servers in a settings file full of unrelated user config) — and **no file**. A config the client never reads would look configured and do nothing, which is the failure mode this project exists to prevent.
+
+### What it costs you
+
+`compile` and `doctor` report the tool budget: `MCP tool budget: 8 tool(s) across 2 server(s); cap 100`. Every tool in a declared allowlist is a tool definition the agent carries for the whole session, so the allowlist is an exact floor on the cost — and `max_mcp_tools` in `[policy]` caps it, warning on breach and failing `--strict`. The default ceiling is 100, the one limit any client documents (Windsurf, past which tools are dropped).
+
+The *real* token cost is reported as unmeasured, and stays that way on purpose. It is the JSON schema of every tool a server exposes, which is only knowable by asking the server — and asking a stdio server means executing it, which is precisely what the install gate exists to prevent. A floor Kitbash can prove beats an estimate it cannot.
 
 A declared MCP server is third-party code that will run with your agent's permissions, so its lints are non-bypassable, like the four safety lints: shell strings, unpinned versions, literal credentials, plain-`http` URLs off loopback, and a missing `tools` allowlist all block install, `--yes` included. Secrets may only appear as `${VAR}`; where a format defines no credential reference and expands no variables, the server is omitted with a warning rather than emitted broken.
 

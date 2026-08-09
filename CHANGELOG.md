@@ -2,6 +2,18 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.20.0] — 2026-08-09
+
+The token-cost argument, applied to MCP — the largest standing-context line item Kitbash was not measuring.
+
+A skill body's cost is statically countable, which is why `context.budget` can be enforced at compile time. An MCP server's real cost is not: the tokens it adds are the JSON schema of every tool it exposes, and knowing those means asking the server — which for a stdio server means **executing it**. That is exactly what the install gate exists to prevent, so Kitbash does not do it, and does not print an estimate it cannot derive.
+
+What it can count exactly is the thing the manifest already states. Every tool in a declared allowlist is a tool definition the agent carries for the whole session, so the allowlist is an exact **floor** on the cost.
+
+### Added
+- **MCP tool budget, reported on every compile and by `doctor`** — `MCP tool budget: 8 tool(s) across 2 server(s); cap 100`, alongside an explicit statement that the token cost is unmeasured and why. A server declaring `tools = ["*"]` has no countable bound, so the total renders as `8+ (1 server(s) declare "*")` and warns that it cannot be bounded, rather than folding into a total that would be wrong.
+- **`max_mcp_tools` in `[policy]`** — caps declared MCP tools across all skills. A breach warns and fails `--strict`. The default ceiling is **100**, the one primary-source numeric limit found across the clients (Windsurf documents it as a hard cap past which tools are dropped). A widely-repeated "40 tool" Cursor limit is deliberately **not** encoded: it appears only in forum posts and blogs, never in Cursor's own docs, and a tool whose pitch is measurement must not ship a folklore number.
+
 ## [0.19.1] — 2026-08-09
 
 Follow-through on 0.19.0: policy gets a say over MCP servers, and the support matrix becomes something you can read before you compile.

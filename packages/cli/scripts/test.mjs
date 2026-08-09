@@ -1632,6 +1632,53 @@ try {
   rmSync(polTmp, { recursive: true, force: true });
 }
 
+// ── MCP tool budget ──────────────────────────────────────────────────────────
+// The standing-cost argument applied to MCP. Counted from the declared allowlist
+// (an exact floor), never estimated — measuring the real cost means executing the
+// server, which is what the install gate exists to prevent.
+const budTmp = mkdtempSync(join(tmpdir(), "kitbash-budget-"));
+try {
+  const bs = join(budTmp, "src");
+  mkdirSync(bs, { recursive: true });
+  writeFileSync(
+    join(bs, "skill.toml"),
+    '[skill]\nname = "toolheavy"\nversion = "1.0.0"\ndescription = "Declares several MCP tools across two servers"\n[context]\nbudget = 1500\n\n[mcp.servers.a]\ntransport = "stdio"\ncommand = "npx"\nargs = ["-y", "@acme/a@1.0.0"]\ntools = ["t1","t2","t3","t4","t5"]\n\n[mcp.servers.b]\ntransport = "streamable-http"\nurl = "https://b.example.com/mcp"\ntools = ["u1","u2","u3"]\n',
+  );
+  writeFileSync(join(bs, "SKILL.md"), "# Tool heavy\n\nBody.\n");
+  writeFileSync(join(budTmp, "kitbash.toml"), '[project]\ntargets = ["claude-code"]\n');
+  run(["install", `file:${bs}`, "--yes"], budTmp);
+
+  const def = run(["compile"], budTmp);
+  check("budget: the tool count is reported on every compile", def.out.includes("MCP tool budget: 8 tool(s) across 2 server(s)"), def.out);
+  check("budget: token cost is reported as unmeasured, not guessed", def.out.includes("unmeasured"), def.out);
+  check("budget: under the cap is a note, not a warning", def.status === 0 && !def.out.includes("budget exceeded"), def.out);
+
+  writeFileSync(join(budTmp, "kitbash.toml"), '[project]\ntargets = ["claude-code"]\n[policy]\nmax_mcp_tools = 5\n');
+  const over = run(["compile"], budTmp);
+  check("budget: a breach of max_mcp_tools warns", over.out.includes("MCP tool budget exceeded"), over.out);
+  check("budget: a breach still compiles by default", over.status === 0, over.out);
+  const strictBudget = run(["compile", "--strict"], budTmp);
+  check("budget: a breach fails --strict", strictBudget.status === 1, strictBudget.out);
+
+  // A wildcard server cannot be bounded — say so rather than fold it into a total.
+  const ws = join(budTmp, "wild");
+  mkdirSync(ws, { recursive: true });
+  writeFileSync(
+    join(ws, "skill.toml"),
+    '[skill]\nname = "wildy"\nversion = "1.0.0"\ndescription = "Declares a wildcard MCP tool allowlist"\n[context]\nbudget = 1500\n\n[mcp.servers.wild]\ntransport = "streamable-http"\nurl = "https://w.example.com/mcp"\ntools = ["*"]\n',
+  );
+  writeFileSync(join(ws, "SKILL.md"), "# Wild\n\nBody.\n");
+  writeFileSync(join(budTmp, "kitbash.toml"), '[project]\ntargets = ["claude-code"]\n');
+  run(["install", `file:${ws}`, "--yes"], budTmp);
+  const wild = run(["compile"], budTmp);
+  check("budget: a wildcard server makes the total a floor, marked +", wild.out.includes('8+ (1 server(s) declare "*")'), wild.out);
+  check("budget: and says it cannot be bounded", wild.out.includes("cannot be bounded"), wild.out);
+  const wdoc = run(["doctor"], budTmp);
+  check("budget: doctor reports the same budget line", wdoc.out.includes("MCP tool budget:"), wdoc.out);
+} finally {
+  rmSync(budTmp, { recursive: true, force: true });
+}
+
 if (failures) {
   console.error(`\n${failures} test(s) failed`);
   process.exit(1);
