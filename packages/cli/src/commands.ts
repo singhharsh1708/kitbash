@@ -11,6 +11,7 @@ import { dropLock, integrityOf, readLock, upsertLock, walk, LOCK_FILE } from "./
 import { fileChanges, manifestDelta, textOf, unifiedDiff } from "./diff.js";
 import { collectImports, driftGroups, type ImportedSource } from "./importers.js";
 import { estimateTokens, loadInstalledSkills, loadInstalledSkillsSafe, loadSkill, resolveBody, schemaLints, standingStub, COMMAND_RE, NAME_RE, SKILLS_DIR, type LoadedSkill } from "./ksf.js";
+import { collectServers, emitMcp, mcpLints, mcpWarnings } from "./mcp.js";
 import { toSarif, type SarifFinding } from "./sarif.js";
 import { parseToml } from "./toml.js";
 
@@ -24,7 +25,9 @@ const VERSION: string = createRequire(import.meta.url)("../package.json").versio
  * else staticChecks reports — schema, budgets, dead refs — is quality, surfaced
  * at `kitbash test`, and never stops an install.
  */
-const SAFETY_LINTS = new Set(["visible-text", "dynamic-context", "remote-exec", "secrets"]);
+// "mcp" is here because a declared MCP server is a request to run third-party
+// code with the agent's permissions — a heavier ask than anything in a body.
+const SAFETY_LINTS = new Set(["visible-text", "dynamic-context", "remote-exec", "secrets", "mcp"]);
 
 const INIT_CONFIG = `# kitbash project configuration — https://github.com/singhharsh1708/kitbash
 [project]
@@ -906,6 +909,43 @@ export async function cmdCompile(args: string[]): Promise<number> {
     writeFileSync(abs, f.content.endsWith("\n") ? f.content : `${f.content}\n`);
     console.log(`→ ${f.path}`);
   }
+  // MCP: server declarations are repo-level config, not per-skill output, so they
+  // are aggregated across skills and written once per target that can honor them.
+  // Targets that cannot get a specific warning and no file — a plausible-looking
+  // config the client never reads is the silent failure this whole design avoids.
+  const { servers: mcpServers, conflicts } = collectServers(skills);
+  if (conflicts.length) {
+    for (const c of conflicts) console.error(`✗ ${c}`);
+    return 1;
+  }
+  if (mcpServers.length) {
+    const unsupported: string[] = [];
+    for (const adapter of adapters) {
+      const out = emitMcp(adapter.id, mcpServers, AGENT_PLUGIN_DIR);
+      for (const f of out.files) {
+        if (!resolveSubpath(root, f.path)) {
+          console.error(`✗ refusing to write outside the project: ${f.path}`);
+          return 1;
+        }
+        const abs = join(root, f.path);
+        mkdirSync(dirname(abs), { recursive: true });
+        writeFileSync(abs, f.content);
+        files.set(f.path, f.content); // counts as written, so pruning leaves it alone
+        console.log(`→ ${f.path}`);
+      }
+      // on_unsupported = "error" turns "this target can't carry it" into a build failure.
+      for (const w of out.warnings) (w.includes("cannot honor") ? unsupported : warnings).push(w);
+    }
+    for (const u of unsupported) {
+      if (skills.some((s) => s.manifest.mcp.onUnsupported === "error")) {
+        console.error(`✗ ${u}`);
+      } else {
+        warnings.push(u);
+      }
+    }
+    if (unsupported.length && skills.some((s) => s.manifest.mcp.onUnsupported === "error")) return 1;
+  }
+
   // Agent Plugins: the skills/ folder is written per-skill by its adapter above.
   // The plugin.json manifest that makes that folder a valid plugin is one
   // repo-level file describing the whole package, so the compiler — not any one
@@ -1048,6 +1088,21 @@ function staticChecks(skill: LoadedSkill): Check[] {
       name: "gate-verdict",
       ok: hasVerdict,
       detail: hasVerdict ? "has a scripts/ dir or a declared artifact" : "gate mode but no scripts/ dir and no artifacts.produces — nothing to produce a verdict",
+    });
+  }
+
+  // MCP servers: a declaration is a request to run third-party code, so its
+  // problems are install-blocking failures rather than quality warnings. Only
+  // reported when the skill actually declares one — a skill with no [mcp] table
+  // should not grow a check row.
+  if (m.mcp.servers.length) {
+    const bad = mcpLints(m.mcp);
+    const soft = mcpWarnings(m.mcp);
+    checks.push({
+      name: "mcp",
+      ok: bad.length === 0,
+      warn: bad.length === 0 && soft.length > 0,
+      detail: bad.length ? bad.join("; ") : soft.length ? soft.join("; ") : `${m.mcp.servers.length} server(s): ${m.mcp.servers.map((s) => s.name).join(", ")}`,
     });
   }
 

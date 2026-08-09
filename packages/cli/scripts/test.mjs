@@ -1446,6 +1446,145 @@ try {
   rmSync(sar, { recursive: true, force: true });
 }
 
+// ── MCP server declarations ──────────────────────────────────────────────────
+// A declared MCP server is third-party code the user will run, so its lints are
+// install-blocking; and only targets with a confirmed project-scoped config file
+// may emit anything — the rest must say why rather than write a dead file.
+const mcpTmp = mkdtempSync(join(tmpdir(), "kitbash-mcp-"));
+try {
+  const src = join(mcpTmp, "src");
+  mkdirSync(src, { recursive: true });
+  writeFileSync(
+    join(src, "skill.toml"),
+    [
+      "[skill]",
+      'name = "deploy-review"',
+      'version = "1.0.0"',
+      'description = "Reviews a deploy plan against the live environment"',
+      "[context]",
+      "budget = 1500",
+      "standing = 80",
+      "",
+      "[mcp.servers.deploy-tools]",
+      'transport = "stdio"',
+      'command = "npx"',
+      'args = ["-y", "@acme/deploy-mcp@2.4.1"]',
+      'tools = ["plan_diff"]',
+      "timeout_ms = 60000",
+      "",
+      "[mcp.servers.status-api]",
+      'transport = "streamable-http"',
+      'url = "https://status.acme.com/mcp"',
+      'tools = ["read_status"]',
+      "",
+    ].join("\n"),
+  );
+  writeFileSync(join(src, "SKILL.md"), "# Deploy review\n\nReview the plan before it ships.\n");
+  writeFileSync(join(mcpTmp, "kitbash.toml"), '[project]\ntargets = ["claude-code", "copilot", "agent-plugins", "aider", "cline"]\n');
+
+  const mi = run(["install", `file:${src}`, "--yes"], mcpTmp);
+  check("mcp: a well-formed declaration installs", mi.status === 0, mi.out);
+  const mc = run(["compile"], mcpTmp);
+  check("mcp: compile exits 0", mc.status === 0, mc.out);
+
+  const claude = JSON.parse(readFileSync(join(mcpTmp, ".mcp.json"), "utf8"));
+  const copilot = JSON.parse(readFileSync(join(mcpTmp, ".github/mcp.json"), "utf8"));
+  const plugin = JSON.parse(readFileSync(join(mcpTmp, "agent-plugin/mcp.json"), "utf8"));
+  check("mcp: claude-code gets .mcp.json with mcpServers", !!claude.mcpServers["deploy-tools"]);
+  check("mcp: copilot gets .github/mcp.json", !!copilot.mcpServers["deploy-tools"]);
+  check("mcp: agent-plugins gets mcp.json inside the plugin root", !!plugin.mcpServers["deploy-tools"]);
+  check("mcp: agent-plugins mcp.json carries the exact $schema const", plugin.$schema === "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json", plugin.$schema);
+  check("mcp: agent-plugins mcp.json has only the two allowed top-level keys", Object.keys(plugin).sort().join(",") === "$schema,mcpServers", Object.keys(plugin).join(","));
+
+  // The transport spellings genuinely differ per client — this is the translation.
+  check("mcp: HTTP is 'http' for claude-code", claude.mcpServers["status-api"].type === "http", claude.mcpServers["status-api"].type);
+  check("mcp: HTTP is 'http' for copilot", copilot.mcpServers["status-api"].type === "http", copilot.mcpServers["status-api"].type);
+  check("mcp: HTTP is 'streamable-http' for agent-plugins", plugin.mcpServers["status-api"].type === "streamable-http", plugin.mcpServers["status-api"].type);
+  check("mcp: every entry declares an explicit type", [claude, copilot, plugin].every((d) => Object.values(d.mcpServers).every((s) => !!s.type)));
+  check("mcp: copilot carries the tools allowlist", JSON.stringify(copilot.mcpServers["deploy-tools"].tools) === '["plan_diff"]');
+  check("mcp: claude-code does not invent a tools field", claude.mcpServers["deploy-tools"].tools === undefined);
+  check("mcp: dropping the tools allowlist is warned about, not silent", mc.out.includes("tools allowlist"), mc.out);
+
+  // Targets that cannot honor a declaration must say why and write nothing.
+  check("mcp: aider warns with no-mcp-surface", mc.out.includes("no-mcp-surface"), mc.out);
+  check("mcp: cline warns with no-project-scope", mc.out.includes("no-project-scope"), mc.out);
+  check("mcp: no MCP file is written for unsupported targets", !existsSync(join(mcpTmp, ".agents/mcp.json")) && !existsSync(join(mcpTmp, ".clinerules/mcp.json")));
+
+  // Hostile declarations are install-blocking, even with --yes.
+  const badSrc = join(mcpTmp, "bad");
+  mkdirSync(badSrc, { recursive: true });
+  writeFileSync(
+    join(badSrc, "skill.toml"),
+    [
+      "[skill]",
+      'name = "sneaky"',
+      'version = "1.0.0"',
+      'description = "A skill with a hostile MCP declaration"',
+      "[context]",
+      "budget = 1500",
+      "",
+      "[mcp.servers.evil]",
+      'transport = "stdio"',
+      "command = \"sh -c 'echo hi'\"",
+      'args = ["@acme/thing@latest"]',
+      'tools = ["a"]',
+      "",
+      "[mcp.servers.evil.env]",
+      'GITHUB_TOKEN = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ012345"',
+      "",
+      "[mcp.servers.leaky]",
+      'transport = "streamable-http"',
+      'url = "http://evil.example.com/mcp"',
+      'tools = ["x"]',
+      "",
+    ].join("\n"),
+  );
+  writeFileSync(join(badSrc, "SKILL.md"), "# Sneaky\n\nNothing to see.\n");
+  const bad = run(["install", `file:${badSrc}`, "--yes"], mcpTmp);
+  check("mcp: a hostile declaration is blocked despite --yes", bad.status === 1, bad.out);
+  check("mcp: shell string in command is caught", bad.out.includes("single executable"), bad.out);
+  check("mcp: unpinned server version is caught", bad.out.includes("not pinned to an exact version"), bad.out);
+  check("mcp: a literal credential is caught", bad.out.includes("GitHub token"), bad.out);
+  check("mcp: plain http off-loopback is caught", bad.out.includes("plain http off-loopback"), bad.out);
+  check("mcp: the blocked skill was not installed", !existsSync(join(mcpTmp, ".kitbash/skills/sneaky")));
+
+  // A missing tools allowlist fails: it is the one field kitbash cannot synthesize.
+  const noTools = join(mcpTmp, "notools");
+  mkdirSync(noTools, { recursive: true });
+  writeFileSync(
+    join(noTools, "skill.toml"),
+    '[skill]\nname = "notools"\nversion = "1.0.0"\ndescription = "Declares a server with no tool allowlist"\n[context]\nbudget = 1500\n\n[mcp.servers.wide]\ntransport = "stdio"\ncommand = "npx"\ntools = []\n',
+  );
+  writeFileSync(join(noTools, "SKILL.md"), "# No tools\n\nBody.\n");
+  const nt = run(["install", `file:${noTools}`, "--yes"], mcpTmp);
+  check("mcp: a missing tools allowlist blocks install", nt.status === 1 && nt.out.includes("tools is required"), nt.out);
+} finally {
+  rmSync(mcpTmp, { recursive: true, force: true });
+}
+
+// A secret must be a ${VAR} reference, and a format that cannot expand one must
+// omit the server rather than emit a reference that will never resolve.
+const refTmp = mkdtempSync(join(tmpdir(), "kitbash-mcpref-"));
+try {
+  const rs = join(refTmp, "src");
+  mkdirSync(rs, { recursive: true });
+  writeFileSync(
+    join(rs, "skill.toml"),
+    '[skill]\nname = "reffy"\nversion = "1.0.0"\ndescription = "Uses a secret reference rather than a literal"\n[context]\nbudget = 1500\n\n[mcp.servers.api]\ntransport = "streamable-http"\nurl = "https://api.example.com/mcp"\ntools = ["query"]\n\n[mcp.servers.api.headers]\nAuthorization = "Bearer ${ACME_TOKEN}"\n',
+  );
+  writeFileSync(join(rs, "SKILL.md"), "# Reffy\n\nBody.\n");
+  writeFileSync(join(refTmp, "kitbash.toml"), '[project]\ntargets = ["claude-code", "agent-plugins"]\n');
+  const ri = run(["install", `file:${rs}`, "--yes"], refTmp);
+  check("mcp: a ${VAR} secret reference installs cleanly", ri.status === 0, ri.out);
+  const rc = run(["compile"], refTmp);
+  const rClaude = JSON.parse(readFileSync(join(refTmp, ".mcp.json"), "utf8"));
+  check("mcp: the reference passes through where the client expands it", rClaude.mcpServers.api.headers.Authorization === "Bearer ${ACME_TOKEN}");
+  check("mcp: agent-plugins omits a server it cannot express", !existsSync(join(refTmp, "agent-plugin/mcp.json")), rc.out);
+  check("mcp: and says why", rc.out.includes("expands no variables"), rc.out);
+} finally {
+  rmSync(refTmp, { recursive: true, force: true });
+}
+
 if (failures) {
   console.error(`\n${failures} test(s) failed`);
   process.exit(1);
