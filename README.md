@@ -187,9 +187,13 @@ tools = ["plan_diff", "list_environments"]       # required: deny-by-default all
 DEPLOY_TOKEN = "${ACME_DEPLOY_TOKEN}"            # a reference; a literal credential fails the gate
 ```
 
-Three targets have a project-scoped MCP config file, and those are the three Kitbash writes: `claude-code` → `.mcp.json`, `copilot` → `.github/mcp.json`, `agent-plugins` → `<plugin-root>/mcp.json`. Nothing is passed through verbatim — the client dialects disagree (the HTTP transport is `http` in Claude Code and Copilot, `streamable-http` in Agent Plugins), so every emitter translates and always writes an explicit `type`.
+Six targets have a project-scoped MCP surface, and Kitbash writes all six: `claude-code` → `.mcp.json`, `copilot` → `.github/mcp.json`, `cursor` → `.cursor/mcp.json`, `agent-plugins` → `<plugin-root>/mcp.json`, plus `gemini` → `.gemini/settings.json` and `zed` → `.zed/settings.json`, which are **merged** rather than overwritten.
 
-The other eight targets get a warning naming the specific reason — `no-mcp-surface` (aider, AGENTS.md have no configuration mechanism), `no-project-scope` (Cline and Windsurf are user-global only), `needs-shared-file-merge` (Zed and Gemini keep servers in a settings file full of unrelated user config) — and **no file**. A config the client never reads would look configured and do nothing, which is the failure mode this project exists to prevent.
+Nothing is passed through verbatim, because the dialects genuinely disagree: the HTTP transport is `http` in Claude Code, Copilot and Gemini but `streamable-http` in Agent Plugins; timeouts are milliseconds everywhere except Zed, which uses seconds and silently clamps at 600; Zed wants no `type` key while Gemini needs one, since a bare `url` there defaults to Streamable HTTP. Every emitter translates.
+
+Merging into a settings file is a destructive-write class — those files hold configuration with nothing to do with skills — so only the server key is touched, servers you added by hand survive, and a file Kitbash cannot parse (or one containing comments, which `JSON.parse` cannot round-trip) is **refused, never overwritten**.
+
+The remaining five targets get a warning naming the specific reason — `no-mcp-surface` (aider and AGENTS.md have no configuration mechanism), `no-project-scope` (Cline and Windsurf are user-global only), `unconfirmed-path` (the `.agents` convention) — and **no file**. A config the client never reads would look configured and do nothing, which is the failure mode this project exists to prevent.
 
 ### What it costs you
 

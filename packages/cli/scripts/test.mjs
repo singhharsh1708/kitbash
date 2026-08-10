@@ -1615,7 +1615,7 @@ try {
   const doc = run(["doctor"], polTmp);
   check("doctor: lists declared MCP servers", doc.out.includes("MCP servers declared: outside"), doc.out);
   check("doctor: shows which targets can carry them", doc.out.includes(".mcp.json") && doc.out.includes(".github/mcp.json"), doc.out);
-  check("doctor: shows why the others cannot", doc.out.includes("no-mcp-surface") && doc.out.includes("needs-shared-file-merge"), doc.out);
+  check("doctor: shows why the others cannot", doc.out.includes("no-mcp-surface") && doc.out.includes("no-project-scope"), doc.out);
 
   // A stdio server is matched on its command line, not a url.
   const stdioSrc = join(polTmp, "stdio");
@@ -1677,6 +1677,59 @@ try {
   check("budget: doctor reports the same budget line", wdoc.out.includes("MCP tool budget:"), wdoc.out);
 } finally {
   rmSync(budTmp, { recursive: true, force: true });
+}
+
+// ── merging MCP into shared settings files ───────────────────────────────────
+// Zed and Gemini keep servers inside settings files carrying unrelated user
+// config, so this is a destructive-write class: unrelated keys must survive, and
+// a file kitbash cannot parse must never be overwritten.
+const mgTmp = mkdtempSync(join(tmpdir(), "kitbash-merge-"));
+try {
+  const ms = join(mgTmp, "src");
+  mkdirSync(ms, { recursive: true });
+  mkdirSync(join(mgTmp, ".gemini"), { recursive: true });
+  mkdirSync(join(mgTmp, ".zed"), { recursive: true });
+  writeFileSync(
+    join(ms, "skill.toml"),
+    '[skill]\nname = "merged"\nversion = "1.0.0"\ndescription = "Server merged into shared settings files"\n[context]\nbudget = 1500\n\n[mcp.servers.acme]\ntransport = "stdio"\ncommand = "npx"\nargs = ["-y", "@acme/a@1.0.0"]\ntools = ["t1"]\n',
+  );
+  writeFileSync(join(ms, "SKILL.md"), "# Merged\n\nBody.\n");
+  writeFileSync(join(mgTmp, ".gemini/settings.json"), JSON.stringify({ theme: "dark", mcpServers: { userOwn: { command: "mine" } } }, null, 2));
+  writeFileSync(join(mgTmp, ".zed/settings.json"), JSON.stringify({ vim_mode: true, buffer_font_size: 15 }, null, 2));
+  writeFileSync(join(mgTmp, "kitbash.toml"), '[project]\ntargets = ["cursor", "gemini", "zed"]\n');
+  run(["install", `file:${ms}`, "--yes"], mgTmp);
+  const mgc = run(["compile"], mgTmp);
+  check("merge: compile exits 0", mgc.status === 0, mgc.out);
+
+  const gem = JSON.parse(readFileSync(join(mgTmp, ".gemini/settings.json"), "utf8"));
+  check("merge: unrelated gemini settings survive", gem.theme === "dark", JSON.stringify(gem));
+  check("merge: the user's own server survives", gem.mcpServers.userOwn.command === "mine");
+  check("merge: our server is added alongside", gem.mcpServers.acme.command === "npx");
+  check("merge: gemini gets its own allowlist field", JSON.stringify(gem.mcpServers.acme.includeTools) === '["t1"]');
+
+  const zed = JSON.parse(readFileSync(join(mgTmp, ".zed/settings.json"), "utf8"));
+  check("merge: unrelated zed settings survive", zed.vim_mode === true && zed.buffer_font_size === 15, JSON.stringify(zed));
+  check("merge: zed uses context_servers, not mcpServers", !!zed.context_servers.acme && zed.mcpServers === undefined);
+
+  const cur = JSON.parse(readFileSync(join(mgTmp, ".cursor/mcp.json"), "utf8"));
+  check("merge: cursor gets a dedicated mcp.json with an explicit stdio type", cur.mcpServers.acme.type === "stdio");
+  check("merge: cursor warns that it cannot enforce the allowlist", mgc.out.includes("cursor:") && mgc.out.includes("tools allowlist"), mgc.out);
+
+  // A file with comments cannot be round-tripped by JSON.parse — refuse, never clobber.
+  writeFileSync(join(mgTmp, ".zed/settings.json"), '{\n  // annotated\n  "vim_mode": true\n}\n');
+  const before = readFileSync(join(mgTmp, ".zed/settings.json"), "utf8");
+  const cmt = run(["compile"], mgTmp);
+  check("merge: a commented settings file is refused", cmt.out.includes("contains comments"), cmt.out);
+  check("merge: and left byte-identical", readFileSync(join(mgTmp, ".zed/settings.json"), "utf8") === before);
+
+  // Same for a file we cannot parse at all.
+  writeFileSync(join(mgTmp, ".zed/settings.json"), '{ "vim_mode": true,,, }\n');
+  const before2 = readFileSync(join(mgTmp, ".zed/settings.json"), "utf8");
+  const broke = run(["compile"], mgTmp);
+  check("merge: an unparseable settings file is refused", broke.out.includes("not valid JSON"), broke.out);
+  check("merge: and left byte-identical", readFileSync(join(mgTmp, ".zed/settings.json"), "utf8") === before2);
+} finally {
+  rmSync(mgTmp, { recursive: true, force: true });
 }
 
 if (failures) {
