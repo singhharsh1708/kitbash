@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.22.0] — 2026-08-09
+
+### Fixed
+- **A repo with both `.agents/` and `.github/` (or `.gemini/`) got the same skill written twice.** The `agents` adapter's detection is narrow so the vendor-neutral path is not forced on repos that never asked for it — but that only covers the case where `.agents/` is absent, not the far more common one where a repo has it *and* a native skills directory. The result was byte-identical `SKILL.md` files in both places, which the source comment beside that adapter had explicitly claimed would not happen.
+
+  The duplicate is never harmless, and it fails differently per client: **Copilot** searches `.github/skills` first and dedupes by name, so the `.agents/skills` copy is silently ignored; **Gemini CLI** loads the `.agents` alias *after* `.gemini/skills`, overrides it, and prints a `Skill conflict detected` warning for every duplicated name — noise Kitbash itself was generating; and **Codex** dedupes root paths but *not* skill names, so it loaded the skill twice. `copilot` and `gemini` now yield to `.agents/skills/` when it is being written, with a note saying so, and any copy left by an earlier version is pruned on the next compile. A repo without `.agents/` is unaffected: Copilot still gets `.github/skills/`, because the dedup must never cost an agent its only copy.
+- **Corrected two unverified claims in the adapter source.** `.agents/skills` is not Codex's only repo path (`<repo>/.codex/skills` also loads at repo scope), and Roo, Amp, OpenCode and Antigravity were listed as readers of the vendor-neutral path without ever having been checked. The readers now named — Codex, Copilot, Gemini CLI, Cursor, Zed and Cline — were each confirmed against that client's own source or documentation.
+- The benchmark harness read Copilot's and Gemini's cost from their own skills directories, which are no longer written when the vendor-neutral path serves them; it now reads the path that actually serves them. The published numbers are unchanged, because the bytes are identical.
+
 ## [0.21.1] — 2026-08-09
 
 ### Fixed

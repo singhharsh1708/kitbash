@@ -51,17 +51,18 @@ function measure(tmp, target, skillName) {
       return estimateTokens(read(`.claude/skills/${skillName}/SKILL.md`));
     case "cursor":
       return estimateTokens(read(`.cursor/rules/${skillName}.mdc`));
-    // zed and cline read the same vendor-neutral path and emit the same bytes,
-    // so they measure identically — listed rather than folded in, because a
-    // reader looking up "what does Zed cost" must find a row.
+    // Every one of these is served by the vendor-neutral path and reads the same
+    // bytes, so they measure identically. Zed and cline compile there directly;
+    // copilot and gemini also read it, so their own skills directory is not
+    // written when it is present (see VENDOR_NEUTRAL_ALIASES). Listed separately
+    // rather than folded together, because a reader looking up "what does Zed
+    // cost" must find a row.
     case "agents":
     case "zed":
     case "cline":
-      return estimateTokens(read(`.agents/skills/${skillName}/SKILL.md`));
     case "copilot":
-      return estimateTokens(read(`.github/skills/${skillName}/SKILL.md`));
     case "gemini":
-      return estimateTokens(read(`.gemini/skills/${skillName}/SKILL.md`));
+      return estimateTokens(read(`.agents/skills/${skillName}/SKILL.md`));
     case "windsurf":
       return estimateTokens(read(`.windsurf/rules/${skillName}.md`));
     case "aider":

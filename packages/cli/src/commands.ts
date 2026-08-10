@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { createInterface } from "node:readline";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { ADAPTERS, AGENT_PLUGIN_DIR, agentPluginManifest, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, type CompiledFile } from "./adapters.js";
+import { ADAPTERS, AGENT_PLUGIN_DIR, agentPluginManifest, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, VENDOR_NEUTRAL_ALIASES, type CompiledFile } from "./adapters.js";
 import { dropLock, integrityOf, readLock, upsertLock, walk, LOCK_FILE } from "./lock.js";
 import { fileChanges, manifestDelta, textOf, unifiedDiff } from "./diff.js";
 import { collectImports, driftGroups, type ImportedSource } from "./importers.js";
@@ -932,6 +932,23 @@ export async function cmdCompile(args: string[]): Promise<number> {
           owners.set(f.path, name);
           files.set(f.path, f.content);
         }
+      }
+    }
+  }
+
+  // A target whose own skills directory is redundant once `.agents/skills/` is
+  // written — the same agent reads both paths — is dropped rather than duplicated.
+  // The duplicate is never harmless: Copilot silently ignores the second copy,
+  // Gemini prints a "Skill conflict detected" warning for every duplicated name,
+  // and Codex dedupes root paths but not skill names, so it loads the skill twice.
+  // Any existing copy is removed by the prune pass below, since nothing wrote it.
+  if (adapters.some((a) => a.id === "agents")) {
+    for (const alias of VENDOR_NEUTRAL_ALIASES) {
+      if (!adapters.some((a) => a.id === alias.id)) continue;
+      const dropped = [...files.keys()].filter((p) => p.startsWith(`${alias.dir}/`));
+      for (const p of dropped) files.delete(p);
+      if (dropped.length) {
+        notes.push(`${alias.id}: served by .agents/skills/, which it also reads — ${alias.dir}/ not written, so the skill is not duplicated.`);
       }
     }
   }

@@ -67,7 +67,9 @@ try {
   check("claude-code output exists", existsSync(claude));
   check("cursor output exists", existsSync(cursor));
   check("agentsmd output exists", existsSync(agents));
-  check("copilot output exists", existsSync(join(tmp, ".github/skills/prereview/SKILL.md")));
+  // This repo has .agents/, and Copilot reads .agents/skills/ as well as its own
+  // dir, so the skill is served once from the shared path rather than duplicated.
+  check("copilot is served by the vendor-neutral path, not a second copy", !existsSync(join(tmp, ".github/skills/prereview/SKILL.md")) && existsSync(join(tmp, ".agents/skills/prereview/SKILL.md")));
   check("copilot uses the lazy skills dir, not always-on instructions", !existsSync(join(tmp, ".github/instructions/prereview.instructions.md")));
   check("cline compiles to the lazy skills path, not a .clinerules rule", existsSync(join(tmp, ".agents/skills/prereview/SKILL.md")));
   check("cline no longer emits an always-on .clinerules rule", !existsSync(join(tmp, ".clinerules/prereview.md")));
@@ -77,7 +79,9 @@ try {
   check("agents (vendor-neutral) output exists", existsSync(join(tmp, ".agents/skills/prereview/SKILL.md")));
   const agentsSkill = readFileSync(join(tmp, ".agents/skills/prereview/SKILL.md"), "utf8");
   check("agents output carries spec frontmatter", /^---\nname: prereview\ndescription: "/.test(agentsSkill), agentsSkill.slice(0, 120));
-  check("gemini output exists in the lazy skills dir", existsSync(join(tmp, ".gemini/skills/prereview/SKILL.md")));
+  // Gemini CLI loads .agents/skills/ as a workspace alias that overrides
+  // .gemini/skills/ and warns on every duplicated name, so only one is written.
+  check("gemini is served by the vendor-neutral path, not a second copy", !existsSync(join(tmp, ".gemini/skills/prereview/SKILL.md")));
   const geminiMd = readFileSync(join(tmp, "GEMINI.md"), "utf8");
   check("gemini no longer merges into GEMINI.md, user content untouched", !geminiMd.includes("kitbash:begin") && geminiMd.startsWith("# Project notes"), geminiMd.slice(0, 120));
   const aiderOut = readFileSync(join(tmp, "CONVENTIONS.md"), "utf8");
@@ -1769,6 +1773,45 @@ try {
   check("escalation: an identical skill reports no MCP delta", !same.out.includes("mcp.servers."), same.out);
 } finally {
   rmSync(escTmp, { recursive: true, force: true });
+}
+
+// ── the vendor-neutral path deduplicates the clients that also read it ───────
+// Copilot and Gemini CLI both read .agents/skills/ in addition to their own
+// skills dir, verified against Copilot's documented search order and Gemini's
+// skillManager.ts. Emitting both is never harmless: Copilot silently ignores the
+// second copy, Gemini warns per duplicated name, and Codex loads it twice.
+const aliasTmp = mkdtempSync(join(tmpdir(), "kitbash-alias-"));
+try {
+  mkdirSync(join(aliasTmp, ".agents"), { recursive: true });
+  mkdirSync(join(aliasTmp, ".github"), { recursive: true });
+  run(["init"], aliasTmp);
+  run(["install", `file:${fixture}`, "--yes"], aliasTmp);
+  const al = run(["compile"], aliasTmp);
+  check("alias: .agents/skills is written", existsSync(join(aliasTmp, ".agents/skills/prereview/SKILL.md")), al.out);
+  check("alias: the redundant copilot dir is not", !existsSync(join(aliasTmp, ".github/skills/prereview/SKILL.md")), al.out);
+  check("alias: and the reason is stated", al.out.includes("served by .agents/skills/"), al.out);
+  check("alias: it is a note, so --strict still passes", run(["compile", "--strict"], aliasTmp).status === 0);
+} finally {
+  rmSync(aliasTmp, { recursive: true, force: true });
+}
+
+// Without .agents/, copilot must still get its own directory — the dedup must
+// never cost an agent its only copy.
+const onlyTmp = mkdtempSync(join(tmpdir(), "kitbash-onlygh-"));
+try {
+  mkdirSync(join(onlyTmp, ".github"), { recursive: true });
+  run(["init"], onlyTmp);
+  run(["install", `file:${fixture}`, "--yes"], onlyTmp);
+  run(["compile"], onlyTmp);
+  check("alias: copilot keeps .github/skills when .agents is absent", existsSync(join(onlyTmp, ".github/skills/prereview/SKILL.md")));
+
+  // Adding .agents/ later must prune the now-redundant copy rather than leave two.
+  mkdirSync(join(onlyTmp, ".agents"), { recursive: true });
+  const after = run(["compile"], onlyTmp);
+  check("alias: the now-stale copy is pruned on the next compile", !existsSync(join(onlyTmp, ".github/skills/prereview/SKILL.md")), after.out);
+  check("alias: pruning is reported", after.out.includes("removed .github/skills/prereview/SKILL.md"), after.out);
+} finally {
+  rmSync(onlyTmp, { recursive: true, force: true });
 }
 
 if (failures) {
