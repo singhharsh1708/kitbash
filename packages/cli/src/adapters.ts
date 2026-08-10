@@ -212,18 +212,49 @@ function skillDirAdapter(
 }
 
 /**
- * The vendor-neutral skills path, read by Codex (its only repo path), Cursor,
- * Copilot, Gemini CLI, Roo, Amp, OpenCode, Zed and Antigravity.
+ * The vendor-neutral skills path. Confirmed against each client's own source or
+ * docs to be read by Codex (`codex-rs/ext/skills/src/host_roots.rs`), Copilot
+ * (project search position 2, after `.github/skills`), Gemini CLI
+ * (`skillManager.ts`, as an explicit workspace alias), Cursor, Zed — for which
+ * it is the *only* location — and Cline (`skill-directories.ts`).
  *
- * Detection is deliberately narrow (`.agents/` or `.codex/`): agents that also
- * have a native path already get their own adapter, and emitting both would
- * duplicate the skill for no benefit.
+ * Two claims that used to sit here were wrong and are worth not repeating:
+ * `.agents/skills` is NOT Codex's only repo path (`<repo>/.codex/skills` also
+ * loads at repo scope when a trusted project layer exists), and Roo, Amp,
+ * OpenCode and Antigravity were listed without ever being verified. They may
+ * well read it; nothing here should assume so until someone checks.
+ *
+ * Detection is deliberately narrow (`.agents/` or `.codex/`). That keeps the
+ * path out of repos that never asked for it, but it does NOT prevent the
+ * both-present case — see VENDOR_NEUTRAL_ALIASES.
  */
 const agents = skillDirAdapter(
   "agents",
   ".agents/skills",
   (root) => existsSync(join(root, ".agents")) || existsSync(join(root, ".codex")),
 );
+
+/**
+ * Targets whose own skills directory is redundant once `.agents/skills/` is
+ * being written, because the same agent reads both paths.
+ *
+ * Emitting both is not merely wasteful, and the failure differs per client:
+ * Copilot searches `.github/skills` first and dedupes by name, so the
+ * `.agents/skills` copy is silently ignored; Gemini CLI loads the `.agents`
+ * alias *after* `.gemini/skills` and overrides it while printing a
+ * "Skill conflict detected" warning for every duplicated name — noise Kitbash
+ * itself would be causing. Codex is worse still: it dedupes root paths but not
+ * skill names, so a skill present at two roots is loaded twice.
+ *
+ * Zed and Cline are absent from this map because they already compile to
+ * `.agents/skills/` and so cannot duplicate. Cursor is absent because it
+ * compiles to `.cursor/rules/*.mdc`, a rules file rather than a skill
+ * directory — a different mechanism, not a second copy of the same one.
+ */
+export const VENDOR_NEUTRAL_ALIASES: { id: string; dir: string }[] = [
+  { id: "copilot", dir: ".github/skills" },
+  { id: "gemini", dir: ".gemini/skills" },
+];
 
 /**
  * Zed's skill loader (`crates/agent_skills/agent_skills.rs`) is stricter than
