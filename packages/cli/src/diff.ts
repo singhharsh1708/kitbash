@@ -40,6 +40,47 @@ export function manifestDelta(a: SkillManifest, b: SkillManifest): string[] {
   field("artifacts.consumes", list(a.artifacts.consumes), list(b.artifacts.consumes));
   const depstr = (d: Record<string, string>) => list(Object.entries(d).map(([k, v]) => `${k}@${v}`));
   field("dependencies", depstr(a.dependencies), depstr(b.dependencies));
+  out.push(...mcpDelta(a, b));
+  return out;
+}
+
+/**
+ * MCP changes, reported server by server rather than as one diffed blob.
+ *
+ * A version that adds an MCP server is the largest escalation a skill can make:
+ * it is asking to run a new program with the agent's permissions, which outranks
+ * `permissions.network: no → YES`. Just as important and easier to miss, a
+ * server that keeps its name while its `command`, `args` or `url` change is the
+ * rug-pull shape — the thing you approved is not the thing that will run. Both
+ * are marked as escalations so neither passes an update review unseen.
+ */
+function mcpDelta(a: SkillManifest, b: SkillManifest): string[] {
+  const out: string[] = [];
+  const before = new Map(a.mcp.servers.map((s) => [s.name, s]));
+  const after = new Map(b.mcp.servers.map((s) => [s.name, s]));
+  // What will actually run — the identity that matters for review.
+  const runs = (s: { transport: string; command?: string; args: string[]; url?: string }) =>
+    s.transport === "stdio" ? [s.command ?? "", ...s.args].join(" ").trim() : (s.url ?? "");
+
+  for (const [name, s] of after) {
+    const prev = before.get(name);
+    if (!prev) {
+      out.push(`mcp.servers.${name}: (absent) → ${s.transport} ${runs(s)}  ⚠ escalation — a new MCP server will run with your agent's permissions`);
+      continue;
+    }
+    if (runs(prev) !== runs(s)) {
+      out.push(`mcp.servers.${name}: ${runs(prev)} → ${runs(s)}  ⚠ escalation — same server name, different program`);
+    }
+    if (prev.transport !== s.transport) out.push(`mcp.servers.${name}.transport: ${prev.transport} → ${s.transport}`);
+    const widened = s.tools.includes("*") ? !prev.tools.includes("*") : s.tools.some((t) => !prev.tools.includes(t));
+    if (JSON.stringify(prev.tools) !== JSON.stringify(s.tools)) {
+      out.push(`mcp.servers.${name}.tools: ${prev.tools.join(", ") || "none"} → ${s.tools.join(", ") || "none"}${widened ? "  ⚠ escalation — the tool allowlist grew" : ""}`);
+    }
+    // A new env or header key is a new value handed to third-party code.
+    const newKeys = [...Object.keys(s.env), ...Object.keys(s.headers)].filter((k) => !(k in prev.env) && !(k in prev.headers));
+    if (newKeys.length) out.push(`mcp.servers.${name}: new env/header ${newKeys.join(", ")}  ⚠ escalation — a new value is passed to this server`);
+  }
+  for (const name of before.keys()) if (!after.has(name)) out.push(`mcp.servers.${name}: removed`);
   return out;
 }
 

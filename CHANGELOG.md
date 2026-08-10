@@ -2,6 +2,11 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.21.1] — 2026-08-09
+
+### Fixed
+- **An update that added or swapped an MCP server passed review unflagged.** `update` and `diff` print a field-by-field manifest delta and mark escalations — `permissions.network: no → YES` and friends — but the delta covered no MCP fields at all, so the single largest escalation a skill can make was visible only as "skill.toml changed" in the file diff. It is now reported server by server, with four escalations called out: a **new** server (a new program running with your agent's permissions, which outranks any permission flag); a server keeping its **name while its command, args or url change** — the rug-pull shape, where the thing you approved is not the thing that will run; a **widened tool allowlist**, including any narrowing to `*`; and a **new env or header key**, which is a new value handed to third-party code. Removing a server is reported as a change, not an escalation, and an unchanged declaration produces no output.
+
 ## [0.21.0] — 2026-08-09
 
 MCP support doubles: six of the eleven targets now carry a declaration, including the two that keep servers inside a settings file full of unrelated user configuration.
