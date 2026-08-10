@@ -971,7 +971,7 @@ export async function cmdCompile(args: string[]): Promise<number> {
 
     const unsupported: string[] = [];
     for (const adapter of adapters) {
-      const out = emitMcp(adapter.id, mcpServers, AGENT_PLUGIN_DIR);
+      const out = emitMcp(adapter.id, mcpServers, AGENT_PLUGIN_DIR, root);
       for (const f of out.files) {
         if (!resolveSubpath(root, f.path)) {
           console.error(`✗ refusing to write outside the project: ${f.path}`);

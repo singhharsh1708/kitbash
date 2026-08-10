@@ -9,14 +9,15 @@
  *    It is a heavier request than anything in a SKILL.md body, so it is gated at
  *    install like one: the lints here are hard failures, not warnings.
  *
- * 2. **Most targets cannot honor it.** Of the eleven compile targets, only three
- *    have a dedicated, project-scoped, primary-source-confirmed config file.
- *    The rest either have no MCP mechanism at all (aider, agentsmd), no project
- *    scope (cline, windsurf), or need a merge into a shared settings file that
- *    also holds unrelated user config (zed, gemini). Emitting a plausible-looking
- *    file for those would produce something that reads as configured and does
- *    nothing — the exact silent failure Kitbash exists to prevent. They get a
- *    typed warning naming the reason instead, and no file.
+ * 2. **Not every target can honor it.** Six of the eleven compile targets have a
+ *    confirmed project-scoped surface: a dedicated file (claude-code, copilot,
+ *    cursor, agent-plugins) or a settings file Kitbash merges into without
+ *    disturbing the rest of it (gemini, zed). The others have no MCP mechanism
+ *    at all (aider, agentsmd), no project scope (cline, windsurf), or no
+ *    confirmed path (the .agents convention). Emitting a plausible-looking file
+ *    for those would produce something that reads as configured and does nothing
+ *    — the exact silent failure Kitbash exists to prevent. They get a typed
+ *    warning naming the reason instead, and no file.
  *
  * Client config dialects genuinely disagree (the HTTP transport is spelled
  * `streamable-http` by Agent Plugins, `http` by Claude Code and Copilot; timeouts
@@ -24,6 +25,8 @@
  * `transport` and every emitter TRANSLATES. Nothing is passed through verbatim.
  */
 
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { LoadedSkill } from "./ksf.js";
 import type { TomlTable } from "./toml.js";
 
@@ -242,9 +245,6 @@ const UNSUPPORTED: Record<string, { reason: UnsupportedReason; detail: string }>
   agents: { reason: "unconfirmed-path", detail: "the vendor-neutral .agents/ convention has no confirmed MCP file; the only candidate is a third-party draft no client reads" },
   cline: { reason: "no-project-scope", detail: "Cline's MCP settings are global-only, so a repo-committed declaration cannot represent them" },
   windsurf: { reason: "no-project-scope", detail: "Windsurf/Devin documents only a user-global MCP config, and its documented page covers the legacy agent" },
-  zed: { reason: "needs-shared-file-merge", detail: "Zed keeps MCP servers in .zed/settings.json alongside unrelated user settings; merging into it needs its own consent path" },
-  gemini: { reason: "needs-shared-file-merge", detail: "Gemini keeps MCP servers in .gemini/settings.json alongside unrelated user settings; merging into it needs its own consent path" },
-  cursor: { reason: "needs-shared-file-merge", detail: "Cursor's .cursor/mcp.json cannot express a tools allowlist, so a declaration would be silently widened" },
 };
 
 export interface McpEmit {
@@ -257,7 +257,7 @@ export interface McpEmit {
  * all installed skills. Returns no files (and a specific warning) for targets
  * that cannot honor a declaration.
  */
-export function emitMcp(targetId: string, servers: McpServer[], pluginRoot: string): McpEmit {
+export function emitMcp(targetId: string, servers: McpServer[], pluginRoot: string, root: string): McpEmit {
   if (!servers.length) return { files: [], warnings: [] };
 
   const un = UNSUPPORTED[targetId];
@@ -275,6 +275,12 @@ export function emitMcp(targetId: string, servers: McpServer[], pluginRoot: stri
       return emitClaudeCode(servers);
     case "copilot":
       return emitCopilot(servers);
+    case "cursor":
+      return emitCursor(servers);
+    case "gemini":
+      return emitGemini(servers, root);
+    case "zed":
+      return emitZed(servers, root);
     default:
       return { files: [], warnings: [] };
   }
@@ -457,14 +463,214 @@ export function toolBudgetReport(b: ToolBudget, max: number): { line: string; wa
   return { line, warnings, over };
 }
 
-/** Targets that can carry an MCP declaration today. */
-const MCP_TARGETS = ["agent-plugins", "claude-code", "copilot"];
+// ── merging into a shared settings file ──────────────────────────────────────
+
+/**
+ * Zed and Gemini keep MCP servers inside a settings file that also carries
+ * unrelated user configuration. Writing those is a different risk class from
+ * writing a dedicated `mcp.json`: get it wrong and you destroy settings that
+ * have nothing to do with skills. Three rules make it safe.
+ *
+ * 1. **Only the server key is touched.** Every other top-level key is preserved
+ *    exactly, and within the server map, entries Kitbash did not write are left
+ *    alone — a hand-added server survives a compile.
+ * 2. **A file that cannot be parsed is never overwritten.** Refuse and say so.
+ *    Clobbering a settings file we failed to understand is the worst outcome
+ *    available, and it is indistinguishable from the malware that targets these
+ *    same paths for persistence.
+ * 3. **Comments mean refuse.** Both editors permit JSONC, and `JSON.parse`
+ *    cannot round-trip a comment — reserializing would silently delete the
+ *    user's annotations. A warning beats quiet data loss.
+ */
+export interface MergeResult {
+  content?: string;
+  warning?: string;
+}
+
+/** Comments outside of string literals — the signal that JSON.parse would lose data. */
+function hasJsonComment(src: string): boolean {
+  let inStr = false;
+  let esc = false;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i]!;
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === "\\") esc = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') inStr = true;
+    else if (c === "/" && (src[i + 1] === "/" || src[i + 1] === "*")) return true;
+  }
+  return false;
+}
+
+export function mergeSettings(root: string, rel: string, key: string, ours: Record<string, unknown>, target: string): MergeResult {
+  const abs = join(root, rel);
+  let base: Record<string, unknown> = {};
+  if (existsSync(abs)) {
+    const src = readFileSync(abs, "utf8");
+    if (hasJsonComment(src)) {
+      return { warning: `${target}: ${rel} contains comments, which rewriting would delete. Nothing was written — add the MCP server(s) there by hand, or strip the comments.` };
+    }
+    if (src.trim()) {
+      try {
+        const parsed: unknown = JSON.parse(src);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          return { warning: `${target}: ${rel} is not a JSON object. Nothing was written — kitbash will not overwrite a settings file it cannot read.` };
+        }
+        base = parsed as Record<string, unknown>;
+      } catch (e) {
+        return { warning: `${target}: ${rel} is not valid JSON (${e instanceof Error ? e.message.split("\n")[0] : "parse error"}). Nothing was written — kitbash will not overwrite a settings file it cannot read.` };
+      }
+    }
+  }
+  const existing = base[key];
+  const servers: Record<string, unknown> = existing && typeof existing === "object" && !Array.isArray(existing) ? { ...(existing as Record<string, unknown>) } : {};
+  for (const [name, entry] of Object.entries(ours)) servers[name] = entry;
+  return { content: `${JSON.stringify({ ...base, [key]: servers }, null, 2)}\n` };
+}
+
+/**
+ * Cursor — `.cursor/mcp.json`, a dedicated project file. `type` is emitted on
+ * stdio entries (its field table marks it required while its examples omit it,
+ * so emitting satisfies both readings) and omitted on remote entries, where
+ * Cursor documents neither a field table nor a `type` value and every one of its
+ * own examples is `url` + `headers`.
+ */
+function emitCursor(servers: McpServer[]): McpEmit {
+  const warnings: string[] = [];
+  const out: Record<string, unknown> = {};
+  for (const s of servers) {
+    const entry: Record<string, unknown> = {};
+    if (s.transport === "stdio") {
+      entry["type"] = "stdio";
+      entry["command"] = s.command;
+      if (s.args.length) entry["args"] = s.args;
+      if (Object.keys(s.env).length) entry["env"] = s.env;
+    } else {
+      entry["url"] = s.url;
+      if (Object.keys(s.headers).length) entry["headers"] = s.headers;
+    }
+    out[s.name] = entry;
+    if (s.tools.length && !s.tools.includes("*")) {
+      warnings.push(`cursor: "${s.name}" declares a tools allowlist, which .cursor/mcp.json has no field for — Cursor will expose every tool the server offers. The allowlist is not enforced there.`);
+    }
+    if (s.timeoutMs !== undefined) warnings.push(`cursor: "${s.name}" declares timeout_ms, which .cursor/mcp.json has no documented field for — dropped.`);
+  }
+  return { files: [{ path: ".cursor/mcp.json", content: json({ mcpServers: out }) }], warnings };
+}
+
+/**
+ * Gemini CLI — merged into `.gemini/settings.json` under `mcpServers`.
+ *
+ * Two Gemini-specific traps are handled here. An explicit `type` is always
+ * written, because a bare `url` defaults to Streamable HTTP (the opposite of
+ * Cline, which defaults to SSE) — the reason "always emit an explicit type" is
+ * a rule rather than a style preference. And Gemini unconditionally sanitizes
+ * the environment it hands an MCP server, stripping anything whose name matches
+ * TOKEN/SECRET/KEY/AUTH/CREDENTIAL and friends, so a server relying on an
+ * ambient credential fails to authenticate with no discoverable cause. That
+ * gets a warning naming the variables it will strip.
+ */
+const GEMINI_REDACTED_RE = /TOKEN|SECRET|PASSWORD|PASSWD|KEY|AUTH|CREDENTIAL|CREDS|PRIVATE|CERT/i;
+
+function emitGemini(servers: McpServer[], root: string): McpEmit {
+  const warnings: string[] = [];
+  const out: Record<string, unknown> = {};
+  for (const s of servers) {
+    const entry: Record<string, unknown> = {};
+    if (s.transport === "stdio") {
+      entry["command"] = s.command;
+      if (s.args.length) entry["args"] = s.args;
+      if (Object.keys(s.env).length) entry["env"] = s.env;
+    } else {
+      // `httpUrl` is deprecated and wins over `url` when both are present.
+      entry["url"] = s.url;
+      entry["type"] = s.transport === "sse" ? "sse" : "http";
+      if (Object.keys(s.headers).length) entry["headers"] = s.headers;
+    }
+    // Gemini's own allowlist field.
+    if (s.tools.length && !s.tools.includes("*")) entry["includeTools"] = s.tools;
+    if (s.timeoutMs !== undefined) entry["timeout"] = s.timeoutMs; // Gemini reads ms
+    out[s.name] = entry;
+
+    const stripped = refsOf(s).filter((r) => GEMINI_REDACTED_RE.test(r));
+    if (stripped.length) {
+      warnings.push(`gemini: "${s.name}" references ${stripped.map((r) => `\${${r}}`).join(", ")}, and Gemini strips credential-shaped variables from the environment it passes to MCP servers. Set them explicitly in this server's env, or it will fail to authenticate with no visible cause.`);
+    }
+  }
+  const merged = mergeSettings(root, ".gemini/settings.json", "mcpServers", out, "gemini");
+  if (merged.warning) return { files: [], warnings: [...warnings, merged.warning] };
+  return { files: [{ path: ".gemini/settings.json", content: merged.content! }], warnings };
+}
+
+/**
+ * Zed — merged into `.zed/settings.json` under `context_servers`.
+ *
+ * Zed's settings enum is untagged, so no `type` key is written. Timeouts are in
+ * SECONDS here (every other target in this file is milliseconds) and Zed
+ * silently clamps to 600, so an over-long timeout is converted and warned about
+ * rather than passed through to be quietly truncated. Zed documents no variable
+ * interpolation at all, so a server carrying a `${VAR}` cannot be expressed:
+ * it is omitted rather than emitted with a reference that would be read as a
+ * literal.
+ */
+const ZED_MAX_TIMEOUT_SECS = 600;
+
+function emitZed(servers: McpServer[], root: string): McpEmit {
+  const warnings: string[] = [];
+  const out: Record<string, unknown> = {};
+  for (const s of servers) {
+    const refs = refsOf(s);
+    if (refs.length) {
+      warnings.push(`zed: skipped MCP server "${s.name}" — it references ${refs.map((r) => `\${${r}}`).join(", ")}, and Zed performs no variable interpolation, so the reference would be passed through literally.`);
+      continue;
+    }
+    const entry: Record<string, unknown> = {};
+    if (s.transport === "stdio") {
+      entry["command"] = s.command;
+      if (s.args.length) entry["args"] = s.args;
+      if (Object.keys(s.env).length) entry["env"] = s.env;
+    } else {
+      entry["url"] = s.url;
+      if (Object.keys(s.headers).length) entry["headers"] = s.headers;
+    }
+    if (s.timeoutMs !== undefined) {
+      const secs = Math.ceil(s.timeoutMs / 1000);
+      if (secs > ZED_MAX_TIMEOUT_SECS) {
+        warnings.push(`zed: "${s.name}" declares timeout_ms ${s.timeoutMs} (${secs}s), above Zed's ${ZED_MAX_TIMEOUT_SECS}s maximum, which it clamps silently — written as ${ZED_MAX_TIMEOUT_SECS}s.`);
+      }
+      entry["timeout"] = Math.min(secs, ZED_MAX_TIMEOUT_SECS); // seconds, not ms
+    }
+    out[s.name] = entry;
+    if (s.tools.length && !s.tools.includes("*")) {
+      warnings.push(`zed: "${s.name}" declares a tools allowlist, which lives under agent.profiles in Zed's settings rather than beside the server — kitbash does not write that subtree, so the allowlist is not enforced there.`);
+    }
+  }
+  if (!Object.keys(out).length) return { files: [], warnings };
+  const merged = mergeSettings(root, ".zed/settings.json", "context_servers", out, "zed");
+  if (merged.warning) return { files: [], warnings: [...warnings, merged.warning] };
+  warnings.push("zed: an untrusted worktree makes Zed discard the whole of .zed/settings.json, MCP servers included — trust the worktree in Zed if the servers do not appear.");
+  return { files: [{ path: ".zed/settings.json", content: merged.content! }], warnings };
+}
+
+/** Targets that can carry an MCP declaration today, and where each one lands. */
+const MCP_TARGET_PATHS: Record<string, string> = {
+  "agent-plugins": "<plugin-root>/mcp.json",
+  "claude-code": ".mcp.json",
+  copilot: ".github/mcp.json",
+  cursor: ".cursor/mcp.json",
+  gemini: ".gemini/settings.json (merged)",
+  zed: ".zed/settings.json (merged)",
+};
+const MCP_TARGETS = Object.keys(MCP_TARGET_PATHS);
 
 /** One line per target explaining its MCP status — the support matrix, printed. */
 export function mcpSupportMatrix(): string[] {
   const out: string[] = [];
   for (const id of MCP_TARGETS) {
-    const path = id === "agent-plugins" ? "<plugin-root>/mcp.json" : id === "claude-code" ? ".mcp.json" : ".github/mcp.json";
+    const path = MCP_TARGET_PATHS[id]!;
     out.push(`✓ ${id.padEnd(14)} ${path}`);
   }
   for (const [id, u] of Object.entries(UNSUPPORTED)) out.push(`· ${id.padEnd(14)} no output — ${u.reason}: ${u.detail}`);

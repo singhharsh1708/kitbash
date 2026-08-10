@@ -2,6 +2,16 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.21.0] — 2026-08-09
+
+MCP support doubles: six of the eleven targets now carry a declaration, including the two that keep servers inside a settings file full of unrelated user configuration.
+
+### Added
+- **`cursor` → `.cursor/mcp.json`** — a dedicated project file. `type` is written on stdio entries (Cursor's field table marks it required while its examples omit it, so writing it satisfies both readings) and omitted on remote entries, where Cursor documents no `type` at all. Its format has no field for a tool allowlist, so a declared one is reported as unenforced rather than silently widened.
+- **`gemini` → `.gemini/settings.json`** and **`zed` → `.zed/settings.json`**, merged. Gemini gets an explicit `type` (a bare `url` there defaults to Streamable HTTP — the exact inverse of Cline, which defaults to SSE) and its own `includeTools` allowlist field. Zed gets no `type` at all (its settings enum is untagged), timeouts converted to **seconds** rather than the milliseconds every other target uses, and a warning when a timeout exceeds the 600s Zed silently clamps to.
+- **A safe merge for shared settings files.** This is a destructive-write class — these files hold configuration that has nothing to do with skills, and they are the same paths malware targets for persistence. Three rules: only the server key is touched and every other key is preserved byte-for-byte; servers Kitbash did not write are left alone, so a hand-added one survives a compile; and a file that cannot be parsed is **never** overwritten. A settings file containing comments is refused outright, because `JSON.parse` cannot round-trip them and rewriting would silently delete the user's annotations.
+- Gemini strips credential-shaped variables (`TOKEN`, `SECRET`, `KEY`, `AUTH`, …) from the environment it hands an MCP server, unconditionally. A server relying on an ambient credential fails to authenticate with no discoverable cause, so that now produces a warning naming the variables Gemini will strip.
+
 ## [0.20.0] — 2026-08-09
 
 The token-cost argument, applied to MCP — the largest standing-context line item Kitbash was not measuring.
