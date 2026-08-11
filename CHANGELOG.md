@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.23.0] — 2026-08-12
+
+### Added
+- **Compile reports the Cursor rule/skill overlap.** Cursor reads `.agents/skills/` as well as `.cursor/rules/`, and the rule this compiler emits — `alwaysApply: false`, a `description`, no `globs` — is exactly what Cursor's docs call a *dynamic rule*, the shape its own `/migrate-to-skills` command converts into a skill. Both land in Cursor's "Agent Decides" pool, and Cursor documents no dedup between them, so a repo with both paths offers one capability twice and pays each entry's description up front. Compile now says so, with the duplicated cost measured, and points at the `[project].targets` line that resolves it.
+
+  The rule is still emitted. Agent Skills only reached general availability in Cursor 2.4, so dropping it would silently cost anyone on an older version their only trigger — a worse outcome than a duplicated description. The tradeoff is now visible instead of buried in a source comment.
+- **`scripts/bump-tap.sh`** — the Homebrew formula bump, scripted. `TAP_TOKEN` is still unset, so the release workflow's tap job skips with a warning and the formula is bumped by hand; this runs the same steps the workflow does, so the digest is computed from the downloaded tarball rather than copied between terminals. Dry run by default, refuses a version that is not on npm yet, and is a no-op when the formula already points at that version. (An audit while writing it confirmed all eight hand-bumped releases, 0.17.0 through 0.22.0, carry a sha256 matching their real tarball.)
+
+### Fixed
+- Corrected the comment excluding `cursor` from the vendor-neutral dedup, which asserted the rule file was "not a second copy" of the skill. It is a second offer of the same capability through a different mechanism — the same class of confident, unverified comment that hid the Copilot and Gemini duplication until 0.22.0.
+
 ## [0.22.0] — 2026-08-09
 
 ### Fixed
