@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { createInterface } from "node:readline";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { ADAPTERS, AGENT_PLUGIN_DIR, agentPluginManifest, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, VENDOR_NEUTRAL_ALIASES, type CompiledFile } from "./adapters.js";
+import { ADAPTERS, AGENT_PLUGIN_DIR, agentPluginManifest, cursorSkillOverlapNote, GENERATED_MARK, mergeSection, pruneSections, readFileIfExists, VENDOR_NEUTRAL_ALIASES, type CompiledFile } from "./adapters.js";
 import { dropLock, integrityOf, readLock, upsertLock, walk, LOCK_FILE } from "./lock.js";
 import { fileChanges, manifestDelta, textOf, unifiedDiff } from "./diff.js";
 import { collectImports, driftGroups, type ImportedSource } from "./importers.js";
@@ -943,6 +943,12 @@ export async function cmdCompile(args: string[]): Promise<number> {
   // and Codex dedupes root paths but not skill names, so it loads the skill twice.
   // Any existing copy is removed by the prune pass below, since nothing wrote it.
   if (adapters.some((a) => a.id === "agents")) {
+    // Cursor reads .agents/skills/ too, but its rule file is a different
+    // mechanism and older Cursor has no skills support, so the overlap is
+    // reported rather than resolved by dropping one side.
+    if (adapters.some((a) => a.id === "cursor") && skills.length) {
+      notes.push(cursorSkillOverlapNote(skills.map((s) => s.manifest.skill.description)));
+    }
     for (const alias of VENDOR_NEUTRAL_ALIASES) {
       if (!adapters.some((a) => a.id === alias.id)) continue;
       const dropped = [...files.keys()].filter((p) => p.startsWith(`${alias.dir}/`));

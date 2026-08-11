@@ -1814,6 +1814,41 @@ try {
   rmSync(onlyTmp, { recursive: true, force: true });
 }
 
+// ── cursor rule / skill overlap ──────────────────────────────────────────────
+// Cursor reads .agents/skills/ as well as .cursor/rules/, and the rule shape
+// emitted here is the "dynamic rule" its own /migrate-to-skills converts into a
+// skill. Both sit in one selection pool with no documented dedup, so the overlap
+// is reported — but the rule is still written, because Agent Skills only reached
+// GA in Cursor 2.4 and dropping it would cost older Cursor its only trigger.
+const curTmp = mkdtempSync(join(tmpdir(), "kitbash-cursor-"));
+try {
+  mkdirSync(join(curTmp, ".cursor"), { recursive: true });
+  mkdirSync(join(curTmp, ".agents"), { recursive: true });
+  run(["init"], curTmp);
+  run(["install", `file:${fixture}`, "--yes"], curTmp);
+  const c = run(["compile"], curTmp);
+  check("cursor-overlap: the rule is still written", existsSync(join(curTmp, ".cursor/rules/prereview.mdc")), c.out);
+  check("cursor-overlap: the skill is written too", existsSync(join(curTmp, ".agents/skills/prereview/SKILL.md")));
+  check("cursor-overlap: the duplication is reported", c.out.includes("offered twice"), c.out);
+  check("cursor-overlap: with a measured cost", /~\d+ tok of trigger description is charged twice/.test(c.out), c.out);
+  check("cursor-overlap: it is a note, so --strict still passes", run(["compile", "--strict"], curTmp).status === 0);
+} finally {
+  rmSync(curTmp, { recursive: true, force: true });
+}
+
+// Without .agents/, cursor is the only mechanism and there is nothing to report.
+const curOnly = mkdtempSync(join(tmpdir(), "kitbash-cursoronly-"));
+try {
+  mkdirSync(join(curOnly, ".cursor"), { recursive: true });
+  run(["init"], curOnly);
+  run(["install", `file:${fixture}`, "--yes"], curOnly);
+  const c2 = run(["compile"], curOnly);
+  check("cursor-overlap: no note when .agents is absent", !c2.out.includes("offered twice"), c2.out);
+  check("cursor-overlap: and the rule is still emitted", existsSync(join(curOnly, ".cursor/rules/prereview.mdc")));
+} finally {
+  rmSync(curOnly, { recursive: true, force: true });
+}
+
 if (failures) {
   console.error(`\n${failures} test(s) failed`);
   process.exit(1);

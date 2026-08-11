@@ -249,18 +249,37 @@ const agents = skillDirAdapter(
  * Zed and Cline are absent from this map because they already compile to
  * `.agents/skills/` and so cannot duplicate.
  *
- * Cursor is absent for a weaker reason, stated plainly rather than dressed up:
- * it compiles to `.cursor/rules/<name>.mdc`, a description-triggered rule rather
- * than a skill directory, so the two are different mechanisms — but Cursor does
- * read `.agents/skills/`, so in a repo with both it is offered the same body
- * twice. Whether it dedupes, warns, or simply lists both is UNVERIFIED, and
- * dropping the rule on a guess would cost Cursor users their only trigger. Left
- * as-is deliberately until someone checks; do not promote this to a claim.
+ * Cursor is absent for a reason that is real but narrower than it looks, and
+ * worth stating exactly. Cursor reads `.agents/skills/`, and a rule shaped like
+ * the one this compiler emits (`alwaysApply: false`, a `description`, no
+ * `globs`) is what Cursor's own docs call a *dynamic rule* — the shape its
+ * `/migrate-to-skills` command converts into a skill. Both land in the same
+ * "Agent Decides" pool, and Cursor documents no dedup between them, so in a repo
+ * with both paths it sees two entries offering one capability and pays each
+ * one's description up front.
+ *
+ * The rule is still emitted anyway, because dropping it is not free: Agent
+ * Skills only reached general availability in Cursor 2.4, and before that
+ * `.cursor/rules/*.mdc` was the only mechanism that worked. Removing it would
+ * silently cost users on older Cursor their one trigger, to save a duplicated
+ * description on newer ones. Compile reports the duplication instead — see
+ * cursorSkillOverlapNote — so the cost is visible and the choice stays the
+ * reader's.
  */
 export const VENDOR_NEUTRAL_ALIASES: { id: string; dir: string }[] = [
   { id: "copilot", dir: ".github/skills" },
   { id: "gemini", dir: ".gemini/skills" },
 ];
+
+/**
+ * What the Cursor overlap costs, in the terms this tool measures everything else
+ * in. `descriptions` are the skill descriptions written into both the rule and
+ * the skill; each is charged once per entry, and Cursor keeps both entries.
+ */
+export function cursorSkillOverlapNote(descriptions: string[]): string {
+  const dup = descriptions.reduce((sum, d) => sum + estimateTokens(d), 0);
+  return `cursor: each skill is offered twice — as a rule (.cursor/rules/) and as a skill (.agents/skills/), which Cursor also reads. Both sit in its "Agent Decides" pool with no documented dedup, so ~${dup} tok of trigger description is charged twice. Cursor's own /migrate-to-skills converts rules of this shape into skills — drop "cursor" from [project].targets if every Cursor you support is 2.4 or newer.`;
+}
 
 /**
  * Zed's skill loader (`crates/agent_skills/agent_skills.rs`) is stricter than

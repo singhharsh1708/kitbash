@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.22.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.23.0</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,23 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.23.0">
+  <div class="release-head">
+    <h2><a href="#v0.23.0">v0.23.0</a></h2>
+    <span class="release-date">2026-08-12</span><span class="release-tag">latest</span>
+  </div>
+<h3 class="group">Added</h3>
+<ul><li><strong>Compile reports the Cursor rule/skill overlap.</strong> Cursor reads <code>.agents/skills/</code> as well as <code>.cursor/rules/</code>, and the rule this compiler emits — <code>alwaysApply: false</code>, a <code>description</code>, no <code>globs</code> — is exactly what Cursor's docs call a <em>dynamic rule</em>, the shape its own <code>/migrate-to-skills</code> command converts into a skill. Both land in Cursor's "Agent Decides" pool, and Cursor documents no dedup between them, so a repo with both paths offers one capability twice and pays each entry's description up front. Compile now says so, with the duplicated cost measured, and points at the <code>[project].targets</code> line that resolves it.</li></ul>
+<p class="release-intro">  The rule is still emitted. Agent Skills only reached general availability in Cursor 2.4, so dropping it would silently cost anyone on an older version their only trigger — a worse outcome than a duplicated description. The tradeoff is now visible instead of buried in a source comment.</p>
+<ul><li><strong><code>scripts/bump-tap.sh</code></strong> — the Homebrew formula bump, scripted. <code>TAP_TOKEN</code> is still unset, so the release workflow's tap job skips with a warning and the formula is bumped by hand; this runs the same steps the workflow does, so the digest is computed from the downloaded tarball rather than copied between terminals. Dry run by default, refuses a version that is not on npm yet, and is a no-op when the formula already points at that version. (An audit while writing it confirmed all eight hand-bumped releases, 0.17.0 through 0.22.0, carry a sha256 matching their real tarball.)</li></ul>
+<h3 class="group">Fixed</h3>
+<ul><li>Corrected the comment excluding <code>cursor</code> from the vendor-neutral dedup, which asserted the rule file was "not a second copy" of the skill. It is a second offer of the same capability through a different mechanism — the same class of confident, unverified comment that hid the Copilot and Gemini duplication until 0.22.0.</li></ul>
+</article>
+
 <article class="release" id="v0.22.0">
   <div class="release-head">
     <h2><a href="#v0.22.0">v0.22.0</a></h2>
-    <span class="release-date">2026-08-09</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-08-09</span>
   </div>
 <h3 class="group">Fixed</h3>
 <ul><li><strong>A repo with both <code>.agents/</code> and <code>.github/</code> (or <code>.gemini/</code>) got the same skill written twice.</strong> The <code>agents</code> adapter's detection is narrow so the vendor-neutral path is not forced on repos that never asked for it — but that only covers the case where <code>.agents/</code> is absent, not the far more common one where a repo has it <em>and</em> a native skills directory. The result was byte-identical <code>SKILL.md</code> files in both places, which the source comment beside that adapter had explicitly claimed would not happen.</li></ul>
