@@ -131,8 +131,22 @@ Actions) as `TAP_TOKEN`. Without it the tap step skips with a warning and the
 formula is bumped by hand. The GitHub release does **not** need this — it runs
 on the built-in token.
 
+Until that secret exists, bump the tap with `scripts/bump-tap.sh` rather than by
+hand — it runs the same steps the workflow does, so the digest is computed from
+the downloaded tarball instead of being copied between terminals:
+
+```bash
+scripts/bump-tap.sh 0.22.0          # show the change, touch nothing
+scripts/bump-tap.sh 0.22.0 --push   # commit and push it
+```
+
+Dry run is the default: the tap is a separate public repo, and a wrong digest
+there breaks `brew install` for everyone until somebody notices. The script
+refuses a version that is not on npm yet (the formula would 404) and is a no-op
+when the formula already points at that version.
+
 ### Manual fallback
 
 If the workflow is unavailable: `npm publish` from `packages/cli` (the web-auth
 token goes stale between releases — expect to run `npm login --auth-type=web`
-first), then bump the tap formula by hand.
+first), then `scripts/bump-tap.sh <version> --push`.

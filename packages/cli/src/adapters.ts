@@ -247,9 +247,15 @@ const agents = skillDirAdapter(
  * skill names, so a skill present at two roots is loaded twice.
  *
  * Zed and Cline are absent from this map because they already compile to
- * `.agents/skills/` and so cannot duplicate. Cursor is absent because it
- * compiles to `.cursor/rules/*.mdc`, a rules file rather than a skill
- * directory — a different mechanism, not a second copy of the same one.
+ * `.agents/skills/` and so cannot duplicate.
+ *
+ * Cursor is absent for a weaker reason, stated plainly rather than dressed up:
+ * it compiles to `.cursor/rules/<name>.mdc`, a description-triggered rule rather
+ * than a skill directory, so the two are different mechanisms — but Cursor does
+ * read `.agents/skills/`, so in a repo with both it is offered the same body
+ * twice. Whether it dedupes, warns, or simply lists both is UNVERIFIED, and
+ * dropping the rule on a guess would cost Cursor users their only trigger. Left
+ * as-is deliberately until someone checks; do not promote this to a claim.
  */
 export const VENDOR_NEUTRAL_ALIASES: { id: string; dir: string }[] = [
   { id: "copilot", dir: ".github/skills" },
