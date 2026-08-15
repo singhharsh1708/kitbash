@@ -1921,6 +1921,36 @@ try {
   rmSync(nameTmp, { recursive: true, force: true });
 }
 
+// ── the Agent Skills naming rule, checked once per skill ────────────────────
+// KSF permits `tidy--commits` and `tidy-`; the Agent Skills spec every skills
+// directory target follows does not. Several hosts drop such a skill silently,
+// so it is worth saying once about the skill rather than once per target.
+const nmTmp = mkdtempSync(join(tmpdir(), "kitbash-specname-"));
+try {
+  const bad = join(nmTmp, "bad");
+  mkdirSync(bad, { recursive: true });
+  writeFileSync(join(bad, "skill.toml"), '[skill]\nname = "tidy--commits"\nversion = "1.0.0"\ndescription = "A skill whose name has a doubled hyphen"\n[context]\nbudget = 1500\n');
+  writeFileSync(join(bad, "SKILL.md"), "# Tidy\n\nBody.\n");
+  const l = run(["lint", `file:${bad}`], nmTmp);
+  check("spec-name: a doubled hyphen is reported", l.out.includes("name-convention"), l.out);
+  check("spec-name: it warns rather than fails", l.status === 0 && l.out.includes("0 failure(s)"), l.out);
+  check("spec-name: --strict escalates it", run(["lint", "--strict", `file:${bad}`], nmTmp).status === 1);
+
+  const trail = join(nmTmp, "trail");
+  mkdirSync(trail, { recursive: true });
+  writeFileSync(join(trail, "skill.toml"), '[skill]\nname = "tidy-"\nversion = "1.0.0"\ndescription = "A skill whose name ends with a hyphen"\n[context]\nbudget = 1500\n');
+  writeFileSync(join(trail, "SKILL.md"), "# Tidy\n\nBody.\n");
+  check("spec-name: a trailing hyphen is reported", run(["lint", `file:${trail}`], nmTmp).out.includes("name-convention"));
+
+  const ok = join(nmTmp, "ok");
+  mkdirSync(ok, { recursive: true });
+  writeFileSync(join(ok, "skill.toml"), '[skill]\nname = "tidy-commits"\nversion = "1.0.0"\ndescription = "A skill with a spec-clean name"\n[context]\nbudget = 1500\n');
+  writeFileSync(join(ok, "SKILL.md"), "# Tidy\n\nBody.\n");
+  check("spec-name: a clean name is silent", !run(["lint", `file:${ok}`], nmTmp).out.includes("name-convention"));
+} finally {
+  rmSync(nmTmp, { recursive: true, force: true });
+}
+
 if (failures) {
   console.error(`\n${failures} test(s) failed`);
   process.exit(1);

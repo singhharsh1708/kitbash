@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.24.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.24.1</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,19 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.24.1">
+  <div class="release-head">
+    <h2><a href="#v0.24.1">v0.24.1</a></h2>
+    <span class="release-date">2026-08-12</span><span class="release-tag">latest</span>
+  </div>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>A skill name with a doubled or trailing hyphen was only ever flagged for Zed.</strong> KSF's own name rule permits <code>tidy--commits</code> and <code>tidy-</code>, but the <a href="https://agentskills.io/specification" target="_blank" rel="noopener">Agent Skills spec</a> — the shared authority every skills-directory target defers to, Claude Code, Codex, Copilot, Cline, Zed, Gemini CLI and Agent Plugins alike — forbids a leading, trailing or consecutive hyphen outright. So a name that only Zed complained about could in fact be refused by all of them, and several refuse without saying anything. It is now reported once against the skill, at <code>install</code>, <code>lint</code> and <code>test</code>, naming the spec rather than a single target. A warning, not a failure: the name is valid KSF and still compiles, and <code>--strict</code> escalates it like any other warning.</li></ul>
+</article>
+
 <article class="release" id="v0.24.0">
   <div class="release-head">
     <h2><a href="#v0.24.0">v0.24.0</a></h2>
-    <span class="release-date">2026-08-12</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-08-12</span>
   </div>
 <p class="release-intro">A verification pass over every claim the compiler makes about the agents it targets, checked against each client's own source or documentation. <strong>All eleven loading modes are correct</strong> — the 14×–47× standing-cost benchmark stands — but three claims around them were overstated, and one of them was in the published numbers.</p>
 <h3 class="group">Fixed</h3>
