@@ -110,6 +110,20 @@ for (const e of readdirSync(site, { recursive: true, withFileTypes: false })) {
   else writeFileSync(p, out);
 }
 
+// ---- stamp the README's status line ----
+// It drifted eight releases before anything checked it, which is what a
+// hand-maintained version string in prose does. Stamped from the same source as
+// everything else so it cannot disagree with what is published.
+{
+  const p = join(repoRoot, "README.md");
+  const src = readFileSync(p, "utf8");
+  const out = src.replace(/(\*\*Status\.\*\* )v\d+\.\d+\.\d+/, `$1v${version}`);
+  if (out !== src) {
+    if (checkOnly) stale.push(`README.md (status line is not v${version})`);
+    else writeFileSync(p, out);
+  }
+}
+
 if (checkOnly && stale.length) {
   console.error("site is stale — run `node site/build.mjs` and commit the result:");
   for (const s of stale) console.error(`  ${s}`);

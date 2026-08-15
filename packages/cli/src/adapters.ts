@@ -87,20 +87,46 @@ function eagerStandingNote(skill: LoadedSkill, adapter: Adapter, files: Compiled
 }
 
 /** Shared-file adapters (AGENTS.md, GEMINI.md): eager-loaded, marker-merged. */
-function mergedFileAdapter(id: string, file: string, detect: (root: string) => boolean): Adapter {
+function mergedFileAdapter(id: string, file: string, detect: (root: string) => boolean, extraNote?: (root: string) => string | null): Adapter {
   return {
     id,
     capabilities: [],
     loading: "eager",
     detect,
-    emit(skill, body) {
+    emit(skill, body, root) {
       const { name } = skill.manifest.skill;
       const { begin, end } = markers(name);
       const section = `${begin}\n${header(skill)}\n\n## Skill: ${name}\n\n${body.trim()}\n${end}`;
       const files = [{ path: file, content: section, merge: true }];
-      return { files, warnings: degradationWarnings(skill, this), notes: eagerStandingNote(skill, this, files) };
+      const extra = extraNote?.(root);
+      return {
+        files,
+        warnings: degradationWarnings(skill, this),
+        notes: [...eagerStandingNote(skill, this, files), ...(extra ? [extra] : [])],
+      };
     },
   };
+}
+
+/**
+ * Aider does not read `CONVENTIONS.md` on its own. Its docs are explicit that the
+ * file is loaded with `aider --read CONVENTIONS.md`, or by a `read:` entry in
+ * `.aider.conf.yml` — there is no auto-discovery. That matters more here than it
+ * would elsewhere: this adapter is one of only two eager targets, and the standing
+ * cost reported beside it is real only once the file is actually wired in.
+ * Unconfigured, `CONVENTIONS.md` costs nothing and does nothing, so the compiler
+ * says which of the two situations it is looking at rather than quietly implying
+ * the cost is already being paid.
+ */
+function aiderWiringNote(root: string): string | null {
+  const conf = [".aider.conf.yml", ".aider.conf.yaml"].map((f) => join(root, f)).find((p) => existsSync(p));
+  if (conf) {
+    const text = readFileIfExists(root, conf.slice(root.length + 1));
+    // A `read:` entry naming the file (alone or in a list) is enough to load it.
+    if (/^\s*read:/m.test(text) && text.includes("CONVENTIONS.md")) return null;
+    return `aider: CONVENTIONS.md is written, but ${conf.slice(root.length + 1)} does not read it — add "read: CONVENTIONS.md" there, or the file is never in context and the standing cost above is not actually charged.`;
+  }
+  return `aider: CONVENTIONS.md is written, but aider does not read it automatically — run "aider --read CONVENTIONS.md", or add "read: CONVENTIONS.md" to .aider.conf.yml. Until then the file costs nothing and does nothing.`;
 }
 
 /** Simple per-skill file adapters that differ only in path, loading mode, and frontmatter. */
@@ -136,6 +162,13 @@ const claudeCode: Adapter = {
   // only alongside the emit code that produces its primitive.
   capabilities: [],
   loading: "lazy",
+  // Verified lazy: Claude Code keeps each skill's description in context and
+  // loads the body only on invoke. Note that custom commands have since been
+  // merged into skills — a skill at .claude/skills/<n>/SKILL.md already creates
+  // /<n>, and when a .claude/commands/<n>.md exists alongside it the skill wins
+  // the name. The command file is therefore inert on current Claude Code and is
+  // still written only because it remains the trigger on versions from before
+  // that merge; it costs nothing standing, since commands load on use.
   detect: (root) => existsSync(join(root, ".claude")),
   emit(skill, body) {
     const { name, description } = skill.manifest.skill;
@@ -389,6 +422,20 @@ function clineConstraints(skill: LoadedSkill): string[] {
  * frontmatter — `model_decision` means the description is what sits in context
  * and the body loads only when the model judges it relevant, i.e. lazy.
  */
+/**
+ * Windsurf, now Devin Desktop. `.windsurf/rules/` is the LEGACY path: Devin's docs
+ * moved to `.devin/rules/`, and where both exist the `.devin/` copy takes
+ * precedence. The legacy path is still read by both Devin Desktop and the Devin
+ * CLI, which is why it is what gets written — a file at `.windsurf/rules/` works
+ * on current Devin *and* on older Windsurf, while `.devin/rules/` would silently
+ * do nothing for anyone who has not migrated. Revisit when the legacy fallback is
+ * announced for removal.
+ *
+ * `trigger: model_decision` is verified lazy: Devin's docs say only the
+ * `description` reaches the system prompt and the body is read when the model
+ * decides it is relevant. A rule with an empty description is therefore inert —
+ * nothing exists for the model to match on.
+ */
 const windsurf = fileAdapter(
   "windsurf",
   [],
@@ -417,6 +464,7 @@ const aider = mergedFileAdapter(
   "aider",
   "CONVENTIONS.md",
   (root) => existsSync(join(root, "CONVENTIONS.md")) || existsSync(join(root, ".aider.conf.yml")),
+  aiderWiringNote,
 );
 
 /** The floor: everything that reads AGENTS.md (Codex and many others). */

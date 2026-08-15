@@ -145,6 +145,8 @@ Two costs matter:
 - **Loaded** — tokens the agent reads when the skill is in play.
 - **Standing** — tokens sitting in the context window *every session, before the skill is even invoked*. Lazy targets keep only a stub; eager targets carry the whole body.
 
+One caveat on the eager rows: \`agentsmd\` is loaded by the agent automatically, but **aider does not read \`CONVENTIONS.md\` on its own** — it is loaded with \`aider --read CONVENTIONS.md\` or a \`read:\` entry in \`.aider.conf.yml\`. Its standing figure is what the file costs *once wired in*; unconfigured it costs nothing, and \`compile\` says which case a repo is in.
+
 Token counts are estimates (~4 chars/token), the same estimator the compiler enforces budgets with, so the benchmark and the build agree by construction. Absolute counts will differ by a few percent against a model-specific tokenizer; the lazy-vs-eager *ratio* is what the argument rests on. Loading modes are read from the adapters themselves, not restated here, so this table cannot drift from what the compiler emits. Reproduce with \`node packages/cli/scripts/benchmark.mjs\`.
 
 `;

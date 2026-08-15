@@ -91,7 +91,7 @@
       <p>Releases follow <a href="https://keepachangelog.com" target="_blank" rel="noopener">Keep a Changelog</a> and semver — for skills <em>and</em> for this CLI, breaking prompt changes are breaking changes. The CLI is published to npm as <a href="https://www.npmjs.com/package/kitbash" target="_blank" rel="noopener"><code>kitbash</code></a> and to Homebrew via <code>singhharsh1708/tap</code>. Tagged builds are on the <a href="https://github.com/singhharsh1708/kitbash/releases" target="_blank" rel="noopener">GitHub releases page</a>.</p>
 
       <div class="stat-row">
-        <div class="stat"><b><span data-version>v0.23.0</span></b><span>Current CLI version</span></div>
+        <div class="stat"><b><span data-version>v0.24.0</span></b><span>Current CLI version</span></div>
         <div class="stat"><b>8</b><span>Compile targets</span></div>
         <div class="stat"><b>Apache-2.0</b><span>License</span></div>
       </div>
@@ -105,10 +105,22 @@ brew update &amp;&amp; brew upgrade kitbash</code></pre>
       <p>Confirm with <code>kitbash --version</code>, which reads the installed package.json. Install and uninstall routes are covered on the <a href="docs/install">installation page</a>.</p>
 
       <!-- changelog:begin -->
+<article class="release" id="v0.24.0">
+  <div class="release-head">
+    <h2><a href="#v0.24.0">v0.24.0</a></h2>
+    <span class="release-date">2026-08-12</span><span class="release-tag">latest</span>
+  </div>
+<p class="release-intro">A verification pass over every claim the compiler makes about the agents it targets, checked against each client's own source or documentation. <strong>All eleven loading modes are correct</strong> — the 14×–47× standing-cost benchmark stands — but three claims around them were overstated, and one of them was in the published numbers.</p>
+<h3 class="group">Fixed</h3>
+<ul><li><strong>Aider does not read <code>CONVENTIONS.md</code> on its own.</strong> Its docs are explicit: the file is loaded with <code>aider --read CONVENTIONS.md</code> or a <code>read:</code> entry in <code>.aider.conf.yml</code>. Aider is one of only two eager targets, so reporting a standing cost beside a file that is never in context charged a cost nobody was paying. <code>compile</code> now says which of the two situations a repo is in — unconfigured, configured-but-not-reading, or wired up (silent) — and the benchmark and README carry the same caveat. The measured numbers are unchanged; what they mean is now stated correctly.</li><li><strong>The README's status line had drifted eight releases</strong> (it still said v0.15.0) and had omitted <code>import</code> from the working-command list since 0.16.0, because nothing checked either. Both corrected. The version is now stamped into the README by <code>site/build.mjs</code> from the same <code>package.json</code> everything else reads, so CI's existing <code>--check</code> gate catches it — the drift is eliminated rather than re-fixed. Three tests additionally hold the status paragraph to the real command surface, verified to fail on precisely the two drifts that occurred.</li><li>The benchmark script crashed after a docs edit whose backticks closed its template literal, and the failure hid behind a <code>git diff --exit-code</code> check that reads "script never ran" as "output unchanged". Fixed, and the release gate now checks exit codes explicitly.</li></ul>
+<h3 class="group">Changed</h3>
+<ul><li>Recorded, in the adapters themselves, three findings that were previously assumed: <code>.windsurf/rules/</code> is the <strong>legacy</strong> Devin path (<code>.devin/rules/</code> supersedes it and wins where both exist) and is still written deliberately, because it is the form that works on current Devin <em>and</em> on unmigrated Windsurf; Claude Code has <strong>merged custom commands into skills</strong>, so the <code>.claude/commands/</code> shim is inert on current versions and kept only for older ones; and <code>trigger: model_decision</code> is confirmed lazy, which makes a rule with an empty description inert.</li><li>A test now pins the invariant that an emitted skill's frontmatter <code>name</code> equals its directory name. Cline drops a mismatch with a silent <code>return null</code> and Zed rejects it outright, so getting this wrong is invisible skill loss rather than an error. The invariant already held; nothing enforced it.</li></ul>
+</article>
+
 <article class="release" id="v0.23.0">
   <div class="release-head">
     <h2><a href="#v0.23.0">v0.23.0</a></h2>
-    <span class="release-date">2026-08-12</span><span class="release-tag">latest</span>
+    <span class="release-date">2026-08-12</span>
   </div>
 <h3 class="group">Added</h3>
 <ul><li><strong>Compile reports the Cursor rule/skill overlap.</strong> Cursor reads <code>.agents/skills/</code> as well as <code>.cursor/rules/</code>, and the rule this compiler emits — <code>alwaysApply: false</code>, a <code>description</code>, no <code>globs</code> — is exactly what Cursor's docs call a <em>dynamic rule</em>, the shape its own <code>/migrate-to-skills</code> command converts into a skill. Both land in Cursor's "Agent Decides" pool, and Cursor documents no dedup between them, so a repo with both paths offers one capability twice and pays each entry's description up front. Compile now says so, with the duplicated cost measured, and points at the <code>[project].targets</code> line that resolves it.</li></ul>

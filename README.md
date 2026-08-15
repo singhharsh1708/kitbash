@@ -36,7 +36,7 @@ The identical instructions cost ~40 standing tokens on a target that lazy-loads 
 
 Those numbers are measured, not asserted: the method and the full per-target table are in [docs/benchmarks/README.md](docs/benchmarks/README.md), and `npm run bench` inside `packages/cli` regenerates them. A converter would translate the format and stop. Kitbash reads the skill and tells you what it will cost you. I have not found another tool that surfaces that number.
 
-Kitbash always compiles to the cheapest loading mode a target actually supports — nine of the eleven lazy-load; Aider's `CONVENTIONS.md` and the `AGENTS.md` floor cannot, and carry the whole body every session. `--strict` turns budget overruns and degradation warnings into build failures.
+Kitbash always compiles to the cheapest loading mode a target actually supports — nine of the eleven lazy-load; Aider's `CONVENTIONS.md` and the `AGENTS.md` floor cannot, and carry the whole body every session. (Aider does not read `CONVENTIONS.md` on its own — until you add `read: CONVENTIONS.md` to `.aider.conf.yml`, it costs nothing and does nothing, and `compile` says so.) `--strict` turns budget overruns and degradation warnings into build failures.
 
 ### Why not a sync script?
 
@@ -61,7 +61,7 @@ Already have skills? A plain SKILL.md folder — the skills.sh / Claude Skills c
 
 Already carrying a hand-written `CLAUDE.md`, `.cursor/rules/`, `AGENTS.md`, and the rest of the copy-per-agent set? `kitbash import` reads them back into a single skill, measures what each one costs in standing context, and reports where the copies have drifted apart — so `kitbash compile` can regenerate them all from that one source. It touches nothing on disk until you remove the originals yourself.
 
-**Status.** v0.15.0, on npm and Homebrew, zero runtime dependencies, Node 20+. The KSF core is frozen and additive-only within the major version ([RFC 0002](rfcs/0002-ksf-1.0-stabilization.md)). Everything around it is early and labeled as such: `init`, `install`, `remove`, `list`, `compile`, `doctor`, `update`, `diff`, `lint`, `preview`, `explain`, and `test` work today; `audit`, `gate`, `search`, `publish`, `lore`, and `run` exit `7` and are on the [roadmap](docs/roadmap.md). One first-party skill ships (`prereview`); six more are specified but not built. Adoption is single-digit stars — if the measurement above is what you want, you are early.
+**Status.** v0.24.0, on npm and Homebrew, zero runtime dependencies, Node 20+. The KSF core is frozen and additive-only within the major version ([RFC 0002](rfcs/0002-ksf-1.0-stabilization.md)). Everything around it is early and labeled as such: `init`, `import`, `install`, `remove`, `list`, `compile`, `doctor`, `update`, `diff`, `lint`, `preview`, `explain`, and `test` work today; `audit`, `gate`, `search`, `publish`, `lore`, and `run` exit `7` and are on the [roadmap](docs/roadmap.md). One first-party skill ships (`prereview`); six more are specified but not built. Adoption is single-digit stars — if the measurement above is what you want, you are early.
 
 <p align="center">
   <a href="https://www.npmjs.com/package/kitbash"><img src="https://img.shields.io/npm/v/kitbash?color=ffb454" alt="npm version"></a>

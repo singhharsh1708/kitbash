@@ -1849,6 +1849,78 @@ try {
   rmSync(curOnly, { recursive: true, force: true });
 }
 
+// ── the README's own claims stay true ────────────────────────────────────────
+// The status line drifted eight releases (it still said v0.15.0 at v0.23.0) and
+// the command list omitted `import` for seven, because nothing checked either.
+{
+  const readme = readFileSync(join(repoRoot, "README.md"), "utf8");
+  const pkgVersion = JSON.parse(readFileSync(join(here, "../package.json"), "utf8")).version;
+  const claimed = readme.match(/\*\*Status\.\*\* v(\d+\.\d+\.\d+)/)?.[1];
+  check("readme: the status line names the current version", claimed === pkgVersion, `README says v${claimed}, package.json says v${pkgVersion}`);
+
+  // Every command the CLI actually ships must be listed as working, and nothing
+  // that exits 7 may be — that is the promise the status paragraph makes.
+  const help = run(["--help"], repoRoot).out;
+  const planned = help.includes("Planned (not yet implemented):") ? help.split("Planned (not yet implemented):")[1] : "";
+  const working = (help.split("Planned (not yet implemented):")[0] || "")
+    .split("\n")
+    .map((l) => l.match(/^ {2}(\S+) {2,}/)?.[1])
+    .filter(Boolean);
+  const statusPara = readme.split("**Status.**")[1]?.split("\n\n")[0] ?? "";
+  const missing = working.filter((c) => !statusPara.includes(`\`${c}\``));
+  check("readme: every working command is listed in the status line", missing.length === 0, `missing: ${missing.join(", ")}`);
+  const plannedNames = planned.split("\n").map((l) => l.match(/^ {2}(\S+) {2,}/)?.[1]).filter(Boolean);
+  const misfiled = plannedNames.filter((c) => new RegExp(`\`${c}\`[^.]*work today`).test(statusPara));
+  check("readme: no planned command is claimed as working", misfiled.length === 0, `misfiled: ${misfiled.join(", ")}`);
+}
+
+// ── aider only pays the cost it is charged once it is wired up ───────────────
+// Aider does not auto-read CONVENTIONS.md; it needs `aider --read` or a `read:`
+// entry in .aider.conf.yml. Reporting an eager standing cost without saying so
+// would charge a file that is never in context.
+const aidTmp = mkdtempSync(join(tmpdir(), "kitbash-aider-"));
+try {
+  writeFileSync(join(aidTmp, "CONVENTIONS.md"), "# House rules\n");
+  run(["init"], aidTmp);
+  run(["install", `file:${fixture}`, "--yes"], aidTmp);
+
+  const bare = run(["compile"], aidTmp);
+  check("aider: unconfigured, compile says the file is not read", bare.out.includes("does not read it automatically"), bare.out);
+
+  writeFileSync(join(aidTmp, ".aider.conf.yml"), "model: gpt-4\n");
+  const unwired = run(["compile"], aidTmp);
+  check("aider: a conf without read: is still flagged", unwired.out.includes("does not read it"), unwired.out);
+
+  writeFileSync(join(aidTmp, ".aider.conf.yml"), "model: gpt-4\nread: CONVENTIONS.md\n");
+  const wired = run(["compile"], aidTmp);
+  check("aider: once wired up the note goes away", !wired.out.includes("does not read it"), wired.out);
+  check("aider: the standing cost is still reported when wired", wired.out.includes("aider is eager and cannot lazy-load"), wired.out);
+  check("aider: none of this fails --strict", run(["compile", "--strict"], aidTmp).status === 0);
+} finally {
+  rmSync(aidTmp, { recursive: true, force: true });
+}
+
+// The emitted skill's frontmatter name must equal its directory name: Cline drops
+// a mismatch with a silent `return null` and Zed rejects it outright, so a wrong
+// name here is invisible skill loss rather than an error.
+const nameTmp = mkdtempSync(join(tmpdir(), "kitbash-name-"));
+try {
+  const odd = join(nameTmp, "odd");
+  mkdirSync(odd, { recursive: true });
+  // Frontmatter name that KSF must NOT propagate: wrong charset, differs from dir.
+  writeFileSync(join(odd, "SKILL.md"), "---\nname: Totally-Different_Name\ndescription: A bare skill whose frontmatter name differs from its folder\n---\n\nBody.\n");
+  mkdirSync(join(nameTmp, ".agents"), { recursive: true });
+  run(["init"], nameTmp);
+  run(["install", `file:${odd}`, "--yes"], nameTmp);
+  run(["compile"], nameTmp);
+  const emitted = join(nameTmp, ".agents/skills/odd/SKILL.md");
+  check("name-invariant: the skill dir is named from the manifest", existsSync(emitted));
+  const fm = readFileSync(emitted, "utf8");
+  check("name-invariant: frontmatter name equals the directory name", /^---\nname: odd\n/.test(fm), fm.slice(0, 80));
+} finally {
+  rmSync(nameTmp, { recursive: true, force: true });
+}
+
 if (failures) {
   console.error(`\n${failures} test(s) failed`);
   process.exit(1);
