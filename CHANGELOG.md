@@ -2,6 +2,19 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.24.0] — 2026-08-12
+
+A verification pass over every claim the compiler makes about the agents it targets, checked against each client's own source or documentation. **All eleven loading modes are correct** — the 14×–47× standing-cost benchmark stands — but three claims around them were overstated, and one of them was in the published numbers.
+
+### Fixed
+- **Aider does not read `CONVENTIONS.md` on its own.** Its docs are explicit: the file is loaded with `aider --read CONVENTIONS.md` or a `read:` entry in `.aider.conf.yml`. Aider is one of only two eager targets, so reporting a standing cost beside a file that is never in context charged a cost nobody was paying. `compile` now says which of the two situations a repo is in — unconfigured, configured-but-not-reading, or wired up (silent) — and the benchmark and README carry the same caveat. The measured numbers are unchanged; what they mean is now stated correctly.
+- **The README's status line had drifted eight releases** (it still said v0.15.0) and had omitted `import` from the working-command list since 0.16.0, because nothing checked either. Both corrected. The version is now stamped into the README by `site/build.mjs` from the same `package.json` everything else reads, so CI's existing `--check` gate catches it — the drift is eliminated rather than re-fixed. Three tests additionally hold the status paragraph to the real command surface, verified to fail on precisely the two drifts that occurred.
+- The benchmark script crashed after a docs edit whose backticks closed its template literal, and the failure hid behind a `git diff --exit-code` check that reads "script never ran" as "output unchanged". Fixed, and the release gate now checks exit codes explicitly.
+
+### Changed
+- Recorded, in the adapters themselves, three findings that were previously assumed: `.windsurf/rules/` is the **legacy** Devin path (`.devin/rules/` supersedes it and wins where both exist) and is still written deliberately, because it is the form that works on current Devin *and* on unmigrated Windsurf; Claude Code has **merged custom commands into skills**, so the `.claude/commands/` shim is inert on current versions and kept only for older ones; and `trigger: model_decision` is confirmed lazy, which makes a rule with an empty description inert.
+- A test now pins the invariant that an emitted skill's frontmatter `name` equals its directory name. Cline drops a mismatch with a silent `return null` and Zed rejects it outright, so getting this wrong is invisible skill loss rather than an error. The invariant already held; nothing enforced it.
+
 ## [0.23.0] — 2026-08-12
 
 ### Added
