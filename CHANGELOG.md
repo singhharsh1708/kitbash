@@ -2,6 +2,11 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.24.1] — 2026-08-12
+
+### Fixed
+- **A skill name with a doubled or trailing hyphen was only ever flagged for Zed.** KSF's own name rule permits `tidy--commits` and `tidy-`, but the [Agent Skills spec](https://agentskills.io/specification) — the shared authority every skills-directory target defers to, Claude Code, Codex, Copilot, Cline, Zed, Gemini CLI and Agent Plugins alike — forbids a leading, trailing or consecutive hyphen outright. So a name that only Zed complained about could in fact be refused by all of them, and several refuse without saying anything. It is now reported once against the skill, at `install`, `lint` and `test`, naming the spec rather than a single target. A warning, not a failure: the name is valid KSF and still compiles, and `--strict` escalates it like any other warning.
+
 ## [0.24.0] — 2026-08-12
 
 A verification pass over every claim the compiler makes about the agents it targets, checked against each client's own source or documentation. **All eleven loading modes are correct** — the 14×–47× standing-cost benchmark stands — but three claims around them were overstated, and one of them was in the published numbers.

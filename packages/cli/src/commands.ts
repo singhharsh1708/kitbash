@@ -27,6 +27,15 @@ const VERSION: string = createRequire(import.meta.url)("../package.json").versio
  */
 // "mcp" is here because a declared MCP server is a request to run third-party
 // code with the agent's permissions — a heavier ask than anything in a body.
+/**
+ * The Agent Skills naming rule (agentskills.io/specification): 1-64 chars,
+ * lowercase alphanumerics and hyphens, no leading, trailing or consecutive
+ * hyphen. KSF's NAME_RE is stricter in some ways (must start with a letter,
+ * capped at 41) and looser in exactly one: it permits `tidy--commits` and
+ * `tidy-`. This is the spec's rule, used to warn about that gap.
+ */
+const SPEC_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 const SAFETY_LINTS = new Set(["visible-text", "dynamic-context", "remote-exec", "secrets", "mcp"]);
 
 const INIT_CONFIG = `# kitbash project configuration — https://github.com/singhharsh1708/kitbash
@@ -1114,6 +1123,22 @@ function staticChecks(skill: LoadedSkill): Check[] {
   const m = skill.manifest;
 
   checks.push({ name: "manifest", ok: true, warn: skill.bare, detail: skill.bare ? "unmanifested (SKILL.md only) — defaults applied" : `${m.skill.name}@${m.skill.version}` });
+
+  // KSF's own name rule is looser than the Agent Skills spec every skills
+  // directory target follows: the spec forbids a leading, trailing or doubled
+  // hyphen, so `tidy--commits` and `tidy-` are legal KSF names that Claude Code,
+  // Codex, Copilot, Cline, Zed, Gemini and Agent Plugins may all refuse. Some of
+  // them refuse silently, which makes this worth saying once about the skill
+  // rather than once per target. A warning, not a failure — the name is valid
+  // KSF, and the compiler will still emit it.
+  if (!SPEC_NAME_RE.test(m.skill.name)) {
+    checks.push({
+      name: "name-convention",
+      ok: true,
+      warn: true,
+      detail: `"${m.skill.name}" has a leading, trailing or doubled hyphen. The Agent Skills spec allows neither, so hosts reading a skills directory may drop it — several without saying so.`,
+    });
+  }
 
   // templates / dead references
   let body: string | undefined;
