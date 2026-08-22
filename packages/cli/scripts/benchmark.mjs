@@ -147,7 +147,7 @@ Two costs matter:
 
 One caveat on the eager rows: \`agentsmd\` is loaded by the agent automatically, but **aider does not read \`CONVENTIONS.md\` on its own** — it is loaded with \`aider --read CONVENTIONS.md\` or a \`read:\` entry in \`.aider.conf.yml\`. Its standing figure is what the file costs *once wired in*; unconfigured it costs nothing, and \`compile\` says which case a repo is in.
 
-Token counts are estimates (~4 chars/token), the same estimator the compiler enforces budgets with, so the benchmark and the build agree by construction. Absolute counts will differ by a few percent against a model-specific tokenizer; the lazy-vs-eager *ratio* is what the argument rests on. Loading modes are read from the adapters themselves, not restated here, so this table cannot drift from what the compiler emits. Reproduce with \`node packages/cli/scripts/benchmark.mjs\`.
+Token counts are estimates (\`length / 4\`), the same estimator the compiler enforces budgets with, so the benchmark and the build agree by construction. Measured against \`o200k_base\` on this repo's corpus that estimator runs **about 2-11% high** — \`prereview\`'s body is 567 here and 515 in real tokens, its stub 40 against 35 — which is the safe direction for budget enforcement, since a skill fails its budget slightly early rather than late. The bias very largely cancels in the *ratio* the argument rests on: the 14x gap above is **14.7x** under a real tokenizer. Loading modes are read from the adapters themselves, not restated here, so this table cannot drift from what the compiler emits. Reproduce with \`node packages/cli/scripts/benchmark.mjs\`.
 
 `;
   for (const r of rows) {
