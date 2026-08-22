@@ -2,6 +2,12 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com). Versioning: semver — for skills *and* for this CLI, breaking prompt changes are breaking changes.
 
+## [0.24.2] — 2026-08-08
+
+### Fixed
+- **KSF rejected skill names the Agent Skills spec allows, and quietly renamed the skill instead of saying so.** The name rule was `^[a-z][a-z0-9-]{1,40}$`: it required a leading letter and capped names at 41 characters, while [the spec](https://agentskills.io/specification) allows any lowercase alphanumeric start and up to 64. So `2fa-setup` — a perfectly legal Agent Skill — failed the rule, fell through to the directory-name fallback, had its leading digit stripped by a slug that dropped everything before the first letter, and installed as **`fa-setup`**: a different skill from the one its author published, pinned under that name in `kitbash.lock` and compiled under it into every target. The rule now accepts a leading digit and the spec's full 64-character length, and the slug keeps leading digits instead of eating them.
+- The loosening is deliberate in one direction only. `tidy--commits` and `tidy-` still **load**, because tightening a value constraint on a frozen manifest field would turn valid existing skills into load failures (RFC 0002); they are reported by the `name-convention` lint added in 0.24.1, which is where a host-compatibility problem belongs. A frontmatter name KSF cannot load still falls back to the directory name, which is what the spec's name-matches-directory rule wants — that invariant is unchanged and still tested.
+
 ## [0.24.1] — 2026-08-12
 
 ### Fixed
