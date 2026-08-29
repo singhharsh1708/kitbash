@@ -59,7 +59,7 @@ jobs:
         # Runs even when the lint fails — a failing run is exactly the one whose
         # findings need to reach the Security tab.
         if: always() && hashFiles('kitbash.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: kitbash.sarif
 
