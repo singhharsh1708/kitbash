@@ -41,7 +41,7 @@ export const SKILLS_DIR = ".kitbash/skills";
  * different reasons. It accepts `tidy--commits` and `tidy-`, which the spec
  * forbids, because tightening a value constraint on a frozen manifest field
  * would turn valid existing skills into load failures (RFC 0002); those names
- * are reported by the `skills-spec` lint instead, which is where a
+ * are reported by the `name-convention` lint instead, which is where a
  * host-compatibility problem belongs. And it accepts a leading digit and names
  * up to 64 characters, which the old rule rejected outright — `2fa-setup` is a
  * perfectly legal Agent Skill, and refusing to load one the whole ecosystem
