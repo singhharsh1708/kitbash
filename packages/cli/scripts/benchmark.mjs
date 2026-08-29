@@ -9,111 +9,25 @@
  * standing stub on lazy targets and its whole body on eager ones. That gap is
  * the hidden tax of hand-maintaining a copy per agent. Here it is, in numbers.
  *
+ * The corpus lives in bench-fixtures.mjs, shared with tokenizer-check.mjs so the
+ * table and its published error bar describe the same bytes.
+ *
  * Reproduce:  node packages/cli/scripts/benchmark.mjs
  * Writes:     docs/benchmarks/README.md
  */
-import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { estimateTokens, standingStub } from "../dist/ksf.js";
-import { ADAPTERS } from "../dist/adapters.js";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { estimateTokens } from "../dist/ksf.js";
+import { LOADING, SKILLS, artifactText, repoRoot, stubText, withBenchWorkspace } from "./bench-fixtures.mjs";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(here, "../../..");
-const cli = join(here, "../dist/index.js");
-const fixture = join(repoRoot, "examples/skills/prereview");
-
-// agent-plugins is an opt-in publishing target (agent-plugins.org): it is not part
-// of a repo's auto-detected fan-out and would not fire in this fixture's compile
-// (no plugin.json). It is lazy, so it carries the same stub cost as every other
-// lazy target and adds no standing-tax story — this benchmark measures the
-// always-on tax across the targets a repo compiles to by default, so it is excluded.
-const BENCH_ADAPTERS = ADAPTERS.filter((a) => a.id !== "agent-plugins");
-
-// How each target loads a skill, read from the adapters themselves rather than
-// restated here — a second copy of this map is exactly how the published numbers
-// drift away from what the compiler actually emits.
-const LOADING = Object.fromEntries(BENCH_ADAPTERS.map((a) => [a.id, a.loading]));
-
-function run(args, cwd) {
-  const r = spawnSync("node", [cli, ...args], { cwd, encoding: "utf8" });
-  if (r.status !== 0) throw new Error(`kitbash ${args.join(" ")} failed:\n${r.stdout}${r.stderr}`);
-  return `${r.stdout}${r.stderr}`;
-}
-
-/** Token cost of one skill's contribution to a target's output. */
-function measure(tmp, target, skillName) {
-  const read = (rel) => readFileSync(join(tmp, rel), "utf8");
-  switch (target) {
-    case "claude-code":
-      return estimateTokens(read(`.claude/skills/${skillName}/SKILL.md`));
-    case "cursor":
-      return estimateTokens(read(`.cursor/rules/${skillName}.mdc`));
-    // Every one of these is served by the vendor-neutral path and reads the same
-    // bytes, so they measure identically. Zed and cline compile there directly;
-    // copilot and gemini also read it, so their own skills directory is not
-    // written when it is present (see VENDOR_NEUTRAL_ALIASES). Listed separately
-    // rather than folded together, because a reader looking up "what does Zed
-    // cost" must find a row.
-    case "agents":
-    case "zed":
-    case "cline":
-    case "copilot":
-    case "gemini":
-      return estimateTokens(read(`.agents/skills/${skillName}/SKILL.md`));
-    case "windsurf":
-      return estimateTokens(read(`.windsurf/rules/${skillName}.md`));
-    case "aider":
-    case "agentsmd": {
-      const file = target === "aider" ? "CONVENTIONS.md" : "AGENTS.md";
-      const m = read(file).match(new RegExp(`<!-- kitbash:begin ${skillName} -->[\\s\\S]*?<!-- kitbash:end ${skillName} -->`));
-      return m ? estimateTokens(m[0]) : 0;
-    }
-    default:
-      return 0;
-  }
-}
-
-const tmp = mkdtempSync(join(tmpdir(), "kitbash-bench-"));
-const skills = [];
-try {
-  // Every target present so every adapter fires.
-  for (const d of [".claude", ".cursor", ".agents", ".zed", ".clinerules", ".windsurf", ".github"]) mkdirSync(join(tmp, d));
-  writeFileSync(join(tmp, "GEMINI.md"), "");
-  writeFileSync(join(tmp, "CONVENTIONS.md"), "");
-
-  run(["init"], tmp);
-
-  // 1) A real manifested skill (budget 1500, lazy disclosure).
-  run(["install", `file:${fixture}`], tmp);
-  skills.push({ name: "prereview", kind: "manifested (budget 1500, lazy)", standing: 60 });
-
-  // 2) A bare SKILL.md-only skill — the skills.sh / Claude Skills convention,
-  //    which has no manifest and so no declared budget. Sized to a realistic
-  //    mid-size community skill.
-  const bare = join(tmp, "bare");
-  mkdirSync(bare);
-  const bareBody =
-    "Enforce this project's code-review checklist on every diff before it merges.\n\n" +
-    Array.from({ length: 40 }, (_, i) => `- Rule ${i + 1}: check the diff for issue class ${i + 1} and cite the exact line and the fix.`).join("\n") +
-    "\n";
-  writeFileSync(join(bare, "SKILL.md"), `---\nname: review-checklist\ndescription: Enforce the team code-review checklist\n---\n\n${bareBody}`);
-  run(["install", `file:${bare}`], tmp);
-  skills.push({ name: "review-checklist", kind: "bare / unmanifested (no budget)", standing: null });
-
-  run(["compile"], tmp);
-
-  const targets = Object.keys(LOADING);
+withBenchWorkspace((tmp) => {
   const rows = [];
-  for (const s of skills) {
-    const stubTokens = estimateTokens(standingStub(readFileSync(join(tmp, ".kitbash/skills", s.name, "SKILL.md"), "utf8").replace(/^---[\s\S]*?---\n/, "")));
+  for (const s of SKILLS) {
+    const stubTokens = estimateTokens(stubText(tmp, s.name));
     const perTarget = {};
-    for (const t of targets) {
-      const loaded = measure(tmp, t, s.name);
-      const standing = LOADING[t] === "lazy" ? stubTokens : loaded;
-      perTarget[t] = { loaded, standing };
+    for (const t of Object.keys(LOADING)) {
+      const loaded = estimateTokens(artifactText(tmp, t, s.name));
+      perTarget[t] = { loaded, standing: LOADING[t] === "lazy" ? stubTokens : loaded };
     }
     rows.push({ ...s, stubTokens, perTarget });
   }
@@ -147,7 +61,7 @@ Two costs matter:
 
 One caveat on the eager rows: \`agentsmd\` is loaded by the agent automatically, but **aider does not read \`CONVENTIONS.md\` on its own** — it is loaded with \`aider --read CONVENTIONS.md\` or a \`read:\` entry in \`.aider.conf.yml\`. Its standing figure is what the file costs *once wired in*; unconfigured it costs nothing, and \`compile\` says which case a repo is in.
 
-Token counts are estimates (\`length / 4\`), the same estimator the compiler enforces budgets with, so the benchmark and the build agree by construction. Measured against \`o200k_base\` across the artifacts in this table, that estimator is off by **7% low to 36% high**, and the direction depends on what the skill contains: prose over-counts (\`prereview\`'s body 567 here against 515 real, its stub 40 against 35), while the repetitive, heavily numbered \`review-checklist\` body **under**-counts (880 against 942). So it is not uniformly conservative — a skill whose body looks like that one can pass a budget it actually exceeds, and \`--strict\` will not catch it. The lazy-vs-eager *ratio* the argument rests on is more robust than the absolute numbers but is not exact either: \`prereview\`'s 14x is **14.7x** under a real tokenizer, and \`review-checklist\`'s 47x is **68x** — the estimator understates that gap by a third. Treat every number here as an estimate with that error bar, not as a token count. That comparison was made with \`tiktoken\`'s \`o200k_base\` over the exact artifacts this script emits; kitbash ships no tokenizer, so it is a one-off measurement rather than a regenerated number, and it should be re-taken when the fixtures change. Loading modes are read from the adapters themselves, not restated here, so this table cannot drift from what the compiler emits. Reproduce with \`node packages/cli/scripts/benchmark.mjs\`.
+Token counts are estimates (\`length / 4\`), the same estimator the compiler enforces budgets with, so the benchmark and the build agree by construction. Measured against \`o200k_base\` across the artifacts in this table, that estimator is off by **7% low to 36% high**, and the direction depends on what the skill contains: prose over-counts (\`prereview\`'s body 567 here against 515 real, its stub 40 against 35), while the repetitive, heavily numbered \`review-checklist\` body **under**-counts (880 against 942). So it is not uniformly conservative — a skill whose body looks like that one can pass a budget it actually exceeds, and \`--strict\` will not catch it. The lazy-vs-eager *ratio* the argument rests on is more robust than the absolute numbers but is not exact either: \`prereview\`'s 14x is **14.7x** under a real tokenizer, and \`review-checklist\`'s 47x is **68x** — the estimator understates that gap by a third. Treat every number here as an estimate with that error bar, not as a token count. Regenerate that comparison with \`npm run tokencheck\` inside \`packages/cli\`: it measures the same artifacts this script emits against \`o200k_base\` and prints the range and both ratios. The tokenizer is a devDependency and runs in no shipped code path — kitbash's runtime dependency count is still zero. Loading modes are read from the adapters themselves, not restated here, so this table cannot drift from what the compiler emits. Reproduce with \`node packages/cli/scripts/benchmark.mjs\`.
 
 `;
   for (const r of rows) {
@@ -171,6 +85,4 @@ No other format has a field for this. Kitbash measures it at compile time, warns
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "README.md"), md);
   console.log(`wrote docs/benchmarks/README.md`);
-} finally {
-  rmSync(tmp, { recursive: true, force: true });
-}
+});
