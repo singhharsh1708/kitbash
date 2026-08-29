@@ -1947,6 +1947,36 @@ try {
   writeFileSync(join(ok, "skill.toml"), '[skill]\nname = "tidy-commits"\nversion = "1.0.0"\ndescription = "A skill with a spec-clean name"\n[context]\nbudget = 1500\n');
   writeFileSync(join(ok, "SKILL.md"), "# Tidy\n\nBody.\n");
   check("spec-name: a clean name is silent", !run(["lint", `file:${ok}`], nmTmp).out.includes("name-convention"));
+
+  // Interop the other way: names the Agent Skills spec allows that KSF used to
+  // refuse. A leading digit is legal, and the old rule both rejected it and then
+  // silently installed the skill under a DIFFERENT name than its author declared.
+  const digit = join(nmTmp, "2fa-setup");
+  mkdirSync(digit, { recursive: true });
+  writeFileSync(join(digit, "SKILL.md"), "---\nname: 2fa-setup\ndescription: Set up two-factor authentication. Use when configuring 2FA for a service.\n---\nBody.\n");
+  check("spec-name: a leading digit loads under its declared name", loadSkill(digit).manifest.skill.name === "2fa-setup");
+
+  const proj = mkdtempSync(join(tmpdir(), "kitbash-specname-proj-"));
+  try {
+    run(["init"], proj);
+    const ins = run(["install", `file:${digit}`, "--yes"], proj);
+    check("spec-name: and installs under it, not a mangled slug", ins.status === 0 && ins.out.includes("installed 2fa-setup@"), ins.out);
+    const lock = readFileSync(join(proj, "kitbash.lock"), "utf8");
+    check("spec-name: the lockfile pins the declared name, not the mangled one", lock.includes('name = "2fa-setup"') && !lock.includes('name = "fa-setup"'), lock);
+  } finally {
+    rmSync(proj, { recursive: true, force: true });
+  }
+
+  // An unloadable declared name still falls back to the directory, which is what
+  // the spec's name-matches-directory rule wants — asserted by the name-invariant
+  // test above. What must NOT happen is that behaviour swallowing a name KSF can load.
+
+  // A 64-character name is legal per the spec; the old 41-char cap rejected it.
+  const long = "a".repeat(64);
+  const longDir = join(nmTmp, long);
+  mkdirSync(longDir, { recursive: true });
+  writeFileSync(join(longDir, "SKILL.md"), `---\nname: ${long}\ndescription: A skill with the longest name the Agent Skills spec permits.\n---\nBody.\n`);
+  check("spec-name: a 64-character name loads", loadSkill(longDir).manifest.skill.name === long);
 } finally {
   rmSync(nmTmp, { recursive: true, force: true });
 }

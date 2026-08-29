@@ -33,7 +33,21 @@ export interface LoadedSkill {
 }
 
 export const SKILLS_DIR = ".kitbash/skills";
-export const NAME_RE = /^[a-z][a-z0-9-]{1,40}$/;
+/**
+ * What KSF will LOAD as a skill name: 1–64 characters, starting alphanumeric,
+ * then alphanumerics and hyphens.
+ *
+ * Deliberately looser than the Agent Skills spec, in both directions and for
+ * different reasons. It accepts `tidy--commits` and `tidy-`, which the spec
+ * forbids, because tightening a value constraint on a frozen manifest field
+ * would turn valid existing skills into load failures (RFC 0002); those names
+ * are reported by the `name-convention` lint instead, which is where a
+ * host-compatibility problem belongs. And it accepts a leading digit and names
+ * up to 64 characters, which the old rule rejected outright — `2fa-setup` is a
+ * perfectly legal Agent Skill, and refusing to load one the whole ecosystem
+ * accepts was interop breakage, not strictness.
+ */
+export const NAME_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 /** spec/schema/skill.schema.json: a trigger command is a slash plus a lowercase name — never a path. */
 export const COMMAND_RE = /^\/[a-z][a-z0-9-]*$/;
 
@@ -92,7 +106,15 @@ function loadBareSkill(dir: string, bodyPath: string, nameHint?: string): Loaded
   const fm = parseFrontmatter(raw);
   const body = raw.replace(FRONTMATTER_RE, "").trimStart();
 
-  const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^[^a-z]+/, "").slice(0, 40);
+  // Spec-shaped slug: collapse runs of non-alphanumerics to single hyphens and trim
+  // them from both ends. Leading digits are kept — `2fa-setup` is a legal skill name.
+  const slug = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 64).replace(/-+$/, "");
+
+  // A frontmatter name is used only when KSF can load it. Otherwise the directory
+  // name wins: the Agent Skills spec requires `name` to match the parent directory,
+  // so deriving from the directory produces output every host accepts, where
+  // propagating a mismatched name would produce a skill they silently drop.
   const fallback = nameHint ? slug(nameHint) : slug(basename(dir));
   const name = fm["name"] && NAME_RE.test(fm["name"]) ? fm["name"] : fallback;
   if (!NAME_RE.test(name)) throw new Error(`${dir}: cannot derive a valid skill name (got "${name}")`);
